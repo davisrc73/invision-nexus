@@ -1,0 +1,386 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+---
+
+<DashboardLayout title="Control Plane — Visão Global do Parque & Prioridades em Tempo Real" activeNav="overview">
+  <!-- KPIs DINÂMICOS LIGADOS AO SERVIDOR LIVE BRIDGE -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-5">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">
+          Terminais Reais Conectados
+        </span>
+        <span id="kpi-online-badge" class="px-2 py-0.5 text-[11px] font-bold rounded bg-emerald-500/15 text-emerald-400">
+          Live Heartbeat
+        </span>
+      </div>
+      <p id="kpi-devices-count" class="text-3xl font-black text-white mt-2">0</p>
+      <p id="kpi-devices-sub" class="text-xs text-slate-400 mt-1">
+        Mac, Telemóvel & Boxes Android ligados na LAN
+      </p>
+    </div>
+
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-5">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">
+          Catálogo de Media Real
+        </span>
+        <a href="/playlists" class="text-xs text-amber-400 hover:underline font-semibold">
+          Gerir →
+        </a>
+      </div>
+      <p id="kpi-media-count" class="text-3xl font-black text-white mt-2">0</p>
+      <p id="kpi-media-sub" class="text-xs text-slate-400 mt-1">
+        Vídeos e imagens validados com SHA-256
+      </p>
+    </div>
+
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-5">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">
+          Exibições Reais (PoP) & Toques
+        </span>
+        <a href="/telemetry" class="text-xs text-sky-400 hover:underline font-semibold">
+          Ver CSV →
+        </a>
+      </div>
+      <p id="kpi-pop-count" class="text-3xl font-black text-emerald-400 mt-2">0</p>
+      <p id="kpi-touch-sub" class="text-xs text-slate-400 mt-1">
+        0 interações Touch / TV Demo registadas
+      </p>
+    </div>
+
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-5">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">
+          Incidentes de Loja Abertos
+        </span>
+        <a href="/store-wall" class="text-xs text-amber-400 hover:underline font-semibold">
+          Ver Live Wall →
+        </a>
+      </div>
+      <p id="kpi-incidents-count" class="text-3xl font-black text-rose-400 mt-2">0</p>
+      <p class="text-xs text-slate-400 mt-1">
+        Alertas reportados pela loja em tempo real
+      </p>
+    </div>
+  </div>
+
+  <!-- SECÇÃO EXCLUSIVA GLOBAL_ADMIN & IT_OPS: ZERO-TOUCH PAIRING REAL -->
+  <div
+    data-rbac-hide="MEDIA_MANAGER,STORE_MANAGER,DEPT_HEAD"
+    class="bg-slate-900 border border-slate-800 rounded-xl p-6 mb-8"
+  >
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-slate-800 pb-4 mb-5">
+      <div>
+        <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+          Exclusivo GLOBAL_ADMIN & IT_OPS
+        </span>
+        <h3 class="text-base font-bold text-white mt-1.5">
+          Provisionamento Zero-Touch (Código 6 Dígitos) & Atribuição de Loja / Zona
+        </h3>
+        <p class="text-xs text-slate-400">
+          Se colocar o Player no modo de Emparelhamento (ou introduzir o UID/Código do seu telemóvel/Mac), este formulário aprova e desbloqueia o ecrã remotamente via WebSocket!
+        </p>
+      </div>
+    </div>
+
+    <form id="pairing-form" class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
+      <div>
+        <label class="block text-xs text-slate-400 mb-1">Código ou UID no Ecrã</label>
+        <input
+          type="text"
+          id="pair-code"
+          placeholder="NX-849201"
+          value="NX-849201"
+          required
+          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono uppercase text-amber-300 focus:border-amber-400 focus:outline-none"
+        />
+      </div>
+      <div>
+        <label class="block text-xs text-slate-400 mb-1">Nome do Terminal</label>
+        <input
+          type="text"
+          id="pair-name"
+          placeholder="LEDwall Entrada Colombo"
+          required
+          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-amber-400 focus:outline-none"
+        />
+      </div>
+      <div>
+        <label class="block text-xs text-slate-400 mb-1">Loja (Insígnia)</label>
+        <select
+          id="pair-store"
+          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200"
+        >
+          <option value="FNAC Colombo (Lisboa)">FNAC Colombo (Lisboa)</option>
+          <option value="FNAC Vasco da Gama">FNAC Vasco da Gama</option>
+          <option value="FNAC NorteShopping">FNAC NorteShopping</option>
+          <option value="DARTY Paris République">DARTY Paris République</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs text-slate-400 mb-1">Zona / Departamento</label>
+        <select
+          id="pair-zone"
+          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200"
+        >
+          <option value="ENTRANCE_LEDWALL">LEDwall Entrada de Loja</option>
+          <option value="IT_COMPUTERS">Informática & Portáteis Expo</option>
+          <option value="TV_VIDEO">TVs em Exposição</option>
+          <option value="TELECOM_MOBILES">Smartphones & Tablets Expo</option>
+          <option value="GAMING">Gaming & Consolas</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs text-slate-400 mb-1">Categoria / Tipologia</label>
+        <select
+          id="pair-category"
+          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200"
+        >
+          <option value="ANDROID_BOX">ANDROID_BOX (X98 Plus Passivo)</option>
+          <option value="LEDWALL">LEDWALL (Entrada / Topo)</option>
+          <option value="TV_DEMO">TV_DEMO (Catálogo Interativo TV)</option>
+          <option value="LAPTOP_EXPO">LAPTOP_EXPO (Idle + Touch Wake)</option>
+          <option value="SMARTPHONE_EXPO">SMARTPHONE_EXPO (Idle + Touch Wake)</option>
+        </select>
+      </div>
+      <div>
+        <button
+          type="submit"
+          class="w-full bg-[#E1A924] hover:bg-amber-400 text-black font-bold text-sm py-2 px-4 rounded-lg transition shadow"
+        >
+          Aprovar via WebSocket
+        </button>
+      </div>
+    </form>
+    <div id="pair-feedback" class="hidden mt-3 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-300 font-mono"></div>
+  </div>
+
+  <!-- TERMINAIS CONECTADOS EM TEMPO REAL & MOTOR DE 4 PRIORIDADES -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-sm font-bold uppercase tracking-wider text-slate-300">
+          Terminais Reais Ativos na Tua Rede Agora
+        </h3>
+        <a href="/store-wall" class="text-xs text-sky-400 hover:underline">Abrir Live Wall →</a>
+      </div>
+      <div id="live-devices-list" class="space-y-3 text-xs">
+        <div class="p-4 rounded-lg bg-slate-950 border border-slate-800 text-slate-400">
+          A aguardar heartbeat dos Players abertos (Mac / Telemóvel)...
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-sm font-bold uppercase tracking-wider text-slate-300">
+          Estado Real das 4 Prioridades (Precedência Estrita)
+        </h3>
+        <a href="/playlists" class="text-xs text-amber-400 hover:underline">Configurar →</a>
+      </div>
+      <div id="priority-stack-list" class="space-y-3"></div>
+    </div>
+  </div>
+
+  <script is:inline>
+    const API_BASE = `${window.location.protocol}//${window.location.hostname}:3000`;
+
+    async function refreshOverview() {
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/live/state`);
+        const st = await res.json();
+
+        const onlineDevices = (st.devices || []).filter((d) => d.status === 'ONLINE');
+        document.getElementById('kpi-devices-count').textContent = String(st.devices?.length || 0);
+        document.getElementById('kpi-devices-sub').textContent = `${onlineDevices.length} ONLINE agora • Parque Produção: 4.012`;
+
+        document.getElementById('kpi-media-count').textContent = String(st.mediaCatalog?.length || 0);
+        const totalPlaylists = (st.playlists || []).filter((p) => p.isActive).length;
+        document.getElementById('kpi-media-sub').textContent = `${totalPlaylists} Playlists ativas configuradas`;
+
+        const totalPlays = (st.popRecords || []).reduce((acc, r) => acc + r.playCount, 0);
+        const totalTouches = (st.interactionRecords || []).reduce((acc, r) => acc + r.count, 0);
+        document.getElementById('kpi-pop-count').textContent = String(totalPlays);
+        document.getElementById('kpi-touch-sub').textContent = `${totalTouches} interações Touch / TV Demo registadas`;
+
+        const openIncidents = (st.incidents || []).filter((i) => i.status === 'OPEN').length;
+        document.getElementById('kpi-incidents-count').textContent = String(openIncidents);
+
+        // Lista de dispositivos reais
+        const devList = document.getElementById('live-devices-list');
+        if (!st.devices || st.devices.length === 0) {
+          devList.innerHTML = `
+            <div class="p-4 rounded-lg bg-slate-950 border border-dashed border-slate-800 text-slate-400">
+              Abra o Player em <strong>http://localhost:5173</strong> ou no telemóvel para o ver aparecer aqui em tempo real!
+            </div>
+          `;
+        } else {
+          devList.innerHTML = st.devices
+            .map(
+              (d) => `
+              <div class="p-3.5 rounded-xl bg-slate-950 border ${
+                d.status === 'PENDING_APPROVAL' ? 'border-amber-400 ring-1 ring-amber-400' : 'border-slate-800'
+              } flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div>
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="w-2.5 h-2.5 rounded-full ${
+                      d.status === 'ONLINE'
+                        ? 'bg-emerald-400'
+                        : d.status === 'PENDING_APPROVAL'
+                        ? 'bg-amber-400 animate-pulse'
+                        : 'bg-rose-500'
+                    }"></span>
+                    <strong class="text-white text-xs">${d.name}</strong>
+                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">
+                      Código: ${d.pairingCode || d.hardwareUid}
+                    </span>
+                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-sky-300">${d.category}</span>
+                  </div>
+                  <p class="text-[11px] font-mono text-slate-400 mt-1">
+                    ▶ Agora: <span class="text-slate-200">${d.currentMediaTitle}</span> • Modo: ${d.interactionMode}
+                  </p>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    data-pick-device="${d.pairingCode || d.hardwareUid}"
+                    data-pick-name="${d.name}"
+                    class="px-2.5 py-1.5 rounded bg-[#E1A924] hover:bg-amber-400 text-black font-bold text-[11px] transition"
+                  >
+                    ${d.status === 'PENDING_APPROVAL' ? '⚡ Emparelhar Esta Box' : '✎ Configurar'}
+                  </button>
+                  <button
+                    type="button"
+                    data-remove-device="${d.hardwareUid}"
+                    class="px-2 py-1.5 rounded bg-slate-900 hover:bg-rose-500/20 text-rose-400 border border-slate-800 text-[11px] transition"
+                    title="Remover equipamento da lista"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            `
+            )
+            .join('');
+
+          document.querySelectorAll('[data-pick-device]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+              const code = btn.getAttribute('data-pick-device');
+              const name = btn.getAttribute('data-pick-name');
+              document.getElementById('pair-code').value = code;
+              const nameInput = document.getElementById('pair-name');
+              if (!nameInput.value) nameInput.value = name;
+              nameInput.focus();
+            });
+          });
+
+          document.querySelectorAll('[data-remove-device]').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+              const uid = btn.getAttribute('data-remove-device');
+              await fetch(`${API_BASE}/api/v1/live/devices/${encodeURIComponent(uid)}`, {
+                method: 'DELETE',
+              });
+              refreshOverview();
+            });
+          });
+        }
+
+        // Stack de Prioridades
+        const levels = [
+          {
+            code: 'EXCLUSIVA',
+            label: '1. EXCLUSIVA (Override Total)',
+            desc: 'Silencia a 100% Prioritária, Normal e Fallback.',
+            color: 'rose',
+          },
+          {
+            code: 'PRIORITARIA',
+            label: '2. PRIORITÁRIA (Silencia Normal)',
+            desc: 'Quando ativa e com ficheiros, silencia a 100% a Normal.',
+            color: 'amber',
+          },
+          {
+            code: 'NORMAL',
+            label: '3. NORMAL (Slots ou Dynamic SoV)',
+            desc: 'Programação regular de campanha e loja.',
+            color: 'sky',
+          },
+          {
+            code: 'FALLBACK',
+            label: '4. FALLBACK (Segurança Institucional)',
+            desc: 'Toca quando nenhum nível superior tem conteúdos válidos.',
+            color: 'slate',
+          },
+        ];
+
+        const winningPriority = st.effectivePlayback?.activePriority || 'FALLBACK';
+        document.getElementById('priority-stack-list').innerHTML = levels
+          .map((lvl) => {
+            const count = (st.playlists || []).filter(
+              (p) => p.priority === lvl.code && p.isActive && p.items?.length > 0
+            ).length;
+            const isWinning = winningPriority === lvl.code;
+            return `
+              <div class="p-3 rounded-lg bg-slate-950 border ${
+                isWinning ? 'border-[#E1A924] ring-1 ring-[#E1A924]' : 'border-slate-800'
+              } flex items-center justify-between">
+                <div>
+                  <span class="text-xs font-black text-white uppercase">${lvl.label}</span>
+                  <p class="text-xs text-slate-400 mt-0.5">${lvl.desc}</p>
+                </div>
+                <div class="text-right">
+                  <span class="font-mono text-xs px-2 py-1 rounded ${
+                    isWinning
+                      ? 'bg-emerald-500 text-black font-black'
+                      : 'bg-slate-800 text-slate-300'
+                  }">
+                    ${isWinning ? '● DOMINANTE AGORA' : `${count} Ativa(s)`}
+                  </span>
+                </div>
+              </div>
+            `;
+          })
+          .join('');
+      } catch {
+        // ignore
+      }
+    }
+
+    const pairingForm = document.getElementById('pairing-form');
+    const pairFeedback = document.getElementById('pair-feedback');
+
+    pairingForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const pairingCode = document.getElementById('pair-code').value;
+      const name = document.getElementById('pair-name').value;
+      const storeName = document.getElementById('pair-store').value;
+      const zone = document.getElementById('pair-zone').value;
+      const category = document.getElementById('pair-category').value;
+
+      const res = await fetch(`${API_BASE}/api/v1/live/pairing/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pairingCode,
+          name,
+          storeName,
+          zone,
+          category,
+          brand: localStorage.getItem('invision_brand') || 'FNAC',
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        pairFeedback.classList.remove('hidden');
+        pairFeedback.textContent = `✓ [APROVADO VIA WEBSOCKET] Terminal "${data.device.name}" (${data.device.storeName} • ${data.device.zone}) desbloqueado com sucesso! Token: ${data.deviceToken}`;
+        refreshOverview();
+      }
+    });
+
+    refreshOverview();
+    setInterval(refreshOverview, 3000);
+  </script>
+</DashboardLayout>

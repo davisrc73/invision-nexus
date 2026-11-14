@@ -1,0 +1,36 @@
+# Dependências Node.js
+node_modules/
+**/node_modules/
+.npm/
+
+# Builds e artefactos gerados
+dist/
+**/dist/
+.astro/
+**/.astro/
+
+# Binários locais de ferramentas (ex: Android Platform Tools ADB no Mac)
+tools/
+
+# Dados persistentes locais e de contentores (PostgreSQL, Redis, Uploads de Teste)
+data/postgres/
+data/redis/
+data/storage/media/*
+data/storage/thumbs/*
+data/storage/live_state.json
+!data/storage/media/.gitkeep
+!data/storage/thumbs/.gitkeep
+
+# Ficheiros de ambiente e segredos locais (manter apenas .env.example)
+.env
+.env.local
+.env.*.local
+
+# Sistema Operativo / IDE
+.DS_Store
+**/.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*
+.vscode/
+.idea/

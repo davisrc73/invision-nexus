@@ -1,0 +1,197 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+---
+
+<DashboardLayout title="Proof of Play Real & Telemetria Touch / TV Demo (Exportação CSV)" activeNav="telemetry">
+  <!-- TOP ACTIONS: EXPORTAÇÃO CSV -->
+  <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div>
+      <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+        Telemetria em Tempo Real • Recebida dos Players no Mac e Telemóvel
+      </span>
+      <h3 class="text-base font-bold text-white mt-1.5">
+        Auditoria de Exibição (Proof of Play) & Envolvimento de Clientes em Bancada
+      </h3>
+      <p class="text-xs text-slate-400 mt-0.5">
+        Sempre que um vídeo ou imagem termina a exibição no Player (ou quando toca no ecrã em modo <code>IDLE_SCREENSAVER</code> / <code>TV_DEMO</code>), os contadores abaixo e o CSV são atualizados automaticamente!
+      </p>
+    </div>
+    <div class="flex items-center gap-3">
+      <button
+        type="button"
+        id="btn-export-pop-csv"
+        class="px-4 py-2 rounded-lg bg-[#E1A924] hover:bg-amber-400 text-black font-bold text-xs shadow transition"
+      >
+        ⬇ Exportar Proof of Play Real (CSV)
+      </button>
+      <button
+        type="button"
+        id="btn-export-touch-csv"
+        class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs border border-slate-700 transition"
+      >
+        ⬇ Exportar Touch & TV Demo (CSV)
+      </button>
+    </div>
+  </div>
+
+  <!-- TABELA 1: PROOF OF PLAY REAL -->
+  <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 mb-8">
+    <h4 class="text-sm font-bold uppercase tracking-wider text-amber-300 mb-4">
+      1. Registos Reais de Proof of Play (Exibições Concluídas nos Players)
+    </h4>
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse text-xs">
+        <thead>
+          <tr class="border-b border-slate-800 text-slate-400 uppercase">
+            <th class="py-3 px-3">Insígnia</th>
+            <th class="py-3 px-3">Playlist</th>
+            <th class="py-3 px-3">Conteúdo Exibido</th>
+            <th class="py-3 px-3">Prioridade / Modo</th>
+            <th class="py-3 px-3 text-right">Total Exibições (Plays)</th>
+            <th class="py-3 px-3 text-right">Segundos Totais Exibidos</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-800/70 text-slate-200" id="pop-table-body">
+          <tr>
+            <td colspan="6" class="py-4 px-3 text-slate-400 text-center">
+              A carregar contadores reais de Proof of Play...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TABELA 2: INTERAÇÕES REAIS TOUCH & TV DEMO -->
+  <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
+    <h4 class="text-sm font-bold uppercase tracking-wider text-sky-300 mb-3">
+      2. Registos Reais de Interação Touch (`IDLE_SCREENSAVER`) & Categorias `TV_DEMO`
+    </h4>
+    <div id="interactions-list" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs"></div>
+  </div>
+
+  <script is:inline>
+    const API_BASE = `${window.location.protocol}//${window.location.hostname}:3000`;
+    let latestState = { popRecords: [], interactionRecords: [] };
+
+    async function refreshTelemetryPage() {
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/live/state`);
+        latestState = await res.json();
+        renderTables();
+      } catch {
+        // ignore
+      }
+    }
+
+    function renderTables() {
+      const popBody = document.getElementById('pop-table-body');
+      const popRecords = latestState.popRecords || [];
+
+      if (popRecords.length === 0) {
+        popBody.innerHTML = `
+          <tr>
+            <td colspan="6" class="py-6 px-3 text-slate-400 text-center">
+              A aguardar conclusão do primeiro vídeo/imagem no Player (a cada ~8s o Player envia automaticamente o registo de Proof of Play)...
+            </td>
+          </tr>
+        `;
+      } else {
+        popBody.innerHTML = popRecords
+          .map(
+            (r) => `
+            <tr>
+              <td class="py-3 px-3 font-bold ${
+                r.brand === 'DARTY' ? 'text-red-400' : 'text-amber-400'
+              }">${r.brand}</td>
+              <td class="py-3 px-3">${r.playlistName}</td>
+              <td class="py-3 px-3 font-mono text-white font-semibold">${r.mediaTitle}</td>
+              <td class="py-3 px-3">${r.priority} (${r.schedulingMode})</td>
+              <td class="py-3 px-3 text-right font-mono font-bold text-white">${r.playCount}</td>
+              <td class="py-3 px-3 text-right font-mono text-emerald-400">${(
+                r.totalDurationMs / 1000
+              ).toFixed(1)} s</td>
+            </tr>
+          `
+          )
+          .join('');
+      }
+
+      const intContainer = document.getElementById('interactions-list');
+      const intRecords = latestState.interactionRecords || [];
+
+      if (intRecords.length === 0) {
+        intContainer.innerHTML = `
+          <div class="md:col-span-2 p-5 rounded-xl bg-slate-950 border border-dashed border-slate-800 text-center text-slate-400">
+            Para testar esta tabela ao vivo: abra o menu OSD no Player (tecla <code>i</code> ou 5 cliques no canto superior esquerdo), mude para <strong>2. IDLE_SCREENSAVER</strong> ou <strong>3. INTERACTIVE_CATALOG (TV Demo)</strong> e toque no ecrã!
+          </div>
+        `;
+      } else {
+        intContainer.innerHTML = intRecords
+          .map(
+            (r) => `
+            <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+              <div>
+                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 font-bold">
+                  ${r.interactionType}
+                </span>
+                <p class="font-bold text-white mt-1.5">Referência: ${r.referenceKey}</p>
+                <p class="text-slate-400 text-[11px]">Última interação: ${new Date(
+                  r.lastAt
+                ).toLocaleTimeString()}</p>
+              </div>
+              <div class="text-right font-mono">
+                <span class="text-base font-black text-amber-300">${r.count}x</span>
+                <p class="text-[11px] text-emerald-400">${r.totalSeconds}s envolvimento</p>
+              </div>
+            </div>
+          `
+          )
+          .join('');
+      }
+    }
+
+    function downloadCsv(filename, rows) {
+      const csvContent = 'data:text/csv;charset=utf-8,' + rows.map((e) => e.join(';')).join('\n');
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    document.getElementById('btn-export-pop-csv')?.addEventListener('click', () => {
+      const rows = [
+        ['Insignia', 'Playlist', 'Conteudo', 'Prioridade', 'Modo', 'Total_Plays', 'Segundos_Exibidos'],
+        ...(latestState.popRecords || []).map((r) => [
+          r.brand,
+          r.playlistName,
+          r.mediaTitle,
+          r.priority,
+          r.schedulingMode,
+          String(r.playCount),
+          (r.totalDurationMs / 1000).toFixed(1),
+        ]),
+      ];
+      downloadCsv('invision_nexus_live_proof_of_play.csv', rows);
+    });
+
+    document.getElementById('btn-export-touch-csv')?.addEventListener('click', () => {
+      const rows = [
+        ['Tipo_Interacao', 'Referencia_Categoria', 'Total_Interacoes', 'Segundos_Envolvimento'],
+        ...(latestState.interactionRecords || []).map((r) => [
+          r.interactionType,
+          r.referenceKey,
+          String(r.count),
+          String(r.totalSeconds),
+        ]),
+      ];
+      downloadCsv('invision_nexus_live_interactions.csv', rows);
+    });
+
+    refreshTelemetryPage();
+    setInterval(refreshTelemetryPage, 2500);
+  </script>
+</DashboardLayout>

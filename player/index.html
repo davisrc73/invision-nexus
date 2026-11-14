@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta name="theme-color" content="#0f172a" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <title>Invision Nexus Edge Player</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      html,
+      body,
+      #app {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background: #000000;
+        color: #ffffff;
+        font-family: system-ui, -apple-system, sans-serif;
+      }
+      #boot-fallback {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100vh;
+        background: radial-gradient(circle at center, #1e293b 0%, #090d16 100%);
+        color: #e1a924;
+        text-align: center;
+        padding: 2rem;
+      }
+      #boot-fallback h1 {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        color: #ffffff;
+      }
+      #boot-fallback p {
+        font-family: monospace;
+        font-size: 1rem;
+        color: #94a3b8;
+      }
+      #boot-error-log {
+        margin-top: 1rem;
+        color: #f87171;
+        font-family: monospace;
+        font-size: 0.85rem;
+        max-width: 80%;
+        word-break: break-all;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <!-- Ecrã visível imediatamente na TV antes mesmo de o JavaScript/Svelte arrancar -->
+      <div id="boot-fallback">
+        <h1>INVISION NEXUS • ANDROID BOX X98 PLUS</h1>
+        <p id="boot-status">A inicializar motor visual do Player...</p>
+        <div id="boot-error-log"></div>
+      </div>
+    </div>
+    <script>
+      window.onerror = function (msg, url, line) {
+        var el = document.getElementById('boot-error-log');
+        if (el) {
+          el.textContent = 'Erro JS na Box: ' + msg + ' (' + url + ':' + line + ')';
+        }
+      };
+      window.onunhandledrejection = function (ev) {
+        var el = document.getElementById('boot-error-log');
+        if (el) {
+          el.textContent = 'Promise Error: ' + (ev.reason && ev.reason.message ? ev.reason.message : ev.reason);
+        }
+      };
+    </script>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

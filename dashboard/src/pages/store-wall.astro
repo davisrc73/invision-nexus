@@ -1,0 +1,301 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+---
+
+<DashboardLayout title="Live Wall Loja — Auditoria em Tempo Real & Gestão de Incidentes" activeNav="store-wall">
+  <!-- BARRA DE FILTROS DE LOJA E DEPARTAMENTO -->
+  <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div>
+      <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">
+        Live Wall Real-Time • Sincronizado com os Players Abertos (Mac & Telemóvel)
+      </span>
+      <h3 class="text-base font-bold text-white mt-1.5">
+        Auditoria Visual dos Ecrãs Conectados e do Conteúdo Exato em Reprodução
+      </h3>
+      <p class="text-xs text-slate-400">
+        Cada cartão abaixo representa um Player real ligado na sua rede neste momento, mostrando o ficheiro, a prioridade e o modo de operação ativo.
+      </p>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <select
+        id="zone-filter"
+        class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs font-medium text-slate-200"
+      >
+        <option value="ALL">Todos os Departamentos</option>
+        <option value="ENTRANCE_LEDWALL">LEDwall Entrada de Loja</option>
+        <option value="IT_COMPUTERS">Informática & Portáteis Expo</option>
+        <option value="TV_VIDEO">TVs em Exposição (Catálogo Demo)</option>
+        <option value="TELECOM_MOBILES">Smartphones & Tablets Expo</option>
+        <option value="GAMING">Gaming & Consolas</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- GRELHA DE DISPOSITIVOS REAIS EM REPRODUÇÃO -->
+  <div id="wall-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
+    <div class="p-6 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-400">
+      A sincronizar Live Wall com os Players ativos...
+    </div>
+  </div>
+
+  <!-- LISTA DE INCIDENTES REAIS ABERTOS PELA LOJA -->
+  <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h4 class="text-sm font-bold uppercase tracking-wider text-rose-400">
+          Registo Real de Incidentes e Anomalias Reportadas pela Loja
+        </h4>
+        <p class="text-xs text-slate-400">
+          Os incidentes abertos pelos Diretores de Loja e Chefes de Departamento aparecem aqui imediatamente para resolução pela equipa Multimédia / IT.
+        </p>
+      </div>
+    </div>
+    <div id="incidents-list" class="space-y-3 text-xs"></div>
+  </div>
+
+  <!-- MODAL DE REPORTE DE INCIDENTE -->
+  <div
+    id="incident-modal"
+    class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+  >
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+      <h4 class="text-base font-bold text-white">Reportar Anomalia no Terminal</h4>
+      <p id="modal-device-name" class="text-xs text-amber-300 font-mono mt-1"></p>
+
+      <form id="incident-form" class="mt-4 space-y-4">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Tipo de Anomalia</label>
+          <select
+            id="inc-type"
+            class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
+          >
+            <option value="SCREEN_OFF">Ecrã Desligado / Sem Imagem</option>
+            <option value="WRONG_CONTENT">Conteúdo ou Campanha Errada para o Setor</option>
+            <option value="OUTDATED_PRICE">Preço / Promoção Desatualizada no Vídeo</option>
+            <option value="SYNC_DRIFT">Dessincronização entre Ecrãs do Corredor</option>
+            <option value="HARDWARE_DAMAGE">Dano Físico / Cabo / Box X98 Plus</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Observações da Loja</label>
+          <textarea
+            id="inc-desc"
+            rows="3"
+            required
+            placeholder="Descreva o problema observado..."
+            class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-xs text-white"
+          ></textarea>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button
+            type="button"
+            id="btn-close-modal"
+            class="px-4 py-2 rounded-lg bg-slate-800 text-xs font-semibold text-slate-300"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            class="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-xs font-bold text-white"
+          >
+            Registar Incidente Real
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script is:inline>
+    const API_BASE = `${window.location.protocol}//${window.location.hostname}:3000`;
+    const wallGrid = document.getElementById('wall-grid');
+    const incidentsList = document.getElementById('incidents-list');
+    const zoneFilter = document.getElementById('zone-filter');
+    const modal = document.getElementById('incident-modal');
+    const modalDeviceName = document.getElementById('modal-device-name');
+    let selectedDevice = '';
+
+    async function fetchWallState() {
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/live/state`);
+        const st = await res.json();
+        renderWall(st);
+      } catch {
+        // ignore
+      }
+    }
+
+    function renderWall(st) {
+      const selectedZone = zoneFilter?.value || 'ALL';
+      const devices = (st.devices || []).filter(
+        (d) => selectedZone === 'ALL' || d.zone === selectedZone
+      );
+
+      if (devices.length === 0) {
+        wallGrid.innerHTML = `
+          <div class="md:col-span-3 p-6 rounded-xl bg-slate-900 border border-dashed border-slate-800 text-center text-xs text-slate-400">
+            Nenhum terminal ativo neste filtro. Mantenha o Player aberto em <strong>http://localhost:5173</strong> ou no telemóvel para ver a transmissão ao vivo aqui!
+          </div>
+        `;
+      } else {
+        wallGrid.innerHTML = devices
+          .map((d) => {
+            const previewMedia =
+              d.currentMediaType === 'IMAGE' && d.currentMediaUrl
+                ? `<img src="${d.currentMediaUrl}" class="absolute inset-0 w-full h-full object-cover opacity-45" />`
+                : d.currentMediaType === 'VIDEO' && d.currentMediaUrl
+                ? `<video src="${d.currentMediaUrl}" muted autoplay loop playsinline class="absolute inset-0 w-full h-full object-cover opacity-45"></video>`
+                : '';
+
+            return `
+              <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden flex flex-col justify-between">
+                <div>
+                  <div class="h-40 bg-gradient-to-br from-slate-800 via-slate-950 to-black p-4 flex flex-col justify-between border-b border-slate-800 relative overflow-hidden">
+                    ${previewMedia}
+                    <div class="relative z-10 flex items-center justify-between">
+                      <span class="px-2 py-0.5 rounded text-[10px] font-bold ${
+                        d.status === 'ONLINE'
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                          : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                      }">
+                        ● ${d.status} (NTP ${d.ntpOffsetMs}ms)
+                      </span>
+                      <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold">
+                        PRIORIDADE: ${d.activePriority || 'NORMAL'}
+                      </span>
+                    </div>
+                    <div class="relative z-10">
+                      <span class="text-[10px] font-mono uppercase text-amber-300 bg-black/60 px-1.5 py-0.5 rounded">
+                        Modo: ${d.interactionMode}
+                      </span>
+                      <p class="text-sm font-black text-white mt-1 drop-shadow">
+                        ▶ ${d.currentMediaTitle}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div class="p-4 space-y-2 text-xs">
+                    <div class="flex justify-between">
+                      <span class="text-slate-400">Terminal:</span>
+                      <span class="font-bold text-white">${d.name}</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="text-slate-400">Hardware UID:</span>
+                      <span class="font-mono text-slate-300">${d.hardwareUid}</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="text-slate-400">Cache ROM 64GB:</span>
+                      <span class="font-mono text-emerald-400">${Number(d.freeRomGb || 62.4).toFixed(1)} GB Livres</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="p-3 bg-slate-950/70 border-t border-slate-800 flex items-center justify-between">
+                  <span class="text-[11px] text-slate-400">Zona: ${d.zone}</span>
+                  <button
+                    type="button"
+                    data-open-incident="${d.name}"
+                    class="px-3 py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-semibold transition"
+                  >
+                    ! Reportar Anomalia
+                  </button>
+                </div>
+              </div>
+            `;
+          })
+          .join('');
+
+        document.querySelectorAll('[data-open-incident]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            selectedDevice = btn.getAttribute('data-open-incident');
+            modalDeviceName.textContent = `Equipamento: ${selectedDevice}`;
+            modal.classList.remove('hidden');
+          });
+        });
+      }
+
+      // Renderiza Incidentes
+      const incidents = st.incidents || [];
+      if (incidents.length === 0) {
+        incidentsList.innerHTML = `
+          <div class="p-4 rounded-lg bg-slate-950 border border-slate-800 text-slate-400">
+            Nenhuma anomalia pendente. Clique em "! Reportar Anomalia" num cartão acima para testar o fluxo de alerta da loja.
+          </div>
+        `;
+      } else {
+        incidentsList.innerHTML = incidents
+          .map(
+            (inc) => `
+            <div class="p-3.5 rounded-xl bg-slate-950 border ${
+              inc.status === 'OPEN' ? 'border-rose-500/40' : 'border-slate-800 opacity-60'
+            } flex flex-col md:flex-row md:items-center justify-between gap-3">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="font-mono font-bold text-rose-400">${inc.id}</span>
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold ${
+                    inc.status === 'OPEN'
+                      ? 'bg-rose-500/20 text-rose-300'
+                      : 'bg-emerald-500/20 text-emerald-300'
+                  }">${inc.status}</span>
+                  <strong class="text-white">${inc.deviceName}</strong>
+                  <span class="text-slate-400">(${inc.incidentType})</span>
+                </div>
+                <p class="text-slate-300 mt-1">${inc.description}</p>
+              </div>
+              ${
+                inc.status === 'OPEN'
+                  ? `<button type="button" data-resolve-inc="${inc.id}" class="px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 font-semibold shrink-0">✓ Marcar Resolvido</button>`
+                  : ''
+              }
+            </div>
+          `
+          )
+          .join('');
+
+        document.querySelectorAll('[data-resolve-inc]').forEach((btn) => {
+          btn.addEventListener('click', async () => {
+            const id = btn.getAttribute('data-resolve-inc');
+            await fetch(`${API_BASE}/api/v1/live/incidents`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'RESOLVE', id }),
+            });
+            fetchWallState();
+          });
+        });
+      }
+    }
+
+    zoneFilter?.addEventListener('change', fetchWallState);
+    document.getElementById('btn-close-modal')?.addEventListener('click', () => {
+      modal.classList.add('hidden');
+    });
+
+    document.getElementById('incident-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const incidentType = document.getElementById('inc-type').value;
+      const description = document.getElementById('inc-desc').value;
+
+      await fetch(`${API_BASE}/api/v1/live/incidents`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          deviceName: selectedDevice,
+          brand: localStorage.getItem('invision_brand') || 'FNAC',
+          incidentType,
+          description,
+          reportedByRole: localStorage.getItem('invision_role') || 'STORE_MANAGER',
+        }),
+      });
+
+      modal.classList.add('hidden');
+      e.target.reset();
+      fetchWallState();
+    });
+
+    fetchWallState();
+    setInterval(fetchWallState, 2500);
+  </script>
+</DashboardLayout>

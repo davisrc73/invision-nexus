@@ -1,0 +1,11 @@
+{
+  "name": "Invision Nexus Edge Player (Fnac & Darty)",
+  "short_name": "InvisionPlayer",
+  "description": "Offline-First Digital Signage & Interactive Expo Player for Android Box X98 Plus, LEDwalls, TVs and Expo Devices",
+  "start_url": "/",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#000000",
+  "theme_color": "#E1A924"
+}
+

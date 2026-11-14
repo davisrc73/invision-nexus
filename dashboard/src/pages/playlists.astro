@@ -1,0 +1,843 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+---
+
+<DashboardLayout title="Gestão Multi-Playlist (Prioridades, Dayparting, Slots & Share of Voice)" activeNav="playlists">
+  <!-- AVISO PARA PERFIS READ-ONLY -->
+  <div
+    id="readonly-warning"
+    data-rbac-hide="GLOBAL_ADMIN,MEDIA_MANAGER"
+    class="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-sm text-rose-300"
+  >
+    <strong>Acesso Restrito (Governance RBAC):</strong> O perfil selecionado é Read-Only. Mude o seletor de perfil na barra lateral para <code>GLOBAL_ADMIN</code> ou <code>MEDIA_MANAGER</code> para fazer upload de vídeos/imagens e publicar playlists.
+  </div>
+
+  <!-- BANNER EM TEMPO REAL: QUAL PLAYLIST ESTÁ DOMINANTE NO PLAYER AGORA -->
+  <div class="bg-gradient-to-r from-amber-500/20 via-slate-900 to-slate-900 border border-amber-500/40 rounded-xl p-5 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div>
+      <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-amber-400 text-black font-black">
+        EM EXIBIÇÃO NOS PLAYERS AGORA (PRECEDÊNCIA ATIVA)
+      </span>
+      <h3 id="effective-banner-title" class="text-lg font-black text-white mt-1.5">
+        A calcular Playlist Dominante...
+      </h3>
+      <p id="effective-banner-sub" class="text-xs text-slate-300 font-mono mt-0.5"></p>
+    </div>
+    <div class="text-right">
+      <span class="text-xs text-slate-400 block">Regra de Silenciamento Estrito:</span>
+      <span class="text-xs font-mono text-amber-300 font-bold">
+        EXCLUSIVA &gt; PRIORITÁRIA &gt; NORMAL &gt; FALLBACK
+      </span>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- 1. UPLOAD REAL DE VÍDEOS E IMAGENS                                    -->
+  <!-- ===================================================================== -->
+  <div
+    data-rbac-hide="STORE_MANAGER,DEPT_HEAD,IT_OPS"
+    class="bg-slate-900 border border-slate-800 rounded-xl p-6 mb-8"
+  >
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4 mb-5">
+      <div>
+        <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+          1. Catálogo & Upload • SHA-256 & Format Guardrail
+        </span>
+        <h3 class="text-base font-bold text-white mt-1.5">
+          Carregar Novos Vídeos (.mp4, .webm, .mov) ou Imagens (.jpg, .png, .webp)
+        </h3>
+      </div>
+    </div>
+
+    <form id="upload-form" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+      <div class="md:col-span-2">
+        <label class="block text-xs text-slate-400 mb-1">Ficheiro de Vídeo ou Imagem</label>
+        <input
+          type="file"
+          id="media-file-input"
+          accept="video/mp4,video/webm,video/quicktime,image/jpeg,image/png,image/webp"
+          required
+          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-[#E1A924] file:text-black hover:file:bg-amber-400"
+        />
+      </div>
+
+      <div>
+        <label class="block text-xs text-slate-400 mb-1">Título da Campanha / Ativo</label>
+        <input
+          type="text"
+          id="media-title-input"
+          placeholder="Ex: Promo Fnac Gaming"
+          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
+        />
+      </div>
+
+      <div>
+        <label class="block text-xs text-slate-400 mb-1">Duração se Imagem (s)</label>
+        <input
+          type="number"
+          id="media-duration-input"
+          value="8"
+          min="2"
+          max="120"
+          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-amber-300 font-mono"
+        />
+      </div>
+
+      <div>
+        <button
+          type="submit"
+          class="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs py-2.5 px-4 rounded-lg shadow transition"
+        >
+          ⬆ Carregar & Adicionar
+        </button>
+      </div>
+    </form>
+
+    <div id="upload-status" class="hidden mt-4 p-3 rounded-lg bg-slate-950 border border-slate-700 text-xs font-mono text-emerald-300"></div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- 2. SELETOR E CONFIGURADOR MULTI-PLAYLIST (4 NÍVEIS + MODOS + DAYPART) -->
+  <!-- ===================================================================== -->
+  <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 mb-8">
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-4 mb-5">
+      <div>
+        <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">
+          2. Motor Multi-Playlist & Override de Prioridades
+        </span>
+        <h3 class="text-base font-bold text-white mt-1.5">
+          Selecione a Playlist para Editar ou Ativar Override Imediato
+        </h3>
+        <p class="text-xs text-slate-400">
+          Experimente ativar a Playlist <strong>EXCLUSIVA</strong> ou <strong>PRIORITÁRIA</strong> (com pelo menos 1 vídeo/imagem lá dentro) para ver o Player interromper a playlist <strong>NORMAL</strong> no mesmo segundo!
+        </p>
+      </div>
+
+      <button
+        type="button"
+        id="btn-new-playlist"
+        class="px-3.5 py-2 rounded-lg bg-[#E1A924] hover:bg-amber-400 text-black font-bold text-xs shadow transition shrink-0"
+      >
+        + Criar Nova Playlist
+      </button>
+    </div>
+
+    <!-- Tabs das Playlists Existentes -->
+    <div id="playlist-tabs" class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6"></div>
+
+    <!-- Editor da Playlist Selecionada -->
+    <div class="p-5 rounded-xl bg-slate-950 border border-slate-800 space-y-5">
+      <div class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
+        <div class="md:col-span-2">
+          <label class="block text-xs text-slate-400 mb-1">Nome da Playlist</label>
+          <input
+            type="text"
+            id="pl-name"
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs font-bold text-white"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Nível de Prioridade</label>
+          <select
+            id="pl-priority"
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-amber-300 font-bold"
+          >
+            <option value="EXCLUSIVA">1. EXCLUSIVA (Override 100%)</option>
+            <option value="PRIORITARIA">2. PRIORITÁRIA (Silencia Normal)</option>
+            <option value="NORMAL">3. NORMAL (Regular)</option>
+            <option value="FALLBACK">4. FALLBACK (Segurança)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Modelo de Loop</label>
+          <select
+            id="pl-mode"
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-sky-300 font-bold"
+          >
+            <option value="FIXED_SLOTS">Modelo 1: Matriz Slots Fixas</option>
+            <option value="DYNAMIC_SOV">Modelo 2: Share of Voice (%)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Dayparting (Início / Fim)</label>
+          <div class="grid grid-cols-2 gap-1">
+            <input
+              type="time"
+              id="pl-start"
+              value="00:00"
+              class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-[11px] text-white font-mono"
+            />
+            <input
+              type="time"
+              id="pl-end"
+              value="23:59"
+              class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-[11px] text-white font-mono"
+            />
+          </div>
+        </div>
+
+        <div>
+          <button
+            type="button"
+            id="btn-toggle-active"
+            class="w-full py-2 px-3 rounded-lg text-xs font-black transition"
+          >
+            ● PLAYLIST ATIVA
+          </button>
+        </div>
+      </div>
+
+      <!-- Equipamentos Alvo desta Playlist (Todos ou Boxes Android específicas) -->
+      <div class="p-3.5 rounded-lg bg-slate-900 border border-slate-800">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-bold text-sky-300">
+            Equipamentos Alvo desta Playlist (Boxes Android, Telemóvel, Mac):
+          </span>
+          <span class="text-[11px] font-mono text-slate-400">
+            Se nenhum estiver marcado, toca em TODOS os equipamentos
+          </span>
+        </div>
+        <div id="target-devices-checkboxes" class="flex flex-wrap gap-2"></div>
+      </div>
+
+      <!-- Itens da Playlist Selecionada (Com Sliders SoV quando em modo DYNAMIC_SOV) -->
+      <div>
+        <div class="flex items-center justify-between mb-3">
+          <h4 id="pl-items-heading" class="text-xs font-bold uppercase tracking-wider text-amber-300">
+            Conteúdos nesta Playlist
+          </h4>
+          <button
+            type="button"
+            id="btn-clear-playlist"
+            class="text-xs text-rose-400 hover:underline"
+          >
+            Esvaziar esta Playlist
+          </button>
+        </div>
+
+        <div id="playlist-slots-grid" class="grid grid-cols-1 md:grid-cols-4 gap-3"></div>
+      </div>
+
+      <!-- Pré-visualização da Sequência Final Intercalada (Especialmente útil em DYNAMIC_SOV) -->
+      <div class="p-3.5 rounded-lg bg-slate-900/90 border border-slate-800">
+        <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2">
+          Sequência Efetiva Enviada para os Players (Weighted Round-Robin / Slots):
+        </span>
+        <div id="resolved-sequence-bar" class="flex flex-wrap gap-1.5"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- 3. CATÁLOGO DE MEDIA PARA ADICIONAR À PLAYLIST SELECIONADA            -->
+  <!-- ===================================================================== -->
+  <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h3 class="text-sm font-bold uppercase tracking-wider text-slate-200">
+          3. Catálogo de Media Guardado (Clique para inserir na Playlist Selecionada)
+        </h3>
+      </div>
+      <div class="flex items-center gap-3">
+        <select
+          id="pl-screen-profile"
+          class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-emerald-300 font-mono"
+        >
+          <option value="16:9" selected>Guardrail: 16:9</option>
+          <option value="9:16">Guardrail: 9:16</option>
+          <option value="32:9">Guardrail: 32:9</option>
+        </select>
+        <label class="flex items-center gap-1.5 text-xs text-amber-300 font-mono cursor-pointer">
+          <input type="checkbox" id="strict-guardrail-toggle" class="accent-amber-400" />
+          Bloquear Rácio Diferente
+        </label>
+      </div>
+    </div>
+
+    <div id="guardrail-alert" class="hidden mb-4 p-3.5 rounded-lg text-xs font-mono"></div>
+
+    <div id="catalog-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+  </div>
+
+  <script is:inline>
+    const API_BASE = `${window.location.protocol}//${window.location.hostname}:3000`;
+
+    const uploadForm = document.getElementById('upload-form');
+    const fileInput = document.getElementById('media-file-input');
+    const titleInput = document.getElementById('media-title-input');
+    const durationInput = document.getElementById('media-duration-input');
+    const uploadStatus = document.getElementById('upload-status');
+    const catalogGrid = document.getElementById('catalog-grid');
+    const playlistTabs = document.getElementById('playlist-tabs');
+    const playlistGrid = document.getElementById('playlist-slots-grid');
+    const resolvedBar = document.getElementById('resolved-sequence-bar');
+    const guardrailAlert = document.getElementById('guardrail-alert');
+    const strictToggle = document.getElementById('strict-guardrail-toggle');
+    const profileSelect = document.getElementById('pl-screen-profile');
+
+    const plNameInput = document.getElementById('pl-name');
+    const plPrioritySelect = document.getElementById('pl-priority');
+    const plModeSelect = document.getElementById('pl-mode');
+    const plStartInput = document.getElementById('pl-start');
+    const plEndInput = document.getElementById('pl-end');
+    const btnToggleActive = document.getElementById('btn-toggle-active');
+    const targetDevicesBox = document.getElementById('target-devices-checkboxes');
+
+    let liveState = {
+      brand: 'FNAC',
+      mediaCatalog: [],
+      playlists: [],
+      effectivePlayback: null,
+    };
+
+    let selectedPlaylistId = null;
+
+    function gcd(a, b) {
+      return b === 0 ? a : gcd(b, a % b);
+    }
+
+    function calcAspectRatio(w, h) {
+      if (!w || !h) return '16:9';
+      const r = w / h;
+      if (Math.abs(r - 16 / 9) < 0.08) return '16:9';
+      if (Math.abs(r - 9 / 16) < 0.08) return '9:16';
+      if (Math.abs(r - 32 / 9) < 0.15) return '32:9';
+      const d = gcd(w, h);
+      return `${Math.round(w / d)}:${Math.round(h / d)}`;
+    }
+
+    function inspectLocalFile(file) {
+      return new Promise((resolve) => {
+        const objectUrl = URL.createObjectURL(file);
+        if (file.type.startsWith('image/')) {
+          const img = new Image();
+          img.onload = () => {
+            const w = img.naturalWidth || 1920;
+            const h = img.naturalHeight || 1080;
+            URL.revokeObjectURL(objectUrl);
+            resolve({
+              width: w,
+              height: h,
+              ratio: calcAspectRatio(w, h),
+              durationMs: (parseInt(durationInput.value, 10) || 8) * 1000,
+            });
+          };
+          img.onerror = () => {
+            URL.revokeObjectURL(objectUrl);
+            resolve({ width: 1920, height: 1080, ratio: '16:9', durationMs: 8000 });
+          };
+          img.src = objectUrl;
+        } else {
+          const video = document.createElement('video');
+          video.preload = 'metadata';
+          video.onloadedmetadata = () => {
+            const w = video.videoWidth || 1920;
+            const h = video.videoHeight || 1080;
+            const durMs = Math.max(2000, Math.round((video.duration || 10) * 1000));
+            URL.revokeObjectURL(objectUrl);
+            resolve({
+              width: w,
+              height: h,
+              ratio: calcAspectRatio(w, h),
+              durationMs: durMs,
+            });
+          };
+          video.onerror = () => {
+            URL.revokeObjectURL(objectUrl);
+            resolve({ width: 1920, height: 1080, ratio: '16:9', durationMs: 10000 });
+          };
+          video.src = objectUrl;
+        }
+      });
+    }
+
+    async function fetchLiveState() {
+      const res = await fetch(`${API_BASE}/api/v1/live/state`);
+      liveState = await res.json();
+      if (!selectedPlaylistId && liveState.playlists.length > 0) {
+        selectedPlaylistId = liveState.playlists[0].id;
+      }
+      renderAll();
+    }
+
+    function getSelectedPlaylist() {
+      return (
+        liveState.playlists.find((p) => p.id === selectedPlaylistId) ||
+        liveState.playlists[0]
+      );
+    }
+
+    function renderAll() {
+      const eff = liveState.effectivePlayback || {};
+      const bannerTitle = document.getElementById('effective-banner-title');
+      const bannerSub = document.getElementById('effective-banner-sub');
+
+      if (eff.activePlaylistId) {
+        bannerTitle.textContent = `▶ ${eff.activePlaylistName} [${eff.activePriority}]`;
+        bannerSub.textContent = `Modo: ${eff.activeSchedulingMode} • ${eff.resolvedSequence?.length || 0} slots no Loop • Todas as playlists de prioridade inferior estão silenciadas a 100%.`;
+      } else {
+        bannerTitle.textContent = `▶ A exibir Fallback Demo (Nenhuma Playlist ativa com conteúdos)`;
+        bannerSub.textContent = `Adicione um vídeo ou imagem a uma Playlist Ativa abaixo para assumir o controlo dos ecrãs.`;
+      }
+
+      const currentPl = getSelectedPlaylist();
+
+      // Renderiza Tabs das Playlists
+      playlistTabs.innerHTML = liveState.playlists
+        .map((pl) => {
+          const isSel = pl.id === currentPl?.id;
+          const isWinning = pl.id === eff.activePlaylistId;
+          const badgeColor =
+            pl.priority === 'EXCLUSIVA'
+              ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+              : pl.priority === 'PRIORITARIA'
+              ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+              : pl.priority === 'NORMAL'
+              ? 'bg-sky-500/20 text-sky-300 border-sky-500/40'
+              : 'bg-slate-800 text-slate-300 border-slate-700';
+
+          return `
+            <div
+              data-select-pl="${pl.id}"
+              class="cursor-pointer p-3.5 rounded-xl border transition ${
+                isSel
+                  ? 'bg-slate-950 border-[#E1A924] ring-1 ring-[#E1A924]'
+                  : 'bg-slate-950/50 border-slate-800 hover:border-slate-700'
+              }"
+            >
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${badgeColor}">
+                  ${pl.priority}
+                </span>
+                <span class="text-[10px] font-mono ${
+                  isWinning
+                    ? 'text-emerald-400 font-bold'
+                    : pl.isActive
+                    ? 'text-slate-400'
+                    : 'text-rose-400'
+                }">
+                  ${isWinning ? '● NO AR AGORA' : pl.isActive ? '● Ativa' : '○ Inativa'}
+                </span>
+              </div>
+              <p class="text-xs font-bold text-white truncate">${pl.name}</p>
+              <p class="text-[11px] font-mono text-slate-400 mt-1">
+                ${pl.items?.length || 0} ficheiro(s) • ${pl.schedulingMode === 'DYNAMIC_SOV' ? 'SoV %' : 'Slots'} • ${pl.daypartStart || '00:00'}-${pl.daypartEnd || '23:59'}
+              </p>
+            </div>
+          `;
+        })
+        .join('');
+
+      document.querySelectorAll('[data-select-pl]').forEach((el) => {
+        el.addEventListener('click', () => {
+          selectedPlaylistId = el.getAttribute('data-select-pl');
+          renderAll();
+        });
+      });
+
+      if (currentPl) {
+        plNameInput.value = currentPl.name;
+        plPrioritySelect.value = currentPl.priority;
+        plModeSelect.value = currentPl.schedulingMode || 'FIXED_SLOTS';
+        plStartInput.value = currentPl.daypartStart || '00:00';
+        plEndInput.value = currentPl.daypartEnd || '23:59';
+
+        if (currentPl.isActive) {
+          btnToggleActive.textContent = '● PLAYLIST ATIVA (Clique p/ Desativar)';
+          btnToggleActive.className =
+            'w-full py-2 px-3 rounded-lg text-xs font-black bg-emerald-500 text-black shadow transition';
+        } else {
+          btnToggleActive.textContent = '○ PLAYLIST INATIVA (Clique p/ Ativar)';
+          btnToggleActive.className =
+            'w-full py-2 px-3 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition';
+        }
+
+        // Renderiza Checkboxes de Equipamentos Alvo (Boxes Android / Telemóvel / Mac)
+        const allDevices = liveState.devices || [];
+        const selectedTargets = Array.isArray(currentPl.targetDeviceIds)
+          ? currentPl.targetDeviceIds
+          : [];
+
+        if (allDevices.length === 0) {
+          targetDevicesBox.innerHTML = `<span class="text-xs text-slate-400">Toca em TODOS os equipamentos (Abra o Player nas Boxes Android para as selecionar individualmente aqui).</span>`;
+        } else {
+          const allBadge = `
+            <button
+              type="button"
+              id="btn-target-all"
+              class="px-3 py-1.5 rounded-lg text-xs font-bold border transition ${
+                selectedTargets.length === 0
+                  ? 'bg-[#E1A924] text-black border-[#E1A924]'
+                  : 'bg-slate-950 text-slate-300 border-slate-700 hover:border-slate-500'
+              }"
+            >
+              ✓ TODOS OS EQUIPAMENTOS (${allDevices.length})
+            </button>
+          `;
+
+          const devButtons = allDevices
+            .map((d) => {
+              const isChecked = selectedTargets.includes(d.hardwareUid);
+              return `
+                <button
+                  type="button"
+                  data-toggle-target="${d.hardwareUid}"
+                  class="px-3 py-1.5 rounded-lg text-xs font-mono border transition flex items-center gap-1.5 ${
+                    isChecked
+                      ? 'bg-sky-500 text-black font-bold border-sky-400'
+                      : 'bg-slate-950 text-slate-300 border-slate-700 hover:border-slate-500'
+                  }"
+                >
+                  <span>${isChecked ? '☑' : '☐'}</span>
+                  <span>${d.name}</span>
+                  <span class="text-[10px] opacity-75">[${d.pairingCode || d.hardwareUid}]</span>
+                </button>
+              `;
+            })
+            .join('');
+
+          targetDevicesBox.innerHTML = allBadge + devButtons;
+
+          document.getElementById('btn-target-all')?.addEventListener('click', async () => {
+            currentPl.targetDeviceIds = [];
+            await savePlaylistsToServer();
+          });
+
+          document.querySelectorAll('[data-toggle-target]').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+              const uid = btn.getAttribute('data-toggle-target');
+              if (!Array.isArray(currentPl.targetDeviceIds)) currentPl.targetDeviceIds = [];
+              if (currentPl.targetDeviceIds.includes(uid)) {
+                currentPl.targetDeviceIds = currentPl.targetDeviceIds.filter((x) => x !== uid);
+              } else {
+                currentPl.targetDeviceIds.push(uid);
+              }
+              await savePlaylistsToServer();
+            });
+          });
+        }
+
+        // Renderiza itens da Playlist selecionada
+        if (!currentPl.items || currentPl.items.length === 0) {
+          playlistGrid.innerHTML = `
+            <div class="md:col-span-4 p-5 rounded-xl bg-slate-900/60 border border-dashed border-slate-800 text-center text-xs text-slate-400">
+              Esta playlist ("<strong>${currentPl.name}</strong>") ainda não tem conteúdos. Clique em <strong>"+ Inserir nesta Playlist"</strong> num vídeo ou imagem do catálogo abaixo!
+            </div>
+          `;
+        } else {
+          const isSov = currentPl.schedulingMode === 'DYNAMIC_SOV';
+          playlistGrid.innerHTML = currentPl.items
+            .map((item, idx) => {
+              const streamFullUrl = `${API_BASE}${item.streamUrl}`;
+              const thumb =
+                item.mediaType === 'IMAGE'
+                  ? `<img src="${streamFullUrl}" class="w-full h-24 object-cover rounded border border-slate-800 bg-black" />`
+                  : `<video src="${streamFullUrl}" muted class="w-full h-24 object-cover rounded border border-slate-800 bg-black"></video>`;
+
+              const sovControl = isSov
+                ? `
+                  <div class="mt-2 pt-2 border-t border-slate-800">
+                    <div class="flex justify-between text-[11px] font-mono text-sky-300 mb-1">
+                      <span>Share of Voice:</span>
+                      <span>${item.sovPct || 50}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="10"
+                      max="100"
+                      step="10"
+                      value="${item.sovPct || 50}"
+                      data-sov-idx="${idx}"
+                      class="w-full accent-sky-400"
+                    />
+                  </div>
+                `
+                : '';
+
+              return `
+                <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 flex flex-col justify-between gap-2">
+                  <div>
+                    <div class="flex items-center justify-between text-[11px] font-mono text-amber-300 mb-1.5">
+                      <span>${isSov ? `CAMPANHA #${idx + 1}` : `SLOT #0${idx + 1}`} (${item.mediaType})</span>
+                      <span>${(item.durationMs / 1000).toFixed(1)}s</span>
+                    </div>
+                    ${thumb}
+                    <p class="text-xs font-bold text-white mt-2 truncate">${item.title}</p>
+                    ${sovControl}
+                  </div>
+                  <button
+                    type="button"
+                    data-remove-slot="${idx}"
+                    class="w-full py-1 rounded bg-slate-950 hover:bg-rose-500/20 text-rose-300 text-[11px] border border-slate-800 transition"
+                  >
+                    Remover
+                  </button>
+                </div>
+              `;
+            })
+            .join('');
+
+          document.querySelectorAll('[data-remove-slot]').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+              const idx = Number(btn.getAttribute('data-remove-slot'));
+              currentPl.items.splice(idx, 1);
+              await savePlaylistsToServer();
+            });
+          });
+
+          document.querySelectorAll('[data-sov-idx]').forEach((rng) => {
+            rng.addEventListener('change', async (e) => {
+              const idx = Number(rng.getAttribute('data-sov-idx'));
+              currentPl.items[idx].sovPct = Number(e.target.value);
+              await savePlaylistsToServer();
+            });
+          });
+        }
+      }
+
+      // Barra de Sequência Efetiva
+      if (eff.resolvedSequence && eff.resolvedSequence.length > 0) {
+        resolvedBar.innerHTML = eff.resolvedSequence
+          .map(
+            (it, i) =>
+              `<span class="px-2.5 py-1 rounded bg-slate-950 border border-slate-700 text-[11px] font-mono text-amber-300">#${i + 1} ${it.title}</span>`
+          )
+          .join('');
+      } else {
+        resolvedBar.innerHTML = `<span class="text-xs text-slate-500">Nenhum ficheiro ativo na sequência</span>`;
+      }
+
+      // Renderiza Catálogo
+      const activeBrand = localStorage.getItem('invision_brand') || 'FNAC';
+      const filteredCatalog = liveState.mediaCatalog.filter(
+        (m) => activeBrand === 'ALL' || m.brand === activeBrand
+      );
+
+      if (filteredCatalog.length === 0) {
+        catalogGrid.innerHTML = `
+          <div class="md:col-span-3 p-6 rounded-xl bg-slate-950 border border-dashed border-slate-700 text-center text-xs text-slate-400">
+            Nenhum ficheiro carregado para <strong>${activeBrand}</strong>. Use o formulário no topo para carregar vídeos ou imagens!
+          </div>
+        `;
+      } else {
+        catalogGrid.innerHTML = filteredCatalog
+          .map((asset) => {
+            const streamFullUrl = `${API_BASE}${asset.streamUrl}`;
+            const previewHtml =
+              asset.mediaType === 'IMAGE'
+                ? `<img src="${streamFullUrl}" alt="${asset.title}" class="w-full h-32 object-cover rounded-lg border border-slate-800 bg-black" />`
+                : `<video src="${streamFullUrl}" muted loop playsinline onmouseover="this.play()" onmouseout="this.pause()" class="w-full h-32 object-cover rounded-lg border border-slate-800 bg-black"></video>`;
+
+            return `
+              <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 flex flex-col justify-between gap-3">
+                <div>
+                  ${previewHtml}
+                  <div class="flex items-center justify-between mt-3">
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded ${
+                      asset.brand === 'DARTY' ? 'bg-[#E30613] text-white' : 'bg-[#E1A924] text-black'
+                    }">${asset.brand} • ${asset.mediaType}</span>
+                    <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-emerald-300">
+                      ${asset.widthPx}x${asset.heightPx} (${asset.aspectRatio})
+                    </span>
+                  </div>
+                  <h4 class="text-sm font-bold text-white mt-2 truncate">${asset.title}</h4>
+                </div>
+                <div class="flex gap-2">
+                  <button
+                    type="button"
+                    data-add-media="${asset.id}"
+                    class="flex-1 py-2 rounded-lg bg-[#E1A924] hover:bg-amber-400 text-black font-bold text-xs transition"
+                  >
+                    + Inserir em "${currentPl?.name.slice(0, 18) || 'Playlist'}..."
+                  </button>
+                  <button
+                    type="button"
+                    data-del-media="${asset.id}"
+                    class="px-3 py-2 rounded-lg bg-slate-900 hover:bg-rose-500/20 text-rose-400 border border-slate-800 text-xs transition"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            `;
+          })
+          .join('');
+
+        document.querySelectorAll('[data-add-media]').forEach((btn) => {
+          btn.addEventListener('click', () =>
+            addMediaToSelectedPlaylist(btn.getAttribute('data-add-media'))
+          );
+        });
+        document.querySelectorAll('[data-del-media]').forEach((btn) => {
+          btn.addEventListener('click', () =>
+            deleteMediaAsset(btn.getAttribute('data-del-media'))
+          );
+        });
+      }
+    }
+
+    async function addMediaToSelectedPlaylist(mediaId) {
+      const asset = liveState.mediaCatalog.find((a) => a.id === mediaId);
+      const currentPl = getSelectedPlaylist();
+      if (!asset || !currentPl) return;
+
+      const targetRatio = profileSelect.value;
+      guardrailAlert.classList.remove('hidden');
+
+      if (strictToggle.checked && asset.aspectRatio !== targetRatio) {
+        guardrailAlert.className =
+          'mb-4 p-3.5 rounded-lg bg-rose-500/15 border border-rose-500/40 text-xs text-rose-300 font-mono';
+        guardrailAlert.innerHTML = `[FORMAT GUARDRAIL BLOQUEOU] O ficheiro "${asset.title}" é ${asset.widthPx}x${asset.heightPx} (${asset.aspectRatio}), mas o perfil exige ${targetRatio}.`;
+        return;
+      }
+
+      currentPl.items.push({ ...asset, sovPct: 50 });
+      await savePlaylistsToServer();
+
+      guardrailAlert.className =
+        'mb-4 p-3.5 rounded-lg bg-emerald-500/15 border border-emerald-500/40 text-xs text-emerald-300 font-mono';
+      guardrailAlert.innerHTML = `[PUBLICADO] "${asset.title}" inserido em "${currentPl.name}" (${currentPl.priority})!`;
+    }
+
+    async function deleteMediaAsset(id) {
+      await fetch(`${API_BASE}/api/v1/live/media/${id}`, { method: 'DELETE' });
+      await fetchLiveState();
+    }
+
+    async function savePlaylistsToServer() {
+      const activeBrand = localStorage.getItem('invision_brand') || 'FNAC';
+      const res = await fetch(`${API_BASE}/api/v1/live/playlists`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          brand: activeBrand === 'ALL' ? 'FNAC' : activeBrand,
+          playlists: liveState.playlists,
+        }),
+      });
+      liveState = await res.json();
+      renderAll();
+    }
+
+    // Eventos de edição da Playlist Selecionada
+    plNameInput?.addEventListener('change', async () => {
+      const pl = getSelectedPlaylist();
+      if (pl) {
+        pl.name = plNameInput.value;
+        await savePlaylistsToServer();
+      }
+    });
+
+    plPrioritySelect?.addEventListener('change', async () => {
+      const pl = getSelectedPlaylist();
+      if (pl) {
+        pl.priority = plPrioritySelect.value;
+        await savePlaylistsToServer();
+      }
+    });
+
+    plModeSelect?.addEventListener('change', async () => {
+      const pl = getSelectedPlaylist();
+      if (pl) {
+        pl.schedulingMode = plModeSelect.value;
+        await savePlaylistsToServer();
+      }
+    });
+
+    plStartInput?.addEventListener('change', async () => {
+      const pl = getSelectedPlaylist();
+      if (pl) {
+        pl.daypartStart = plStartInput.value;
+        await savePlaylistsToServer();
+      }
+    });
+
+    plEndInput?.addEventListener('change', async () => {
+      const pl = getSelectedPlaylist();
+      if (pl) {
+        pl.daypartEnd = plEndInput.value;
+        await savePlaylistsToServer();
+      }
+    });
+
+    btnToggleActive?.addEventListener('click', async () => {
+      const pl = getSelectedPlaylist();
+      if (pl) {
+        pl.isActive = !pl.isActive;
+        await savePlaylistsToServer();
+      }
+    });
+
+    document.getElementById('btn-clear-playlist')?.addEventListener('click', async () => {
+      const pl = getSelectedPlaylist();
+      if (pl) {
+        pl.items = [];
+        await savePlaylistsToServer();
+      }
+    });
+
+    document.getElementById('btn-new-playlist')?.addEventListener('click', async () => {
+      const id = 'pl-' + Math.random().toString(36).slice(2, 8);
+      liveState.playlists.push({
+        id,
+        name: `Nova Playlist #${liveState.playlists.length + 1}`,
+        brand: localStorage.getItem('invision_brand') || 'FNAC',
+        priority: 'NORMAL',
+        schedulingMode: 'FIXED_SLOTS',
+        screenProfile: '16:9',
+        daypartStart: '00:00',
+        daypartEnd: '23:59',
+        isActive: true,
+        items: [],
+      });
+      selectedPlaylistId = id;
+      await savePlaylistsToServer();
+    });
+
+    uploadForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const file = fileInput.files?.[0];
+      if (!file) return;
+
+      const activeBrand = localStorage.getItem('invision_brand') || 'FNAC';
+      const brandToSave = activeBrand === 'ALL' ? 'FNAC' : activeBrand;
+      const customTitle = titleInput.value.trim() || file.name;
+
+      uploadStatus.classList.remove('hidden');
+      uploadStatus.textContent = `A inspecionar "${file.name}"...`;
+
+      const meta = await inspectLocalFile(file);
+      uploadStatus.textContent = `A enviar "${customTitle}" (${meta.width}x${meta.height} • ${meta.ratio})...`;
+
+      const query = new URLSearchParams({
+        filename: file.name,
+        title: customTitle,
+        brand: brandToSave,
+        mime: file.type || 'video/mp4',
+        width: String(meta.width),
+        height: String(meta.height),
+        ratio: meta.ratio,
+        duration_ms: String(meta.durationMs),
+      });
+
+      const res = await fetch(`${API_BASE}/api/v1/live/upload?${query.toString()}`, {
+        method: 'POST',
+        body: file,
+      });
+
+      if (res.ok) {
+        const created = await res.json();
+        uploadStatus.textContent = `✓ Upload concluído! Inserido automaticamente na Playlist selecionada.`;
+        uploadForm.reset();
+        durationInput.value = '8';
+        await fetchLiveState();
+        await addMediaToSelectedPlaylist(created.id);
+      }
+    });
+
+    window.addEventListener('invision:brand-change', () => renderAll());
+    fetchLiveState();
+  </script>
+</DashboardLayout>
