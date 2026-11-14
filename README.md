@@ -57,3 +57,4 @@ bash scripts/provision-x98-kiosk.sh <IP_DA_BOX_X98_PLUS> http://<IP_DO_NAS>:5173
 - [04-manuais/01-setup-synology-docker.md](docs/04-manuais/01-setup-synology-docker.md) — Guia passo-a-passo de instalação e atualização no Synology NAS (`DS220+`).
 - [04-manuais/02-manual-governance-dashboard.md](docs/04-manuais/02-manual-governance-dashboard.md) — Manual de operação do Dashboard Central.
 - [04-manuais/03-provisionamento-kiosk-x98-sync.md](docs/04-manuais/03-provisionamento-kiosk-x98-sync.md) — Manual de provisionamento Kiosk ADB nas Boxes Android X98 Plus.
+

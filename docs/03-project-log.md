@@ -300,3 +300,17 @@ Arranque do desenvolvimento de uma plataforma enterprise de Digital Signage inte
 3. **Scripts de Sincronização Contínua (`scripts/git-sync.sh` e `scripts/update-nas.sh`):**
    - [scripts/git-sync.sh](file:///Users/daviscorreia/Antigravity%20/invision-nexus/scripts/git-sync.sh): Script para comitar e enviar evoluções para o GitHub num único comando.
    - [scripts/update-nas.sh](file:///Users/daviscorreia/Antigravity%20/invision-nexus/scripts/update-nas.sh): Script para correr no Synology NAS que faz `git pull origin main` e `docker compose up -d --build --remove-orphans`.
+
+---
+
+## [2026-11-14] - Resolução de Conflito de Portas no Synology NAS (`5432` DSM & Coexistência com `BandOS`)
+
+### Problema Reportado no Synology NAS
+- Ao executar `bash scripts/update-nas.sh` no NAS, as imagens compilaram com sucesso mas o arranque do `invision_postgres` devolveu: `Error starting userland proxy: listen tcp4 0.0.0.0:5432: bind: address already in use`.
+
+### Causa e Solução Implementada
+1. **Conflito de Porta `5432` no Synology DSM (e `5433`/`5173` do `BandOS`):**
+   - O sistema operativo Synology DSM utiliza nativamente a porta `5432` para a sua base de dados PostgreSQL interna de sistema, e o projeto `BandOS` utiliza a porta `5433` (Postgres) e `5173` (Frontend).
+2. **Isolamento Automático de Portas Externas ([docker-compose.yml](file:///Users/daviscorreia/Antigravity%20/invision-nexus/docker-compose.yml), [.env.example](file:///Users/daviscorreia/Antigravity%20/invision-nexus/.env.example) e [scripts/update-nas.sh](file:///Users/daviscorreia/Antigravity%20/invision-nexus/scripts/update-nas.sh)):**
+   - Alterada a porta externa do `invision_postgres` para **`5434`** (`5434:5432`) e do `invision_redis` para **`6380`** (`6380:6379`).
+   - O script `scripts/update-nas.sh` foi atualizado para corrigir automaticamente qualquer ficheiro `.env` já existente no NAS (`5432 -> 5434`, `6379 -> 6380`) e detetar se a porta `5173` já está ocupada pelo `bandaos-frontend` no NAS (atribuindo automaticamente `5174` ao `invision_player` caso o `BandOS` esteja ativo em simultâneo).

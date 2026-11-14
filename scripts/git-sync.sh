@@ -25,3 +25,4 @@ git push -u origin "${CURRENT_BRANCH}"
 echo "✅ Repositório GitHub atualizado com sucesso!"
 echo "   Para atualizar agora o teu Synology NAS, corre no NAS:"
 echo "   bash scripts/update-nas.sh"
+

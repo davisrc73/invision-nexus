@@ -31,7 +31,7 @@ services:
       - "-c"
       - "synchronous_commit=off"
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_PORT:-5434}:5432"
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
       - ./backend/sql/001_init_schema.sql:/docker-entrypoint-initdb.d/001_init_schema.sql:ro
@@ -56,7 +56,7 @@ services:
       --save 60 1000
       --appendonly no
     ports:
-      - "${REDIS_PORT:-6379}:6379"
+      - "${REDIS_PORT:-6380}:6379"
     volumes:
       - ./data/redis:/data
     deploy:
