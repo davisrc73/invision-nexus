@@ -314,3 +314,18 @@ Arranque do desenvolvimento de uma plataforma enterprise de Digital Signage inte
 2. **Isolamento Automático de Portas Externas ([docker-compose.yml](file:///Users/daviscorreia/Antigravity%20/invision-nexus/docker-compose.yml), [.env.example](file:///Users/daviscorreia/Antigravity%20/invision-nexus/.env.example) e [scripts/update-nas.sh](file:///Users/daviscorreia/Antigravity%20/invision-nexus/scripts/update-nas.sh)):**
    - Alteradas as portas base para **`5434`** (`invision_postgres`), **`6380`** (`invision_redis`), **`3000`** (`invision_backend`), **`4322`** (`invision_dashboard`) e **`5174`** (`invision_player`).
    - Implementado um **Auto-Port Scanner** (`pick_free_port` via `docker ps` + `ss -tuln` / `netstat -tuln`) no [scripts/update-nas.sh](file:///Users/daviscorreia/Antigravity%20/invision-nexus/scripts/update-nas.sh): antes de arrancar o Docker Compose, o script verifica individualmente cada uma das 5 portas no NAS e, se alguma estiver ocupada por outro projeto/serviço, avança automaticamente para a porta seguinte livre (`+1`) e grava-a no `.env`, além de saltar o `--build` quando as imagens já estão compiladas e sem alterações de código.
+
+---
+
+## [2026-11-14] - Suporte Multi-Plataforma (Synology NAS Linux & macOS) no Script `provision-x98-kiosk.sh`
+
+### Problema Reportado
+- Ao executar `bash scripts/provision-x98-kiosk.sh 192.168.68.115 http://<IP_DO_NAS>:5173` diretamente no terminal SSH do Synology NAS, ocorria o erro `unzip: command not found` e o pacote descarregado era a versão macOS (`darwin`).
+
+### Solução Implementada
+1. **Deteção Automática de Sistema Operativo (`uname -s`) em [scripts/provision-x98-kiosk.sh](file:///Users/daviscorreia/Antigravity%20/invision-nexus/scripts/provision-x98-kiosk.sh):**
+   - Descarrega automaticamente `platform-tools-latest-linux.zip` quando executado no Synology NAS (`Linux`) e `platform-tools-latest-darwin.zip` quando executado no Mac (`Darwin`).
+2. **Extração ZIP sem dependência de `unzip` no Synology DSM:**
+   - Função `extract_zip` com *fallbacks* nativos do Synology DSM (`python3 -m zipfile`, `/usr/syno/bin/7z`, `busybox unzip` ou contentor `alpine`).
+3. **Deteção Automática do IP e Porta do Player no NAS (`.env`):**
+   - Lê automaticamente o `PLAYER_PORT` do `.env` (ex: `5174` no NAS para não colidir com o `BandOS` na `5173`) e ajusta o URL caso o utilizador passe `:5173` ou omita o segundo parâmetro.
