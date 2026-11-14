@@ -111,7 +111,7 @@ services:
     depends_on:
       - backend
     ports:
-      - "${DASHBOARD_PORT:-4321}:80"
+      - "${DASHBOARD_PORT:-4322}:80"
     deploy:
       resources:
         limits:
@@ -126,7 +126,7 @@ services:
     depends_on:
       - backend
     ports:
-      - "${PLAYER_PORT:-5173}:80"
+      - "${PLAYER_PORT:-5174}:80"
     deploy:
       resources:
         limits:
