@@ -69,6 +69,7 @@
   let currentIndex = 0;
   let currentSlot = activeLoop[0];
   let slotProgressPct = 0;
+  let slotElapsedMs = 0;
   let playbackTimer = null;
   let isAdvancing = false;
   let videoElement = null;
@@ -177,6 +178,7 @@
     currentIndex = 0;
     currentSlot = activeLoop[0];
     slotProgressPct = 0;
+    slotElapsedMs = 0;
     playCurrentVideoIfAny();
     sendLiveHeartbeat();
   }
@@ -184,20 +186,30 @@
   function playCurrentVideoIfAny() {
     setTimeout(() => {
       if (currentSlot && currentSlot.mediaType === 'VIDEO' && videoElement) {
-        videoElement.currentTime = 0;
-        videoElement.play().catch(() => {});
+        try {
+          videoElement.muted = true;
+          videoElement.currentTime = 0;
+          videoElement.load();
+          const p = videoElement.play();
+          if (p && p.catch) p.catch(() => {});
+        } catch {
+          // ignore
+        }
       }
-    }, 40);
+    }, 50);
   }
 
   function handleVideoMetadataLoaded() {
-    if (videoElement && videoElement.duration && isFinite(videoElement.duration)) {
+    if (videoElement && videoElement.duration && isFinite(videoElement.duration) && videoElement.duration > 0) {
       currentSlot.durationMs = Math.max(2000, Math.round(videoElement.duration * 1000));
+    }
+    if (videoElement && videoElement.paused) {
+      videoElement.play().catch(() => {});
     }
   }
 
   function handleVideoTimeUpdate() {
-    if (videoElement && videoElement.duration && isFinite(videoElement.duration)) {
+    if (videoElement && videoElement.duration && isFinite(videoElement.duration) && videoElement.duration > 0) {
       slotProgressPct = Math.min(100, (videoElement.currentTime / videoElement.duration) * 100);
     }
   }
@@ -239,6 +251,7 @@
       currentIndex = (currentIndex + 1) % activeLoop.length;
       currentSlot = { ...activeLoop[currentIndex] };
       slotProgressPct = 0;
+      slotElapsedMs = 0;
 
       playCurrentVideoIfAny();
       sendLiveHeartbeat();
@@ -535,15 +548,27 @@
     await sendLiveHeartbeat();
     heartbeatTimer = setInterval(sendLiveHeartbeat, 4000);
 
-    // Relógio de Progresso para Imagens e Slides (Para Vídeos, o evento nativo on:ended e on:timeupdate controla o avanço!)
+    // Relógio de Progresso e Self-Healing Watchdog para Imagens, Slides e Vídeos (impede ecrã preto!)
     playbackTimer = setInterval(() => {
-      if (isCustomerUsingDevice || selectedTvCategory || !isPaired) return;
+      if (isCustomerUsingDevice || selectedTvCategory || !isPaired || !currentSlot) return;
       const diag = syncEngine.getDiagnostics();
       ntpOffsetMs = diag.offsetMs;
 
-      if (currentSlot && currentSlot.mediaType !== 'VIDEO') {
-        slotProgressPct += (100 / currentSlot.durationMs) * 100;
-        if (slotProgressPct >= 100) {
+      slotElapsedMs += 100;
+      const targetDuration = Math.max(3000, Number(currentSlot.durationMs || 8000));
+
+      if (currentSlot.mediaType === 'VIDEO') {
+        // Se o Chrome pausou o vídeo ao entrar em Fullscreen ou num toque ADB, retoma automaticamente
+        if (videoElement && videoElement.paused && !videoElement.ended && slotElapsedMs > 400) {
+          videoElement.play().catch(() => {});
+        }
+        // Se o vídeo encravar ou exceder a sua duração + 2.5s de tolerância, avança automaticamente (nunca fica preto!)
+        if (slotElapsedMs >= targetDuration + 2500) {
+          advanceSlotGapless();
+        }
+      } else {
+        slotProgressPct = Math.min(100, (slotElapsedMs / targetDuration) * 100);
+        if (slotElapsedMs >= targetDuration) {
           advanceSlotGapless();
         }
       }
@@ -614,61 +639,68 @@
       </div>
     </section>
   {:else}
-    <!-- STAGE DE REPRODUÇÃO SEQUENCIAL (TODOS OS ITENS DA PLAYLIST) -->
+    <!-- STAGE DE REPRODUÇÃO SEQUENCIAL (REUTILIZA O MESMO ELEMENTO VIDEO PARA NÃO ESGOTAR O DECODER DA BOX) -->
     <div class="dual-deck-stage">
       {#if !selectedTvCategory}
-        {#key `${currentSlot.id}-${currentIndex}`}
-          <div class="video-deck deck-visible" style="background: {currentSlot.bgGradient};">
-            {#if currentSlot.mediaType === 'IMAGE' && currentSlot.streamUrl}
-              <img src={currentSlot.streamUrl} alt={currentSlot.title} class="fullscreen-media" />
-            {:else if currentSlot.mediaType === 'VIDEO' && currentSlot.streamUrl}
-              <video
-                bind:this={videoElement}
-                src={currentSlot.streamUrl}
-                muted
-                playsinline
-                autoplay
-                class="fullscreen-media"
-                on:loadedmetadata={handleVideoMetadataLoaded}
-                on:timeupdate={handleVideoTimeUpdate}
-                on:ended={advanceSlotGapless}
-                on:error={advanceSlotGapless}
-              ></video>
+        <div class="video-deck deck-visible" style="background: {currentSlot.bgGradient};">
+          {#if currentSlot.mediaType === 'IMAGE' && currentSlot.streamUrl}
+            <img
+              src={currentSlot.streamUrl}
+              alt={currentSlot.title}
+              class="fullscreen-media"
+              on:error={advanceSlotGapless}
+            />
+          {:else if currentSlot.mediaType === 'VIDEO' && currentSlot.streamUrl}
+            <video
+              bind:this={videoElement}
+              src={currentSlot.streamUrl}
+              muted
+              playsinline
+              autoplay
+              preload="auto"
+              class="fullscreen-media"
+              on:loadedmetadata={handleVideoMetadataLoaded}
+              on:timeupdate={handleVideoTimeUpdate}
+              on:ended={advanceSlotGapless}
+              on:error={advanceSlotGapless}
+              on:stalled={() => {
+                if (videoElement) videoElement.play().catch(() => {});
+              }}
+            ></video>
+          {/if}
+
+          <div class="slot-content">
+            {#if showHudBadges || currentSlot.mediaType === 'SLIDE'}
+              <div class="top-badges">
+                <span class="brand-pill">{activeBrand}</span>
+                <span class="priority-pill">PRIORIDADE: {activePriority}</span>
+                <span class="cache-pill">{currentSlot.badge}</span>
+                <span class="deck-pill">{deviceName} ({hardwareUid})</span>
+              </div>
             {/if}
 
-            <div class="slot-content">
-              {#if showHudBadges || currentSlot.mediaType === 'SLIDE'}
-                <div class="top-badges">
-                  <span class="brand-pill">{activeBrand}</span>
-                  <span class="priority-pill">PRIORIDADE: {activePriority}</span>
-                  <span class="cache-pill">{currentSlot.badge}</span>
-                  <span class="deck-pill">{deviceName} ({hardwareUid})</span>
-                </div>
-              {/if}
+            {#if currentSlot.mediaType === 'SLIDE'}
+              <div class="center-hero">
+                <h2>{currentSlot.title}</h2>
+                <p>{currentSlot.subtitle}</p>
+              </div>
+            {:else if showHudBadges}
+              <div class="media-caption">
+                <strong>{currentSlot.title}</strong>
+                <span>{currentSlot.subtitle}</span>
+              </div>
+            {/if}
 
-              {#if currentSlot.mediaType === 'SLIDE'}
-                <div class="center-hero">
-                  <h2>{currentSlot.title}</h2>
-                  <p>{currentSlot.subtitle}</p>
-                </div>
-              {:else if showHudBadges}
-                <div class="media-caption">
-                  <strong>{currentSlot.title}</strong>
-                  <span>{currentSlot.subtitle}</span>
-                </div>
-              {/if}
-
-              {#if showHudBadges || currentSlot.mediaType === 'SLIDE'}
-                <div class="progress-bar-track">
-                  <div
-                    class="progress-bar-fill"
-                    style="width: {slotProgressPct}%; background: {currentSlot.accentColor};"
-                  ></div>
-                </div>
-              {/if}
-            </div>
+            {#if showHudBadges || currentSlot.mediaType === 'SLIDE'}
+              <div class="progress-bar-track">
+                <div
+                  class="progress-bar-fill"
+                  style="width: {slotProgressPct}%; background: {currentSlot.accentColor};"
+                ></div>
+              </div>
+            {/if}
           </div>
-        {/key}
+        </div>
       {:else}
         <div class="video-deck deck-visible" style="background: {selectedTvCategory.bgGradient};">
           <div class="slot-content">

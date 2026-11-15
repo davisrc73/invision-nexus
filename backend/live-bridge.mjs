@@ -258,15 +258,79 @@ function findAdbBinary() {
 function runAdb(args, timeoutMs = 8000) {
   return new Promise((resolve) => {
     const adbBin = findAdbBinary();
-    execFile(adbBin, args, { timeout: timeoutMs }, (err, stdout, stderr) => {
-      resolve({
-        ok: !err,
-        stdout: String(stdout || '').trim(),
-        stderr: String(stderr || '').trim(),
-        error: err ? err.message : null,
-      });
-    });
+    execFile(
+      adbBin,
+      args,
+      { timeout: timeoutMs, maxBuffer: 8 * 1024 * 1024 },
+      (err, stdout, stderr) => {
+        resolve({
+          ok: !err,
+          stdout: String(stdout || '').trim(),
+          stderr: String(stderr || '').trim(),
+          error: err ? err.message : null,
+        });
+      }
+    );
   });
+}
+
+async function launchChromeSingleTabOnBox(target, cleanUrl) {
+  await runAdb(['-s', target, 'shell', 'am', 'clear-debug-app']);
+  await runAdb(['-s', target, 'shell', 'rm', '-f', '/data/local/tmp/chrome-command-line']);
+  await runAdb([
+    '-s',
+    target,
+    'shell',
+    'settings',
+    'put',
+    'global',
+    'policy_control',
+    'immersive.full=*',
+  ]);
+
+  // Usa application_id fixo e create_new_tab=false para reutilizar sempre a mesma Tab sem abrir novas tabs!
+  const launchRes = await runAdb([
+    '-s',
+    target,
+    'shell',
+    'am',
+    'start',
+    '-a',
+    'android.intent.action.VIEW',
+    '-c',
+    'android.intent.category.BROWSABLE',
+    '-f',
+    '0x14000000',
+    '--es',
+    'com.android.browser.application_id',
+    'com.invision.nexus.kiosk',
+    '--ez',
+    'create_new_tab',
+    'false',
+    '-d',
+    cleanUrl,
+    'com.android.chrome',
+  ]);
+  if (!launchRes.ok) {
+    await runAdb([
+      '-s',
+      target,
+      'shell',
+      'am',
+      'start',
+      '-a',
+      'android.intent.action.VIEW',
+      '-d',
+      cleanUrl,
+    ]);
+  }
+
+  setTimeout(async () => {
+    await runAdb(['-s', target, 'shell', 'input', 'tap', '960', '540']);
+    setTimeout(async () => {
+      await runAdb(['-s', target, 'shell', 'input', 'tap', '960', '540']);
+    }, 2000);
+  }, 3500);
 }
 
 async function provisionAdbBox(boxIp, rawPlayerUrl, autoWatchdog = true) {
@@ -320,46 +384,8 @@ async function provisionAdbBox(boxIp, rawPlayerUrl, autoWatchdog = true) {
   await runAdb(['-s', target, 'shell', 'settings', 'put', 'global', 'heads_up_notifications_enabled', '0']);
   await runAdb(['-s', target, 'shell', 'settings', 'put', 'global', 'policy_control', 'immersive.full=*']);
 
-  logs.push(`==> [4/6] A limpar flags de debug antigas do Chrome (evita separador em branco)...`);
-  await runAdb(['-s', target, 'shell', 'am', 'clear-debug-app']);
-  await runAdb(['-s', target, 'shell', 'rm', '-f', '/data/local/tmp/chrome-command-line']);
-
-  logs.push(`==> [5/6] A abrir o Player PWA (${cleanUrl}) no Chrome da Box...`);
-  const launchRes = await runAdb([
-    '-s',
-    target,
-    'shell',
-    'am',
-    'start',
-    '-a',
-    'android.intent.action.VIEW',
-    '-c',
-    'android.intent.category.BROWSABLE',
-    '-d',
-    cleanUrl,
-    'com.android.chrome',
-  ]);
-  if (!launchRes.ok) {
-    await runAdb([
-      '-s',
-      target,
-      'shell',
-      'am',
-      'start',
-      '-a',
-      'android.intent.action.VIEW',
-      '-d',
-      cleanUrl,
-    ]);
-  }
-
-  logs.push(`==> [6/6] A agendar toque automático de Fullscreen (3.5s) e a ativar Watchdog Pós-Reboot...`);
-  setTimeout(async () => {
-    await runAdb(['-s', target, 'shell', 'input', 'tap', '960', '540']);
-    setTimeout(async () => {
-      await runAdb(['-s', target, 'shell', 'input', 'tap', '960', '540']);
-    }, 2000);
-  }, 3500);
+  logs.push(`==> [4/6] A abrir o Player PWA (${cleanUrl}) numa única Tab limpa e ativar Fullscreen...`);
+  await launchChromeSingleTabOnBox(target, cleanUrl);
 
   const nowIso = new Date().toISOString();
   const existing = state.adbBoxes.find((b) => b.boxIp === cleanIp);
@@ -369,6 +395,7 @@ async function provisionAdbBox(boxIp, rawPlayerUrl, autoWatchdog = true) {
     existing.status = 'ONLINE (Chrome Kiosk)';
     existing.lastProvisionedAt = nowIso;
     existing.lastCheckedAt = nowIso;
+    existing.lastLaunchMs = Date.now();
     existing.lastLog = logs.join('\n');
   } else {
     state.adbBoxes.push({
@@ -378,6 +405,7 @@ async function provisionAdbBox(boxIp, rawPlayerUrl, autoWatchdog = true) {
       status: 'ONLINE (Chrome Kiosk)',
       lastProvisionedAt: nowIso,
       lastCheckedAt: nowIso,
+      lastLaunchMs: Date.now(),
       lastLog: logs.join('\n'),
     });
   }
@@ -413,36 +441,44 @@ async function runKioskWatchdogCycle() {
         continue;
       }
 
-      const winRes = await runAdb(['-s', target, 'shell', 'dumpsys', 'window', 'windows'], 5000);
-      const focusLines = winRes.stdout
-        .split('\n')
-        .filter((l) => l.includes('mCurrentFocus') || l.includes('mFocusedApp'))
-        .join(' ');
+      // Verifica se o Android já terminou o arranque (sys.boot_completed == 1)
+      const bootRes = await runAdb(['-s', target, 'shell', 'getprop', 'sys.boot_completed'], 4000);
+      if (bootRes.stdout.trim() !== '1') {
+        continue;
+      }
 
-      if (focusLines && !focusLines.includes('com.android.chrome') && !focusLines.includes('com.android.systemui')) {
-        // A Box reiniciou e está no Launcher do Android! Relança automaticamente o Chrome no URL do Player
-        await runAdb(['-s', target, 'shell', 'am', 'clear-debug-app']);
-        await runAdb(['-s', target, 'shell', 'settings', 'put', 'global', 'policy_control', 'immersive.full=*']);
-        await runAdb([
+      // Verifica de forma ultra-rápida qual a Activity em primeiro plano na TV e se o processo Chrome existe
+      const actRes = await runAdb(
+        [
           '-s',
           target,
           'shell',
-          'am',
-          'start',
-          '-a',
-          'android.intent.action.VIEW',
-          '-c',
-          'android.intent.category.BROWSABLE',
-          '-d',
-          box.playerUrl,
-          'com.android.chrome',
-        ]);
-        setTimeout(async () => {
-          await runAdb(['-s', target, 'shell', 'input', 'tap', '960', '540']);
-        }, 4000);
+          'dumpsys activity activities | grep -iE "ResumedActivity|mFocusedApp" | head -n 4; echo "CHROME_PID:$(pidof com.android.chrome)"',
+        ],
+        5000
+      );
+
+      const out = actRes.stdout || '';
+      const hasChromePid = !out.includes('CHROME_PID:') || /CHROME_PID:\s*[0-9]+/.test(out);
+      const resumedLines = out
+        .split('\n')
+        .filter((l) => /ResumedActivity|mFocusedApp/i.test(l))
+        .join(' ');
+      const isChromeInForeground =
+        hasChromePid &&
+        resumedLines.length > 0 &&
+        resumedLines.includes('com.android.chrome');
+
+      const sinceLastLaunchMs = Date.now() - Number(box.lastLaunchMs || 0);
+
+      if (!isChromeInForeground && !resumedLines.includes('com.android.systemui') && sinceLastLaunchMs > 18000) {
+        // A Box reiniciou para o Desktop do Android (Launcher) ou o Chrome fechou!
+        // Abre automaticamente o Chrome no URL do Player!
+        box.lastLaunchMs = Date.now();
+        await launchChromeSingleTabOnBox(target, box.playerUrl);
         box.status = 'AUTO-RECOVERED (Pós-Boot)';
         changed = true;
-      } else if (box.status !== 'ONLINE (Chrome Kiosk)') {
+      } else if (isChromeInForeground && box.status !== 'ONLINE (Chrome Kiosk)') {
         box.status = 'ONLINE (Chrome Kiosk)';
         changed = true;
       }
@@ -458,7 +494,7 @@ async function runKioskWatchdogCycle() {
   }
 }
 
-setInterval(runKioskWatchdogCycle, 25000);
+setInterval(runKioskWatchdogCycle, 12000);
 
 // Clientes WebSocket ativos
 const wsClients = new Set();
@@ -963,27 +999,13 @@ const server = http.createServer(async (req, res) => {
         await runAdb(['-s', target, 'shell', 'input', 'tap', '960', '540']);
       } else if (action === 'RELAUNCH_URL') {
         const targetUrl = (box && box.playerUrl) || payload.playerUrl;
-        await runAdb(['-s', target, 'shell', 'am', 'clear-debug-app']);
-        await runAdb(['-s', target, 'shell', 'rm', '-f', '/data/local/tmp/chrome-command-line']);
-        await runAdb([
-          '-s',
-          target,
-          'shell',
-          'am',
-          'start',
-          '-a',
-          'android.intent.action.VIEW',
-          '-c',
-          'android.intent.category.BROWSABLE',
-          '-d',
-          targetUrl,
-          'com.android.chrome',
-        ]);
-        setTimeout(async () => {
-          await runAdb(['-s', target, 'shell', 'input', 'tap', '960', '540']);
-        }, 3500);
+        if (box) box.lastLaunchMs = Date.now();
+        await launchChromeSingleTabOnBox(target, targetUrl);
       } else if (action === 'REBOOT_BOX') {
-        if (box) box.status = 'REBOOTING (A reiniciar Box...)';
+        if (box) {
+          box.status = 'REBOOTING (A reiniciar Box...)';
+          box.lastLaunchMs = 0;
+        }
         runAdb(['-s', target, 'reboot']);
       }
 

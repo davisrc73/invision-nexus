@@ -153,8 +153,8 @@ echo "==> [5/7] A limpar flags de debug antigas do Chrome (evita separador em br
 "${ADB_BIN}" -s "${BOX_IP}:5555" shell am clear-debug-app || true
 "${ADB_BIN}" -s "${BOX_IP}:5555" shell rm -f /data/local/tmp/chrome-command-line || true
 
-echo "==> [6/7] A abrir o Player PWA (${PLAYER_URL}) preservando o ID registado no localStorage..."
-"${ADB_BIN}" -s "${BOX_IP}:5555" shell am start -a android.intent.action.VIEW -c android.intent.category.BROWSABLE -d "${PLAYER_URL}" "${CHROME_PKG}" 2>/dev/null || \
+echo "==> [6/7] A abrir o Player PWA (${PLAYER_URL}) numa única Tab limpa preservando o ID..."
+"${ADB_BIN}" -s "${BOX_IP}:5555" shell am start -a android.intent.action.VIEW -c android.intent.category.BROWSABLE -f 0x14000000 --es com.android.browser.application_id com.invision.nexus.kiosk --ez create_new_tab false -d "${PLAYER_URL}" "${CHROME_PKG}" 2>/dev/null || \
 "${ADB_BIN}" -s "${BOX_IP}:5555" shell am start -a android.intent.action.VIEW -d "${PLAYER_URL}"
 
 echo "==> [7/7] A aguardar carregamento do Player (4s), ativar Fullscreen e registar Auto-Boot Watchdog..."

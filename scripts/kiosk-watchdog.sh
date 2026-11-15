@@ -44,20 +44,20 @@ while true; do
       "${ADB_BIN}" connect "${BOX_IP}:5555" >/dev/null 2>&1 || true
 
       if "${ADB_BIN}" devices 2>/dev/null | grep -q "${BOX_IP}:5555.*device"; then
-        # Verifica qual a janela em primeiro plano na TV
-        FOCUSED_APP="$("${ADB_BIN}" -s "${BOX_IP}:5555" shell dumpsys window windows 2>/dev/null | grep -E 'mCurrentFocus|mFocusedApp' || true)"
+        BOOT_DONE="$("${ADB_BIN}" -s "${BOX_IP}:5555" shell getprop sys.boot_completed 2>/dev/null | tr -d '[:space:]' || true)"
+        [[ "${BOOT_DONE}" != "1" ]] && continue
 
-        # Se o Chrome não estiver em primeiro plano (ex: a Box reiniciou e está no Launcher do Android)
-        if [[ -n "${FOCUSED_APP}" ]] && ! echo "${FOCUSED_APP}" | grep -q "${CHROME_PKG}"; then
-          TARGET_URL="${PLAYER_URL}"
-          if [[ -n "${HW_UID:-}" ]]; then
-            TARGET_URL="${PLAYER_URL}/?hw_uid=${HW_UID}"
-          fi
-          echo "[$(date '+%Y-%m-%d %H:%M:%S')] Box ${BOX_IP} reiniciou ou saiu do Kiosk. A relançar ${TARGET_URL}..."
+        # Verifica de forma ultra-rápida qual a Activity em primeiro plano na TV e se o processo Chrome existe
+        RESUMED_OUT="$("${ADB_BIN}" -s "${BOX_IP}:5555" shell 'dumpsys activity activities | grep -iE "ResumedActivity|mFocusedApp" | head -n 4; echo "CHROME_PID:$(pidof com.android.chrome)"' 2>/dev/null || true)"
+
+        # Se o Chrome não estiver em primeiro plano (ex: a Box reiniciou e está no Desktop do Android)
+        if ! echo "${RESUMED_OUT}" | grep -E "ResumedActivity|mFocusedApp" | grep -q "${CHROME_PKG}"; then
+          echo "[$(date '+%Y-%m-%d %H:%M:%S')] Box ${BOX_IP} reiniciou para o Desktop Android. A abrir ${PLAYER_URL}..."
+          "${ADB_BIN}" -s "${BOX_IP}:5555" shell am clear-debug-app >/dev/null 2>&1 || true
           "${ADB_BIN}" -s "${BOX_IP}:5555" shell settings put global policy_control "immersive.full=*" >/dev/null 2>&1 || true
-          "${ADB_BIN}" -s "${BOX_IP}:5555" shell am start -a android.intent.action.VIEW -d "${TARGET_URL}" "${CHROME_PKG}" >/dev/null 2>&1 || \
-          "${ADB_BIN}" -s "${BOX_IP}:5555" shell am start -a android.intent.action.VIEW -d "${TARGET_URL}" >/dev/null 2>&1 || true
-          sleep 5
+          "${ADB_BIN}" -s "${BOX_IP}:5555" shell am start -a android.intent.action.VIEW -c android.intent.category.BROWSABLE -f 0x14000000 --es com.android.browser.application_id com.invision.nexus.kiosk --ez create_new_tab false -d "${PLAYER_URL}" "${CHROME_PKG}" >/dev/null 2>&1 || \
+          "${ADB_BIN}" -s "${BOX_IP}:5555" shell am start -a android.intent.action.VIEW -d "${PLAYER_URL}" >/dev/null 2>&1 || true
+          sleep 4
           "${ADB_BIN}" -s "${BOX_IP}:5555" shell input tap 960 540 >/dev/null 2>&1 || true
           sleep 2
           "${ADB_BIN}" -s "${BOX_IP}:5555" shell input tap 960 540 >/dev/null 2>&1 || true
@@ -65,6 +65,6 @@ while true; do
       fi
     done < "${CONF_FILE}"
   fi
-  sleep 25
+  sleep 12
 done
 
