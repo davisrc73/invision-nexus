@@ -473,7 +473,8 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
       document.getElementById('kpi-total-clicks').textContent = String(sumClicks);
       document.getElementById('kpi-compliance-pct').textContent = `${avgCompliance} %`;
       document.getElementById('kpi-connected-pct').textContent = `${avgConnected} %`;
-      document.getElementById('active-stores-banner').textContent = `# LOJAS ATIVAS: ${totalStores}/${(liveState.storesCatalog || []).length}`;
+      const brandCatalogStores = (liveState.storesCatalog || []).filter((s) => s.brand === activeBrand);
+      document.getElementById('active-stores-banner').textContent = `# LOJAS ATIVAS: ${totalStores}/${brandCatalogStores.length} (${activeBrand})`;
 
       // Renderiza Tabela de Compliance
       const tbody = document.getElementById('compliance-table-body');

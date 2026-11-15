@@ -128,15 +128,18 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     }
 
     function renderWall(st) {
+      const activeBrand = localStorage.getItem('invision_brand') || 'FNAC';
       const selectedZone = zoneFilter?.value || 'ALL';
       const devices = (st.devices || []).filter(
-        (d) => selectedZone === 'ALL' || d.zone === selectedZone
+        (d) =>
+          (!d.brand || d.brand === activeBrand) &&
+          (selectedZone === 'ALL' || d.zone === selectedZone)
       );
 
       if (devices.length === 0) {
         wallGrid.innerHTML = `
           <div class="md:col-span-3 p-6 rounded-xl bg-slate-900 border border-dashed border-slate-800 text-center text-xs text-slate-400">
-            Nenhum terminal ativo neste filtro. Mantenha o Player aberto em <strong>http://localhost:5173</strong> ou no telemóvel para ver a transmissão ao vivo aqui!
+            Nenhum terminal ${activeBrand} ativo neste filtro. Mantenha o Player aberto ou provisione uma Box Android para ver a transmissão ao vivo aqui!
           </div>
         `;
       } else {
@@ -295,7 +298,8 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
       fetchWallState();
     });
 
+    window.addEventListener('invision:brand-change', () => fetchWallState());
     fetchWallState();
-    setInterval(fetchWallState, 2500);
+    setInterval(fetchWallState, 3000);
   </script>
 </DashboardLayout>

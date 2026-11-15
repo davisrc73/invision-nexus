@@ -336,13 +336,23 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     }
 
     function getSelectedPlaylist() {
+      const activeBrand = localStorage.getItem('invision_brand') || 'FNAC';
+      const brandPlaylists = (liveState.playlists || []).filter(
+        (p) => !p.brand || p.brand === activeBrand
+      );
       return (
-        liveState.playlists.find((p) => p.id === selectedPlaylistId) ||
-        liveState.playlists[0]
+        brandPlaylists.find((p) => p.id === selectedPlaylistId) ||
+        brandPlaylists[0] ||
+        null
       );
     }
 
     function renderAll() {
+      const activeBrand = localStorage.getItem('invision_brand') || 'FNAC';
+      const brandPlaylists = (liveState.playlists || []).filter(
+        (p) => !p.brand || p.brand === activeBrand
+      );
+
       if (
         profileSelect &&
         Array.isArray(liveState.screenProfilesCatalog) &&
@@ -364,78 +374,86 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
       const bannerTitle = document.getElementById('effective-banner-title');
       const bannerSub = document.getElementById('effective-banner-sub');
 
-      if (eff.activePlaylistId) {
-        bannerTitle.textContent = `▶ ${eff.activePlaylistName} [${eff.activePriority}]`;
+      if (eff.activePlaylistId && (!eff.activeBrand || eff.activeBrand === activeBrand)) {
+        bannerTitle.textContent = `▶ ${eff.activePlaylistName} [${eff.activePriority}] (${activeBrand})`;
         bannerSub.textContent = `Modo: ${eff.activeSchedulingMode} • ${eff.resolvedSequence?.length || 0} slots no Loop • Todas as playlists de prioridade inferior estão silenciadas a 100%.`;
       } else {
-        bannerTitle.textContent = `▶ A exibir Fallback Demo (Nenhuma Playlist ativa com conteúdos)`;
-        bannerSub.textContent = `Adicione um vídeo ou imagem a uma Playlist Ativa abaixo para assumir o controlo dos ecrãs.`;
+        bannerTitle.textContent = `▶ A exibir Fallback (${activeBrand}) — Nenhuma Playlist ativa com conteúdos`;
+        bannerSub.textContent = `Adicione um vídeo ou imagem a uma Playlist Ativa abaixo para assumir o controlo dos ecrãs da ${activeBrand}.`;
       }
 
       const currentPl = getSelectedPlaylist();
 
-      // Renderiza Tabs das Playlists
-      playlistTabs.innerHTML = liveState.playlists
-        .map((pl) => {
-          const isSel = pl.id === currentPl?.id;
-          const isWinning = pl.id === eff.activePlaylistId;
-          const badgeColor =
-            pl.priority === 'EXCLUSIVA'
-              ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
-              : pl.priority === 'PRIORITARIA'
-              ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-              : pl.priority === 'NORMAL'
-              ? 'bg-sky-500/20 text-sky-300 border-sky-500/40'
-              : 'bg-slate-800 text-slate-300 border-slate-700';
+      // Renderiza Tabs das Playlists da Marca Ativa
+      if (brandPlaylists.length === 0) {
+        playlistTabs.innerHTML = `
+          <div class="md:col-span-4 p-5 rounded-xl bg-slate-950 border border-dashed border-slate-800 text-center text-xs text-slate-400">
+            Nenhuma playlist configurada para <strong>${activeBrand}</strong>. Clique no botão <strong>+ Criar Nova Playlist</strong> acima!
+          </div>
+        `;
+      } else {
+        playlistTabs.innerHTML = brandPlaylists
+          .map((pl) => {
+            const isSel = pl.id === currentPl?.id;
+            const isWinning = pl.id === eff.activePlaylistId;
+            const badgeColor =
+              pl.priority === 'EXCLUSIVA'
+                ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                : pl.priority === 'PRIORITARIA'
+                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                : pl.priority === 'NORMAL'
+                ? 'bg-sky-500/20 text-sky-300 border-sky-500/40'
+                : 'bg-slate-800 text-slate-300 border-slate-700';
 
-          return `
-            <div
-              data-select-pl="${pl.id}"
-              class="cursor-pointer p-3.5 rounded-xl border transition ${
-                isSel
-                  ? 'bg-slate-950 border-[#E1A924] ring-1 ring-[#E1A924]'
-                  : 'bg-slate-950/50 border-slate-800 hover:border-slate-700'
-              }"
-            >
-              <div class="flex items-center justify-between mb-1.5">
-                <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${badgeColor}">
-                  ${pl.priority}
-                </span>
-                <span class="text-[10px] font-mono ${
-                  isWinning
-                    ? 'text-emerald-400 font-bold'
-                    : pl.isActive
-                    ? 'text-slate-400'
-                    : 'text-rose-400'
-                }">
-                  ${isWinning ? '● NO AR AGORA' : pl.isActive ? '● Ativa' : '○ Inativa'}
-                </span>
+            return `
+              <div
+                data-select-pl="${pl.id}"
+                class="cursor-pointer p-3.5 rounded-xl border transition ${
+                  isSel
+                    ? 'bg-slate-950 border-[#E1A924] ring-1 ring-[#E1A924]'
+                    : 'bg-slate-950/50 border-slate-800 hover:border-slate-700'
+                }"
+              >
+                <div class="flex items-center justify-between mb-1.5">
+                  <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${badgeColor}">
+                    ${pl.priority}
+                  </span>
+                  <span class="text-[10px] font-mono ${
+                    isWinning
+                      ? 'text-emerald-400 font-bold'
+                      : pl.isActive
+                      ? 'text-slate-400'
+                      : 'text-rose-400'
+                  }">
+                    ${isWinning ? '● NO AR AGORA' : pl.isActive ? '● Ativa' : '○ Inativa'}
+                  </span>
+                </div>
+                <p class="text-xs font-bold text-white truncate">${pl.name}</p>
+                <p class="text-[11px] font-mono text-slate-400 mt-1">
+                  ${pl.items?.length || 0} ficheiro(s) • ${pl.schedulingMode === 'DYNAMIC_SOV' ? 'SoV %' : 'Slots'} • ${pl.daypartStart || '00:00'}-${pl.daypartEnd || '23:59'}
+                </p>
+                ${
+                  Array.isArray(pl.autoTags) && pl.autoTags.length > 0
+                    ? `<div class="mt-1.5 flex flex-wrap gap-1">${pl.autoTags
+                        .map(
+                          (t) =>
+                            `<span class="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 text-[9px] font-mono font-bold">#${t}</span>`
+                        )
+                        .join('')}</div>`
+                    : ''
+                }
               </div>
-              <p class="text-xs font-bold text-white truncate">${pl.name}</p>
-              <p class="text-[11px] font-mono text-slate-400 mt-1">
-                ${pl.items?.length || 0} ficheiro(s) • ${pl.schedulingMode === 'DYNAMIC_SOV' ? 'SoV %' : 'Slots'} • ${pl.daypartStart || '00:00'}-${pl.daypartEnd || '23:59'}
-              </p>
-              ${
-                Array.isArray(pl.autoTags) && pl.autoTags.length > 0
-                  ? `<div class="mt-1.5 flex flex-wrap gap-1">${pl.autoTags
-                      .map(
-                        (t) =>
-                          `<span class="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 text-[9px] font-mono font-bold">#${t}</span>`
-                      )
-                      .join('')}</div>`
-                  : ''
-              }
-            </div>
-          `;
-        })
-        .join('');
+            `;
+          })
+          .join('');
 
-      document.querySelectorAll('[data-select-pl]').forEach((el) => {
-        el.addEventListener('click', () => {
-          selectedPlaylistId = el.getAttribute('data-select-pl');
-          renderAll();
+        document.querySelectorAll('[data-select-pl]').forEach((el) => {
+          el.addEventListener('click', () => {
+            selectedPlaylistId = el.getAttribute('data-select-pl');
+            renderAll();
+          });
         });
-      });
+      }
 
       if (currentPl) {
         plNameInput.value = currentPl.name;
@@ -459,8 +477,8 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
             'w-full py-2 px-3 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition';
         }
 
-        // Renderiza Checkboxes de Equipamentos Alvo (Boxes Android / Telemóvel / Mac)
-        const allDevices = liveState.devices || [];
+        // Renderiza Checkboxes de Equipamentos Alvo (Boxes Android / Telemóvel / Mac da Marca Ativa)
+        const allDevices = (liveState.devices || []).filter((d) => !d.brand || d.brand === activeBrand);
         const selectedTargets = Array.isArray(currentPl.targetDeviceIds)
           ? currentPl.targetDeviceIds
           : [];
@@ -855,7 +873,10 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
       }
     });
 
-    window.addEventListener('invision:brand-change', () => renderAll());
+    window.addEventListener('invision:brand-change', () => {
+      selectedPlaylistId = null;
+      renderAll();
+    });
     fetchLiveState();
   </script>
 </DashboardLayout>

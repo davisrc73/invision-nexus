@@ -129,10 +129,17 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     </button>
     <button
       type="button"
+      data-settings-tab="RULES"
+      class="settings-tab-btn px-4 py-2 rounded-lg text-xs font-bold bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-700 transition"
+    >
+      ⚖️ 5. Precedência & Regras de Playlists
+    </button>
+    <button
+      type="button"
       data-settings-tab="USERS"
       class="settings-tab-btn px-4 py-2 rounded-lg text-xs font-bold bg-slate-900 text-slate-400 border border-dashed border-slate-800 transition"
     >
-      👥 5. Utilizadores & RBAC (Próximo Passo)
+      👥 6. Utilizadores & RBAC (Próximo Passo)
     </button>
   </div>
 
@@ -513,7 +520,66 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
   </section>
 
   <!-- ===================================================================== -->
-  <!-- TAB 5: UTILIZADORES & RBAC (FASE SEGUINTE)                            -->
+  <!-- TAB 5: REGRAS DE PLAYLISTS & PRECEDÊNCIA DE PROGRAMAÇÃO               -->
+  <!-- ===================================================================== -->
+  <section id="tab-panel-RULES" class="hidden space-y-6">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-4 mb-5">
+        <div>
+          <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+            Regras de Emissão & Silenciamento Estrito de Playlists
+          </span>
+          <h4 class="text-base font-bold text-white mt-1.5">
+            Precedência de Programação (4 Níveis Determinísticos)
+          </h4>
+          <p class="text-xs text-slate-400 mt-0.5">
+            O motor de emissão avalia as prioridades em cascata estrita: <strong class="text-amber-300">EXCLUSIVA &gt; PRIORITÁRIA &gt; NORMAL &gt; FALLBACK</strong>.
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span id="rules-winning-badge" class="px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-mono font-bold">
+            A avaliar prioridade dominante...
+          </span>
+        </div>
+      </div>
+
+      <!-- Grelha dos 4 Níveis com Estado Ativo -->
+      <div id="rules-priority-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6"></div>
+
+      <!-- Resumo dos Guardrails e Tecnologias de Emissão -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-slate-800">
+        <div class="p-4 rounded-xl bg-slate-950 border border-slate-800">
+          <span class="text-xs font-mono font-bold text-emerald-400 block mb-1">
+            🛡️ Guardrail de Formato de Ecrã
+          </span>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Impede a colocação acidental de vídeos verticais (9:16) em ecrãs horizontais (16:9), emitindo aviso ou bloqueio estrito na publicação.
+          </p>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-950 border border-slate-800">
+          <span class="text-xs font-mono font-bold text-sky-400 block mb-1">
+            ⚡ RAM Blob Preloader (Anti-Ecrã Preto)
+          </span>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Ao carregar a Playlist, a Box descarrega os ficheiros para a memória local (<code class="text-emerald-300">blob:</code>), garantindo 0 ligações TCP ao NAS no loop contínuo.
+          </p>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-950 border border-slate-800">
+          <span class="text-xs font-mono font-bold text-amber-400 block mb-1">
+            🏷️ Auto-Binding por Smart TAGs
+          </span>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Ao fazer upload de conteúdos com TAGs (ex: <code class="text-amber-300">NATAL</code>, <code class="text-amber-300">CREDITO</code>), os vídeos entram automaticamente nas Playlists com essas tags sem edição manual.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- TAB 6: UTILIZADORES & RBAC (FASE SEGUINTE)                            -->
   <!-- ===================================================================== -->
   <section id="tab-panel-USERS" class="hidden">
     <div class="bg-slate-900 border border-slate-800 rounded-xl p-8 text-center">
@@ -536,7 +602,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
 
     // Alternância de Tabs
     const tabBtns = document.querySelectorAll('[data-settings-tab]');
-    const tabPanels = ['STORES', 'PROFILES', 'ZONES', 'CATEGORIES', 'USERS'];
+    const tabPanels = ['STORES', 'PROFILES', 'ZONES', 'CATEGORIES', 'RULES', 'USERS'];
 
     tabBtns.forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -615,19 +681,26 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
         btnRestore?.classList.add('hidden');
       }
 
-      // 1. Renderiza Tabela de Lojas
-      document.getElementById('stores-total-label').textContent = String(stores.length);
+      // 1. Renderiza Tabela de Lojas (Filtrada pela Insígnia Ativa)
+      const activeBrand = localStorage.getItem('invision_brand') || 'FNAC';
+      const stBrandEl = document.getElementById('st-brand');
+      if (stBrandEl && !stBrandEl.value) {
+        stBrandEl.value = activeBrand;
+      }
+
+      const brandStores = stores.filter((s) => !s.brand || s.brand === activeBrand);
+      document.getElementById('stores-total-label').textContent = `${brandStores.length} (${activeBrand})`;
       const storesTbody = document.getElementById('settings-stores-tbody');
-      if (stores.length === 0) {
+      if (brandStores.length === 0) {
         storesTbody.innerHTML = `
           <tr>
             <td colspan="8" class="py-8 text-center text-slate-400">
-              Os dados de simulação foram limpos! Utilize o formulário acima ou a Importação CSV ao lado para criar as suas Lojas Reais.
+              Nenhuma loja registada para <strong>${activeBrand}</strong>. Utilize o formulário acima ou a Importação CSV ao lado para criar as suas Lojas Reais.
             </td>
           </tr>
         `;
       } else {
-        storesTbody.innerHTML = stores
+        storesTbody.innerHTML = brandStores
           .map(
             (s) => `
             <tr class="hover:bg-slate-800/40 transition">
@@ -812,7 +885,90 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
           });
         });
       });
+
+      // 5. Renderiza Precedência & Regras de Playlists
+      const levels = [
+        {
+          code: 'EXCLUSIVA',
+          label: '1. EXCLUSIVA',
+          tag: 'OVERRIDE TOTAL 100%',
+          desc: 'Silencia a 100% todas as outras playlists (Prioritária, Normal e Fallback). Usada para Flash Sales, Takeovers ou Emergências.',
+          color: 'border-rose-500/40 bg-rose-500/10 text-rose-300',
+        },
+        {
+          code: 'PRIORITARIA',
+          label: '2. PRIORITÁRIA',
+          tag: 'CAMPANHA COMERCIAL',
+          desc: 'Silencia a 100% a programação Regular/Normal. Ideal para campanhas com período marcado (ex: Natal, Dias Fnac).',
+          color: 'border-amber-500/40 bg-amber-500/10 text-amber-300',
+        },
+        {
+          code: 'NORMAL',
+          label: '3. NORMAL',
+          tag: 'SLOTS & SHARE OF VOICE %',
+          desc: 'Programação regular do dia a dia da loja. Pode correr em grelha fixa (Slots) ou ponderada por percentagem de Share of Voice.',
+          color: 'border-sky-500/40 bg-sky-500/10 text-sky-300',
+        },
+        {
+          code: 'FALLBACK',
+          label: '4. FALLBACK',
+          tag: 'SEGURANÇA DE REDE',
+          desc: 'Ativa automaticamente e mantém os ecrãs iluminados com segurança quando nenhuma playlist superior estiver ativa.',
+          color: 'border-slate-700 bg-slate-950 text-slate-300',
+        },
+      ];
+
+      const brandPlaylists = (liveState.playlists || []).filter(
+        (p) => !p.brand || p.brand === activeBrand
+      );
+      const effWinning = liveState.effectivePlayback?.activePriority || 'FALLBACK';
+
+      const winningBadge = document.getElementById('rules-winning-badge');
+      if (winningBadge) {
+        winningBadge.textContent = `● Prioridade Dominante: ${effWinning} (${activeBrand})`;
+      }
+
+      const rulesGrid = document.getElementById('rules-priority-grid');
+      if (rulesGrid) {
+        rulesGrid.innerHTML = levels
+          .map((lvl) => {
+            const count = brandPlaylists.filter(
+              (p) => p.priority === lvl.code && p.isActive && p.items?.length > 0
+            ).length;
+            const isWinning = effWinning === lvl.code;
+            return `
+              <div class="p-4 rounded-xl border ${lvl.color} flex flex-col justify-between gap-3 ${
+                isWinning ? 'ring-2 ring-emerald-400' : ''
+              }">
+                <div>
+                  <div class="flex items-center justify-between mb-2">
+                    <strong class="text-sm font-black text-white">${lvl.label}</strong>
+                    <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded ${
+                      isWinning ? 'bg-emerald-400 text-black' : 'bg-slate-800 text-slate-300'
+                    }">
+                      ${isWinning ? '● NO AR AGORA' : `${count} Ativa(s)`}
+                    </span>
+                  </div>
+                  <span class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300 block w-fit mb-2">
+                    ${lvl.tag}
+                  </span>
+                  <p class="text-xs text-slate-300 leading-relaxed">${lvl.desc}</p>
+                </div>
+                <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono text-slate-400">
+                  <span>Playlists Ativas (${activeBrand}):</span>
+                  <strong class="text-white">${count}</strong>
+                </div>
+              </div>
+            `;
+          })
+          .join('');
+      }
     }
+
+    // Re-renderiza quando a insígnia for alterada no topo
+    window.addEventListener('invision:brand-change', () => {
+      renderSettings();
+    });
 
     // Eventos do Pop-up de Purge Demo
     const modal = document.getElementById('demo-purge-modal');
@@ -932,3 +1088,4 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     fetchSettingsState();
   </script>
 </DashboardLayout>
+

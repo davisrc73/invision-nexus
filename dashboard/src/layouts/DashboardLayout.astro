@@ -152,31 +152,24 @@ const { title, activeNav = 'overview' } = Astro.props;
           <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2">
             Insígnia Ativa (Guardrail)
           </label>
-          <div class="grid grid-cols-3 gap-1.5 bg-slate-900 p-1 rounded-lg border border-slate-800">
+          <div class="grid grid-cols-2 gap-1.5 bg-slate-900 p-1 rounded-lg border border-slate-800">
             <button
               type="button"
               data-switch-brand="FNAC"
               class="brand-btn py-1.5 px-2 rounded-md text-xs font-bold bg-[#E1A924] text-black shadow transition"
             >
-              FNAC
+              🟨 FNAC
             </button>
             <button
               type="button"
               data-switch-brand="DARTY"
               class="brand-btn py-1.5 px-2 rounded-md text-xs font-bold text-slate-400 hover:text-white transition"
             >
-              DARTY
-            </button>
-            <button
-              type="button"
-              data-switch-brand="ALL"
-              class="brand-btn py-1.5 px-2 rounded-md text-xs font-bold text-slate-400 hover:text-white transition"
-            >
-              GLOBAL
+              🟥 DARTY
             </button>
           </div>
           <p class="mt-2 text-[11px] text-slate-400 leading-tight">
-            O catálogo e as playlists filtram e bloqueiam automaticamente conteúdos de outra insígnia.
+            Isolamento estrito: Lojas, Equipamentos, Playlists e Conteúdos filtram exclusivamente pela insígnia ativa.
           </p>
         </div>
 
@@ -395,55 +388,48 @@ const { title, activeNav = 'overview' } = Astro.props;
       const rbacBanner = document.getElementById('rbac-banner');
 
       function applyBrand(brand) {
-        localStorage.setItem('invision_brand', brand);
-        body.setAttribute('data-brand', brand);
+        const cleanBrand = brand === 'DARTY' ? 'DARTY' : 'FNAC';
+        localStorage.setItem('invision_brand', cleanBrand);
+        body.setAttribute('data-brand', cleanBrand);
 
         brandBtns.forEach((btn) => {
           const b = btn.getAttribute('data-switch-brand');
-          if (b === brand) {
+          if (b === cleanBrand) {
             btn.className =
-              brand === 'DARTY'
+              cleanBrand === 'DARTY'
                 ? 'brand-btn py-1.5 px-2 rounded-md text-xs font-bold bg-[#E30613] text-white shadow transition'
-                : brand === 'FNAC'
-                ? 'brand-btn py-1.5 px-2 rounded-md text-xs font-bold bg-[#E1A924] text-black shadow transition'
-                : 'brand-btn py-1.5 px-2 rounded-md text-xs font-bold bg-sky-500 text-black shadow transition';
+                : 'brand-btn py-1.5 px-2 rounded-md text-xs font-bold bg-[#E1A924] text-black shadow transition';
           } else {
             btn.className =
               'brand-btn py-1.5 px-2 rounded-md text-xs font-bold text-slate-400 hover:text-white transition';
           }
         });
 
-        if (brand === 'DARTY') {
+        if (cleanBrand === 'DARTY') {
           brandBadge.textContent = 'DA';
           brandBadge.className =
             'w-10 h-10 rounded-lg bg-[#E30613] text-white font-black flex items-center justify-center text-lg shadow-lg transition-colors';
           brandSubtitle.textContent = 'Contexto Isolado: DARTY';
           brandSubtitle.className = 'text-xs text-red-400 font-medium';
-        } else if (brand === 'FNAC') {
+        } else {
           brandBadge.textContent = 'FN';
           brandBadge.className =
             'w-10 h-10 rounded-lg bg-[#E1A924] text-black font-black flex items-center justify-center text-lg shadow-lg transition-colors';
           brandSubtitle.textContent = 'Contexto Isolado: FNAC';
           brandSubtitle.className = 'text-xs text-amber-400 font-medium';
-        } else {
-          brandBadge.textContent = 'NX';
-          brandBadge.className =
-            'w-10 h-10 rounded-lg bg-sky-500 text-black font-black flex items-center justify-center text-lg shadow-lg transition-colors';
-          brandSubtitle.textContent = 'Visão Parque Global (Fnac + Darty)';
-          brandSubtitle.className = 'text-xs text-sky-400 font-medium';
         }
 
         // Filtra elementos da página marcados com data-brand-item
         document.querySelectorAll('[data-brand-item]').forEach((el) => {
           const itemBrand = el.getAttribute('data-brand-item');
-          if (brand === 'ALL' || itemBrand === brand) {
+          if (itemBrand === cleanBrand) {
             el.classList.remove('hidden');
           } else {
             el.classList.add('hidden');
           }
         });
 
-        window.dispatchEvent(new CustomEvent('invision:brand-change', { detail: { brand } }));
+        window.dispatchEvent(new CustomEvent('invision:brand-change', { detail: { brand: cleanBrand } }));
       }
 
       function applyRole(role) {

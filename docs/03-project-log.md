@@ -423,3 +423,19 @@ Arranque do desenvolvimento de uma plataforma enterprise de Digital Signage inte
    - Pode ser ativado/desativado **em tempo real num único clique** diretamente no cartão de cada equipamento em **`🖥️ Equipamentos`** ([dashboard/src/pages/devices.astro](file:///Users/daviscorreia/Antigravity%20/invision-nexus/dashboard/src/pages/devices.astro) via `POST /api/v1/live/devices/invert`), como predefinição de um Formato em **`⚙️ Configurações & Setup`**, ou localmente no menu secreto OSD do Player.
 4. **Áreas / Zonas de Loja & Tipologias de Equipamento Dinâmicas:**
    - Todos os seletores de Loja, Zona/Departamento, Formato de Ecrã e Tipologia de Equipamento em `/devices/` e `/playlists/` passam a ser alimentados dinamicamente pelos catálogos configurados em `/settings/`.
+
+---
+
+## [2026-11-15] - Otimização UI/UX: Switch Estrito FNAC / DARTY, Janelas Pop-up (Modais) em Equipamentos e Precedência em Configurações
+
+### Decisões de Arquitetura e Ajustes de Janelas Implementados
+1. **Isolamento Estrito por Insígnia (`FNAC` vs `DARTY`) sem Modo Misto "GLOBAL":**
+   - Removida a opção `"GLOBAL"` do seletor de marca no menu lateral ([dashboard/src/layouts/DashboardLayout.astro](file:///Users/daviscorreia/Antigravity%20/invision-nexus/dashboard/src/layouts/DashboardLayout.astro)), ficando apenas o alternador direto `[ 🟨 FNAC ]` ou `[ 🟥 DARTY ]`.
+   - Todos os módulos do Backoffice (`Visão Global /`, `Equipamentos /devices/`, `Conteúdos /content/`, `Playlists /playlists/`, `Live Wall /store-wall/`, `Relatórios /telemetry/` e `Configurações /settings/`) filtram 100% dos dados pela marca ativa e reagem instantaneamente ao evento `invision:brand-change`.
+2. **Otimização do Módulo de Equipamentos ([dashboard/src/pages/devices.astro](file:///Users/daviscorreia/Antigravity%20/invision-nexus/dashboard/src/pages/devices.astro)):**
+   - **Remoção de Elementos Redundantes:** Retirado o botão `"← Voltar à Visão Global"` e removida a coluna lateral de precedência de prioridades.
+   - **Inventário em Full-Width:** A lista de equipamentos reais ativos passa a ocupar 100% da largura horizontal, garantindo máxima legibilidade para centenas de equipamentos.
+   - **Pop-up de Configuração / Emparelhamento (`#pairing-modal`):** Clicar em `"✎ Configurar"` ou no novo botão `"+ Emparelhar Terminal"` abre uma janela modal centrada no ecrã com os campos de código, nome, loja, zona, categoria, formato e inversão 180°, sem empurrar a lista para baixo.
+   - **Pop-up de Provisionamento Kiosk ADB (`#adb-modal`):** A ferramenta técnica de ligação ADB e controlo de boxes (reboot, fullscreen, URL) foi encapsulada numa janela modal acionada pelo botão `"📺 Provisionamento ADB & Watchdog"`, com contador dinâmico de boxes monitorizadas.
+3. **Transferência da Precedência de Programação para `⚙️ Configurações & Setup` ([dashboard/src/pages/settings.astro](file:///Users/daviscorreia/Antigravity%20/invision-nexus/dashboard/src/pages/settings.astro)):**
+   - Adicionada a nova aba **`⚖️ 5. Precedência & Regras de Playlists`**, centralizando a explicação e auditoria em tempo real dos 4 níveis de prioridade (`EXCLUSIVA > PRIORITÁRIA > NORMAL > FALLBACK`), contagem de playlists ativas por nível na marca selecionada, regras do Guardrail de Formato, RAM Blob Caching e Auto-Binding de TAGs.

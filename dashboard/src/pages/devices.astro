@@ -6,17 +6,10 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
   title="Gestão e Controlo de Parque Informático & Equipamentos (Boxes ADB, TVs & Bancadas)"
   activeNav="devices"
 >
-  <!-- BARRA DE CONTEXTO DE DRILL-DOWN (QUANDO VEM DA VISÃO GLOBAL) -->
+  <!-- BARRA DE FILTROS E AÇÕES RÁPIDAS -->
   <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 mb-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
     <div class="flex items-center gap-3 flex-wrap">
-      <a
-        href="/"
-        class="px-3 py-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-700 text-xs font-bold transition"
-      >
-        ← Voltar à Visão Global
-      </a>
-
-      <span class="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">
+      <span class="text-xs font-bold uppercase tracking-wider text-slate-400">
         Filtro Loja:
       </span>
       <select
@@ -24,12 +17,6 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
         class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:border-amber-400 focus:outline-none"
       >
         <option value="ALL">Todas as Lojas</option>
-        <option value="FNAC Colombo (Lisboa)">FNAC Colombo (Lisboa)</option>
-        <option value="FNAC Vasco da Gama">FNAC Vasco da Gama</option>
-        <option value="FNAC NorteShopping">FNAC NorteShopping</option>
-        <option value="Fnac Almada Forum">Fnac Almada Forum</option>
-        <option value="Fnac Cascaishopping">Fnac Cascaishopping</option>
-        <option value="DARTY Paris République">DARTY Paris République</option>
       </select>
 
       <span class="text-xs font-bold uppercase tracking-wider text-slate-400">
@@ -40,12 +27,6 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
         class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-sky-300 font-mono focus:border-amber-400 focus:outline-none"
       >
         <option value="ALL">Todas as Categorias</option>
-        <option value="ANDROID_BOX">🖥️ ANDROID_BOX (Box X98 Plus Passivo)</option>
-        <option value="LEDWALL">🧱 LEDWALL (Entrada / Topo)</option>
-        <option value="TV_DEMO">📺 TV_DEMO (Smart TVs Catálogo)</option>
-        <option value="LAPTOP_EXPO">💻 LAPTOP_EXPO (Portáteis Idle + Touch)</option>
-        <option value="SMARTPHONE_EXPO">📱 SMARTPHONE_EXPO (Smartphones Expo)</option>
-        <option value="TABLET_EXPO">📟 TABLET_EXPO (Tablets Expo)</option>
       </select>
 
       <button
@@ -57,226 +38,318 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
       </button>
     </div>
 
-    <div class="flex items-center gap-3">
+    <!-- BOTÕES DE AÇÃO: MODAIS DE EMPARELHAMENTO & ADB -->
+    <div class="flex items-center gap-2.5 flex-wrap">
+      <button
+        type="button"
+        id="btn-open-pairing-modal"
+        class="px-3.5 py-1.5 rounded-lg bg-[#E1A924] hover:bg-amber-400 text-black font-bold text-xs transition shadow flex items-center gap-1.5"
+      >
+        <span>⚡ + Emparelhar Terminal</span>
+      </button>
+
+      <button
+        type="button"
+        id="btn-open-adb-modal"
+        data-rbac-hide="MEDIA_MANAGER,STORE_MANAGER,DEPT_HEAD"
+        class="px-3.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-bold text-xs transition flex items-center gap-2"
+      >
+        <span>📺 Provisionamento ADB & Watchdog</span>
+        <span id="adb-count-pill" class="px-1.5 py-0.2 rounded bg-emerald-500 text-black font-black text-[10px]">
+          0 Boxes
+        </span>
+      </button>
+
       <span id="dev-active-badge" class="px-3 py-1 rounded-full text-xs font-mono font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-        0 Terminais Reais na LAN
+        0 Terminais na LAN
       </span>
     </div>
   </div>
 
-  <!-- 1. TERMINAIS REAIS ATIVOS NA REDE LOCAL (HEARTBEAT WEBSOCKET) + ESTADO DAS 4 PRIORIDADES -->
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-    <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-6">
-      <div class="flex items-center justify-between mb-4">
-        <div>
-          <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-            1. Inventário Real-Time (LAN / Heartbeat)
-          </span>
-          <h3 class="text-base font-bold text-white mt-1.5">
-            Terminais e Players Conectados Agora
-          </h3>
-        </div>
+  <!-- INVENTÁRIO REAL-TIME A 100% DA LARGURA (FULL-WIDTH) -->
+  <div class="w-full bg-slate-900 border border-slate-800 rounded-xl p-6 mb-8">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+          Inventário Real-Time (LAN / Heartbeat)
+        </span>
+        <h3 class="text-base font-bold text-white mt-1.5">
+          Terminais e Players Conectados Agora
+        </h3>
+      </div>
+      <div class="flex items-center gap-3">
         <a href="/store-wall/" class="text-xs text-sky-400 hover:underline font-semibold">
           Abrir Live Wall Visual →
         </a>
       </div>
-
-      <div id="live-devices-list" class="space-y-3 text-xs">
-        <div class="p-4 rounded-lg bg-slate-950 border border-slate-800 text-slate-400">
-          A carregar equipamentos ligados...
-        </div>
-      </div>
     </div>
 
-    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
-      <div class="flex items-center justify-between mb-4">
+    <div id="live-devices-list" class="space-y-3 text-xs">
+      <div class="p-4 rounded-lg bg-slate-950 border border-slate-800 text-slate-400">
+        A carregar equipamentos ligados...
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL: PROVISIONAMENTO & CONTROLO KIOSK ADB                           -->
+  <!-- ===================================================================== -->
+  <div
+    id="adb-modal"
+    class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+  >
+    <div class="max-w-3xl w-full bg-slate-900 border-2 border-emerald-500/60 rounded-2xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
         <div>
-          <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
-            Precedência de Programação
+          <span class="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+            Controlo Remoto ADB Integrado no NAS
           </span>
-          <h3 class="text-base font-bold text-white mt-1.5">
-            Estado das 4 Prioridades
+          <h3 class="text-base font-bold text-white mt-1">
+            📺 Provisionamento Kiosk ADB & Auto-Boot Watchdog (Boxes Android X98 Plus)
           </h3>
         </div>
-        <a href="/playlists/" class="text-xs text-amber-400 hover:underline font-semibold">
-          Playlists →
-        </a>
+        <button
+          type="button"
+          id="btn-close-adb-modal"
+          class="text-slate-400 hover:text-white text-lg font-bold p-1 rounded-lg hover:bg-slate-800 transition"
+        >
+          ✕
+        </button>
       </div>
-      <div id="priority-stack-list" class="space-y-3"></div>
+
+      <p class="text-xs text-slate-300 mb-4 leading-relaxed">
+        Ligue, abra o Player PWA em Fullscreen (Single-Tab, sem barra de tradução) e mantenha o Watchdog Pós-Reboot ativo a cada 12 segundos.
+      </p>
+
+      <form id="adb-provision-form" class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end mb-4">
+        <div class="md:col-span-4">
+          <label class="block text-xs text-slate-400 mb-1">IP da Box Android X98 Plus</label>
+          <input
+            type="text"
+            id="adb-box-ip"
+            placeholder="192.168.68.115"
+            value="192.168.68.115"
+            required
+            class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-emerald-300 focus:border-amber-400 focus:outline-none"
+          />
+        </div>
+        <div class="md:col-span-5">
+          <label class="block text-xs text-slate-400 mb-1">Endereço do Player PWA</label>
+          <input
+            type="text"
+            id="adb-player-url"
+            placeholder="http://192.168.68.117:5174"
+            required
+            class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-sky-300 focus:border-amber-400 focus:outline-none"
+          />
+        </div>
+        <div class="md:col-span-3">
+          <button
+            type="submit"
+            id="adb-submit-btn"
+            class="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs py-2.5 px-3 rounded-lg transition shadow"
+          >
+            🚀 Provisionar Box
+          </button>
+        </div>
+      </form>
+
+      <pre
+        id="adb-console-log"
+        class="hidden mb-4 p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-[11px] font-mono text-slate-300 whitespace-pre-wrap leading-relaxed"
+      ></pre>
+
+      <div class="border-t border-slate-800 pt-4">
+        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2.5">
+          Boxes Android Monitorizadas pelo Watchdog do NAS (Auto-Arranque Pós-Reboot a cada 12s)
+        </h4>
+        <div id="adb-boxes-list" class="space-y-2.5 text-xs"></div>
+      </div>
     </div>
   </div>
 
-  <!-- 2. PROVISIONAMENTO & CONTROLO KIOSK ADB (BOXES ANDROID X98 PLUS) -->
+  <!-- ===================================================================== -->
+  <!-- MODAL: EMPARELHAMENTO ZERO-TOUCH & CONFIGURAÇÃO DE EQUIPAMENTO        -->
+  <!-- ===================================================================== -->
   <div
-    data-rbac-hide="MEDIA_MANAGER,STORE_MANAGER,DEPT_HEAD"
-    class="bg-slate-900 border border-slate-800 rounded-xl p-6 mb-8"
+    id="pairing-modal"
+    class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
   >
-    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-slate-800 pb-4 mb-5">
-      <div>
-        <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-          2. Controlo Remoto ADB Integrado no NAS • Sem precisar de SSH/Bash
-        </span>
-        <h3 class="text-base font-bold text-white mt-1.5">
-          📺 Provisionamento Kiosk ADB & Auto-Boot Watchdog (Boxes Android X98 Plus)
-        </h3>
-        <p class="text-xs text-slate-400">
-          Ligue, abra o Player PWA em Fullscreen (Single-Tab, sem barra de tradução) e mantenha o Watchdog Pós-Reboot ativo a cada 12 segundos.
-        </p>
-      </div>
-    </div>
-
-    <form id="adb-provision-form" class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-      <div class="md:col-span-3">
-        <label class="block text-xs text-slate-400 mb-1">IP da Box Android X98 Plus</label>
-        <input
-          type="text"
-          id="adb-box-ip"
-          placeholder="192.168.68.115"
-          value="192.168.68.115"
-          required
-          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-emerald-300 focus:border-amber-400 focus:outline-none"
-        />
-      </div>
-      <div class="md:col-span-5">
-        <label class="block text-xs text-slate-400 mb-1">Endereço do Player PWA (NAS / Servidor)</label>
-        <input
-          type="text"
-          id="adb-player-url"
-          placeholder="http://192.168.68.117:5174"
-          required
-          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-sky-300 focus:border-amber-400 focus:outline-none"
-        />
-      </div>
-      <div class="md:col-span-4">
+    <div class="max-w-2xl w-full bg-slate-900 border-2 border-[#E1A924] rounded-2xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+        <div>
+          <span class="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+            Emparelhamento & Setup de Terminal
+          </span>
+          <h3 id="pairing-modal-title" class="text-base font-bold text-white mt-1">
+            Configurar Equipamento
+          </h3>
+        </div>
         <button
-          type="submit"
-          id="adb-submit-btn"
-          class="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-black text-sm py-2 px-4 rounded-lg transition shadow"
+          type="button"
+          id="btn-close-pairing-modal"
+          class="text-slate-400 hover:text-white text-lg font-bold p-1 rounded-lg hover:bg-slate-800 transition"
         >
-          🚀 Provisionar & Abrir Player na Box
+          ✕
         </button>
       </div>
-    </form>
 
-    <pre
-      id="adb-console-log"
-      class="hidden mt-4 p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-[11px] font-mono text-slate-300 whitespace-pre-wrap leading-relaxed"
-    ></pre>
+      <p class="text-xs text-slate-300 mb-4">
+        Associe o código único do ecrã à Loja, Zona, Categoria, Formato e ajuste a orientação se necessário.
+      </p>
 
-    <div class="mt-5">
-      <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2.5">
-        Boxes Android Monitorizadas pelo Watchdog do NAS (Auto-Arranque Pós-Reboot a cada 12s)
-      </h4>
-      <div id="adb-boxes-list" class="space-y-2.5 text-xs"></div>
+      <form id="pairing-form" class="space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Código de Emparelhamento ou UID</label>
+            <input
+              type="text"
+              id="pair-code"
+              placeholder="NX-849201"
+              required
+              class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono uppercase text-amber-300 focus:border-amber-400 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Nome Amigável do Terminal</label>
+            <input
+              type="text"
+              id="pair-name"
+              placeholder="Ex: Box X98 Entrada Principal"
+              required
+              class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-amber-400 focus:outline-none"
+            />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Loja de Destino</label>
+            <select
+              id="pair-store"
+              class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200"
+            ></select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Zona / Área de Loja</label>
+            <select
+              id="pair-zone"
+              class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200"
+            ></select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Categoria / Tipologia</label>
+            <select
+              id="pair-category"
+              class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200"
+            ></select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Formato / Resolução</label>
+            <select
+              id="pair-profile"
+              class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-emerald-300"
+            ></select>
+          </div>
+        </div>
+
+        <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between">
+          <div>
+            <span class="text-xs font-bold text-amber-300 block">🔄 Inversão de Ecrã 180° ("Pernas para o ar")</span>
+            <span class="text-[11px] text-slate-400">Ative caso o ecrã físico tenha sido instalado de cabeça para baixo.</span>
+          </div>
+          <input type="checkbox" id="pair-invert180" class="accent-amber-400 w-5 h-5 cursor-pointer" />
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-2">
+          <button
+            type="button"
+            id="btn-cancel-pairing"
+            class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            class="px-5 py-2 rounded-lg bg-[#E1A924] hover:bg-amber-400 text-black font-black text-xs transition shadow"
+          >
+            Guardar Configuração
+          </button>
+        </div>
+      </form>
+
+      <div
+        id="pair-feedback"
+        class="hidden mt-3 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-300 font-mono"
+      ></div>
     </div>
-  </div>
-
-  <!-- 3. EMPARELHAMENTO ZERO-TOUCH (CÓDIGO 6 DÍGITOS) & CONFIGURAÇÃO DE LOJA/ZONA -->
-  <div
-    id="pairing-section"
-    data-rbac-hide="MEDIA_MANAGER,STORE_MANAGER,DEPT_HEAD"
-    class="bg-slate-900 border border-slate-800 rounded-xl p-6"
-  >
-    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-slate-800 pb-4 mb-5">
-      <div>
-        <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-          3. Emparelhamento Zero-Touch & Reconfiguração de Terminal
-        </span>
-        <h3 class="text-base font-bold text-white mt-1.5">
-          Aprovar Código de 6 Dígitos ou Alterar Nome / Loja / Modo de Operação
-        </h3>
-        <p class="text-xs text-slate-400">
-          Clique em <strong>"✎ Configurar"</strong> num equipamento da lista acima para carregar o seu código aqui e mudar o nome, loja ou modo (Passivo, Catálogo TV Demo ou Touch Screensaver).
-        </p>
-      </div>
-    </div>
-
-    <form id="pairing-form" class="grid grid-cols-1 md:grid-cols-8 gap-3 items-end">
-      <div>
-        <label class="block text-xs text-slate-400 mb-1">Código ou UID no Ecrã</label>
-        <input
-          type="text"
-          id="pair-code"
-          placeholder="NX-849201"
-          value="NX-849201"
-          required
-          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono uppercase text-amber-300 focus:border-amber-400 focus:outline-none"
-        />
-      </div>
-      <div>
-        <label class="block text-xs text-slate-400 mb-1">Nome do Terminal</label>
-        <input
-          type="text"
-          id="pair-name"
-          placeholder="Box X98 Entrada Colombo"
-          required
-          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-amber-400 focus:outline-none"
-        />
-      </div>
-      <div>
-        <label class="block text-xs text-slate-400 mb-1">Loja (Insígnia)</label>
-        <select
-          id="pair-store"
-          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200"
-        >
-          <option value="Fnac Colombo">Fnac Colombo</option>
-        </select>
-      </div>
-      <div>
-        <label class="block text-xs text-slate-400 mb-1">Zona / Área de Loja</label>
-        <select
-          id="pair-zone"
-          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200"
-        >
-          <option value="ENTRANCE_LEDWALL">LEDwall Entrada de Loja</option>
-        </select>
-      </div>
-      <div>
-        <label class="block text-xs text-slate-400 mb-1">Categoria / Tipologia</label>
-        <select
-          id="pair-category"
-          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200"
-        >
-          <option value="ANDROID_BOX">ANDROID_BOX (X98 Plus Passivo)</option>
-        </select>
-      </div>
-      <div>
-        <label class="block text-xs text-slate-400 mb-1">Formato Ecrã</label>
-        <select
-          id="pair-profile"
-          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-emerald-300"
-        >
-          <option value="16:9">1920x1080 (16:9)</option>
-          <option value="9:16">1080x1920 (9:16)</option>
-          <option value="32:9">3840x1080 (32:9)</option>
-        </select>
-      </div>
-      <div class="flex items-center pb-1">
-        <label class="flex items-center gap-1.5 text-xs font-bold text-amber-300 cursor-pointer bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 w-full">
-          <input type="checkbox" id="pair-invert180" class="accent-amber-400 w-4 h-4" />
-          <span>🔄 Inverter 180°</span>
-        </label>
-      </div>
-      <div>
-        <button
-          type="submit"
-          class="w-full bg-[#E1A924] hover:bg-amber-400 text-black font-bold text-sm py-2 px-4 rounded-lg transition shadow"
-        >
-          Guardar / Emparelhar
-        </button>
-      </div>
-    </form>
-    <div
-      id="pair-feedback"
-      class="hidden mt-3 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-300 font-mono"
-    ></div>
   </div>
 
   <script is:inline>
     const API_BASE = `${window.location.protocol}//${window.location.hostname}:3000`;
     let isPlayerUrlInitialized = false;
 
-    // Lê parâmetros de drill-down vindos da Visão Global (?store=...&category=...)
+    // Modais
+    const adbModal = document.getElementById('adb-modal');
+    const pairingModal = document.getElementById('pairing-modal');
+    const btnOpenAdb = document.getElementById('btn-open-adb-modal');
+    const btnCloseAdb = document.getElementById('btn-close-adb-modal');
+    const btnOpenPairing = document.getElementById('btn-open-pairing-modal');
+    const btnClosePairing = document.getElementById('btn-close-pairing-modal');
+    const btnCancelPairing = document.getElementById('btn-cancel-pairing');
+    const pairingModalTitle = document.getElementById('pairing-modal-title');
+
+    function openAdbModal() {
+      adbModal?.classList.remove('hidden');
+    }
+    function closeAdbModal() {
+      adbModal?.classList.add('hidden');
+    }
+    function openPairingModal(isNew = false) {
+      if (isNew) {
+        if (pairingModalTitle) pairingModalTitle.textContent = 'Emparelhar Novo Terminal (Zero-Touch)';
+        const codeInput = document.getElementById('pair-code');
+        if (codeInput && !codeInput.value) {
+          codeInput.value = `NX-${Math.floor(100000 + Math.random() * 900000)}`;
+        }
+        document.getElementById('pair-name').value = '';
+        const invEl = document.getElementById('pair-invert180');
+        if (invEl) invEl.checked = false;
+      }
+      pairingModal?.classList.remove('hidden');
+    }
+    function closePairingModal() {
+      pairingModal?.classList.add('hidden');
+      const feedback = document.getElementById('pair-feedback');
+      if (feedback) feedback.classList.add('hidden');
+    }
+
+    btnOpenAdb?.addEventListener('click', openAdbModal);
+    btnCloseAdb?.addEventListener('click', closeAdbModal);
+    btnOpenPairing?.addEventListener('click', () => openPairingModal(true));
+    btnClosePairing?.addEventListener('click', closePairingModal);
+    btnCancelPairing?.addEventListener('click', closePairingModal);
+
+    // Fecha modal clicando no backdrop
+    adbModal?.addEventListener('click', (e) => {
+      if (e.target === adbModal) closeAdbModal();
+    });
+    pairingModal?.addEventListener('click', (e) => {
+      if (e.target === pairingModal) closePairingModal();
+    });
+
+    // Tecla Escape para fechar modais
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeAdbModal();
+        closePairingModal();
+      }
+    });
+
+    // Filtros
     const urlParams = new URLSearchParams(window.location.search);
     const initialStore = urlParams.get('store');
     const initialCategory = urlParams.get('category');
@@ -285,7 +358,6 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     const catFilterEl = document.getElementById('dev-filter-category');
 
     if (initialStore && storeFilterEl) {
-      // Se a loja não existir no select, adiciona-a dinamicamente
       const exists = Array.from(storeFilterEl.options).some((o) => o.value === initialStore);
       if (!exists) {
         const opt = document.createElement('option');
@@ -310,8 +382,14 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     storeFilterEl?.addEventListener('change', refreshDevicesPage);
     catFilterEl?.addEventListener('change', refreshDevicesPage);
 
+    // Recarrega sempre que a insígnia (FNAC / DARTY) for alternada no topo
+    window.addEventListener('invision:brand-change', () => {
+      refreshDevicesPage();
+    });
+
     async function refreshDevicesPage() {
       try {
+        const activeBrand = localStorage.getItem('invision_brand') || 'FNAC';
         const res = await fetch(`${API_BASE}/api/v1/live/state`);
         const st = await res.json();
 
@@ -325,12 +403,15 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
           isPlayerUrlInitialized = true;
         }
 
-        // Sincroniza selects com os Catálogos Dinâmicos de /settings/
-        if (Array.isArray(st.storesCatalog) && st.storesCatalog.length > 0) {
+        // Lojas da insígnia ativa
+        const allStores = st.storesCatalog || [];
+        const brandStores = allStores.filter((s) => !s.brand || s.brand === activeBrand);
+
+        if (Array.isArray(brandStores) && brandStores.length > 0) {
           const pairStoreEl = document.getElementById('pair-store');
           if (pairStoreEl) {
             const curVal = pairStoreEl.value;
-            pairStoreEl.innerHTML = st.storesCatalog
+            pairStoreEl.innerHTML = brandStores
               .map(
                 (s) =>
                   `<option value="${s.name}">${s.name} (${s.region || s.city}${s.gatewaySubnet ? ' • ' + s.gatewaySubnet : ''})</option>`
@@ -343,8 +424,8 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
           if (storeFilterEl) {
             const curFilter = storeFilterEl.value;
             storeFilterEl.innerHTML =
-              `<option value="ALL">Todas as Lojas (${st.storesCatalog.length})</option>` +
-              st.storesCatalog
+              `<option value="ALL">Todas as Lojas (${brandStores.length})</option>` +
+              brandStores
                 .map((s) => `<option value="${s.name}">${s.name} (${s.city})</option>`)
                 .join('');
             if (curFilter && Array.from(storeFilterEl.options).some((o) => o.value === curFilter)) {
@@ -407,16 +488,22 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
         }
 
         // Renderiza Boxes Android ADB
+        const adbCountPill = document.getElementById('adb-count-pill');
+        const adbBoxes = st.adbBoxes || [];
+        if (adbCountPill) {
+          adbCountPill.textContent = `${adbBoxes.length} ${adbBoxes.length === 1 ? 'Box' : 'Boxes'}`;
+        }
+
         const adbBoxesEl = document.getElementById('adb-boxes-list');
         if (adbBoxesEl) {
-          if (!st.adbBoxes || st.adbBoxes.length === 0) {
+          if (adbBoxes.length === 0) {
             adbBoxesEl.innerHTML = `
               <div class="p-3 rounded-lg bg-slate-950 border border-dashed border-slate-800 text-slate-400">
-                Nenhuma Box Android registada no Watchdog ADB. Introduza o IP acima (ex: <code>192.168.68.115</code>) e clique em <strong>Provisionar & Abrir Player na Box</strong>.
+                Nenhuma Box Android registada no Watchdog ADB. Introduza o IP acima (ex: <code>192.168.68.115</code>) e clique em <strong>Provisionar Box</strong>.
               </div>
             `;
           } else {
-            adbBoxesEl.innerHTML = st.adbBoxes
+            adbBoxesEl.innerHTML = adbBoxes
               .map(
                 (b) => `
                 <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
@@ -436,7 +523,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
                           ? 'bg-sky-500/15 text-sky-300 border border-sky-500/30'
                           : 'bg-slate-800 text-slate-400'
                       }">
-                        Watchdog Pós-Reboot: ${b.autoWatchdog !== false ? 'ATIVO (12s)' : 'PAUSADO'}
+                        Watchdog: ${b.autoWatchdog !== false ? 'ATIVO (12s)' : 'PAUSADO'}
                       </span>
                     </div>
                     <p class="text-[11px] font-mono text-slate-400 mt-1">
@@ -451,7 +538,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
                       data-adb-url="${b.playerUrl}"
                       class="px-2.5 py-1.5 rounded bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 font-bold text-[11px] transition"
                     >
-                      🔄 Abrir URL Player
+                      🔄 Abrir URL
                     </button>
                     <button
                       type="button"
@@ -459,7 +546,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
                       data-adb-ip="${b.boxIp}"
                       class="px-2.5 py-1.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 font-bold text-[11px] transition"
                     >
-                      ⛶ Forçar Fullscreen
+                      ⛶ Fullscreen
                     </button>
                     <button
                       type="button"
@@ -467,7 +554,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
                       data-adb-ip="${b.boxIp}"
                       class="px-2.5 py-1.5 rounded bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 font-bold text-[11px] transition"
                     >
-                      🔌 Reiniciar Box
+                      🔌 Reiniciar
                     </button>
                     <button
                       type="button"
@@ -511,11 +598,22 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
           }
         }
 
-        // Filtra equipamentos reais
+        // Filtra equipamentos pela INSÍGNIA ATIVA (FNAC ou DARTY)
         const selStore = storeFilterEl?.value || 'ALL';
         const selCat = catFilterEl?.value || 'ALL';
 
-        const allDevs = st.devices || [];
+        const allDevs = (st.devices || []).filter((d) => {
+          if (d.brand && d.brand !== activeBrand) return false;
+          // Se o equipamento tiver loja atribuída, confirma que a loja é da marca ativa
+          if (d.storeName) {
+            const matchedStore = allStores.find((s) => s.name === d.storeName);
+            if (matchedStore && matchedStore.brand && matchedStore.brand !== activeBrand) {
+              return false;
+            }
+          }
+          return true;
+        });
+
         const filteredDevs = allDevs.filter((d) => {
           if (selCat !== 'ALL' && d.category !== selCat) return false;
           if (
@@ -531,24 +629,34 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
         const onlineCount = allDevs.filter((d) => d.status === 'ONLINE').length;
         const badgeEl = document.getElementById('dev-active-badge');
         if (badgeEl) {
-          badgeEl.textContent = `${onlineCount}/${allDevs.length} Terminais Reais Online na LAN`;
+          badgeEl.textContent = `${onlineCount}/${allDevs.length} Terminais (${activeBrand}) na LAN`;
         }
 
         const devList = document.getElementById('live-devices-list');
         if (filteredDevs.length === 0) {
           devList.innerHTML = `
-            <div class="p-4 rounded-lg bg-slate-950 border border-dashed border-slate-800 text-slate-400">
-              Nenhum terminal encontrado com os filtros atuais (${selStore} / ${selCat}). Clique em <strong>Limpar Filtros</strong> ou provisione uma Box Android abaixo.
+            <div class="p-6 rounded-lg bg-slate-950 border border-dashed border-slate-800 text-center text-slate-400">
+              Nenhum terminal ${activeBrand} encontrado com os filtros atuais (${selStore} / ${selCat}).
+              <div class="mt-3">
+                <button
+                  type="button"
+                  id="btn-empty-pair"
+                  class="px-3 py-1.5 rounded-lg bg-[#E1A924] hover:bg-amber-400 text-black font-bold text-xs transition"
+                >
+                  ⚡ Emparelhar Novo Terminal
+                </button>
+              </div>
             </div>
           `;
+          document.getElementById('btn-empty-pair')?.addEventListener('click', () => openPairingModal(true));
         } else {
           devList.innerHTML = filteredDevs
             .map(
               (d) => `
-              <div class="p-3.5 rounded-xl bg-slate-950 border ${
+              <div class="p-4 rounded-xl bg-slate-950 border ${
                 d.status === 'PENDING_APPROVAL' ? 'border-amber-400 ring-1 ring-amber-400' : 'border-slate-800'
-              } flex flex-col md:flex-row md:items-center justify-between gap-3">
-                <div>
+              } flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div class="space-y-1.5">
                   <div class="flex items-center gap-2 flex-wrap">
                     <span class="w-2.5 h-2.5 rounded-full ${
                       d.status === 'ONLINE'
@@ -557,21 +665,21 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
                         ? 'bg-amber-400 animate-pulse'
                         : 'bg-rose-500'
                     }"></span>
-                    <strong class="text-white text-xs">${d.name}</strong>
-                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">
+                    <strong class="text-white text-sm">${d.name}</strong>
+                    <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
                       ID: ${d.pairingCode || d.hardwareUid}
                     </span>
-                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-sky-300">${d.category}</span>
-                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800">${d.storeName || 'Fnac Colombo'}</span>
-                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-900 text-emerald-300 border border-slate-800">${d.screenProfile || '16:9'}</span>
+                    <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-sky-300 border border-slate-700 font-semibold">${d.category}</span>
+                    <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-800">${d.storeName || 'Loja Principal'}</span>
+                    <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900 text-emerald-300 border border-slate-800">${d.screenProfile || '16:9'}</span>
                     ${
                       d.invert180
-                        ? `<span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold">🔄 180° INVERTIDO</span>`
+                        ? `<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold">🔄 180° INVERTIDO</span>`
                         : ''
                     }
                   </div>
-                  <p class="text-[11px] font-mono text-slate-400 mt-1">
-                    ▶ Em exibição: <span class="text-emerald-300 font-semibold">${d.currentMediaTitle}</span> • Zona: <strong>${d.zone || 'ENTRANCE_LEDWALL'}</strong> • IP: ${d.clientIp || 'LAN'}
+                  <p class="text-xs font-mono text-slate-400">
+                    ▶ Em exibição: <span class="text-emerald-300 font-semibold">${d.currentMediaTitle}</span> • Zona: <strong class="text-slate-300">${d.zone || 'ENTRANCE_LEDWALL'}</strong> • IP: <span class="text-sky-300">${d.clientIp || 'LAN'}</span> • Prioridade: <strong>${d.activePriority || 'NORMAL'}</strong>
                   </p>
                 </div>
                 <div class="flex items-center gap-2 shrink-0 flex-wrap">
@@ -579,11 +687,11 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
                     type="button"
                     data-invert-device="${d.hardwareUid}"
                     data-invert-current="${d.invert180 ? '1' : '0'}"
-                    class="px-2.5 py-1.5 rounded ${
+                    class="px-3 py-1.5 rounded-lg ${
                       d.invert180
                         ? 'bg-amber-500 text-black font-black'
                         : 'bg-slate-900 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold'
-                    } text-[11px] transition"
+                    } text-xs transition"
                     title="Inverter Ecrã 180° (Pernas para o ar) em Tempo Real"
                   >
                     🔄 ${d.invert180 ? '180° ON' : 'Inverter 180°'}
@@ -592,19 +700,19 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
                     type="button"
                     data-pick-device="${d.pairingCode || d.hardwareUid}"
                     data-pick-name="${d.name}"
-                    data-pick-store="${d.storeName || 'Fnac Colombo'}"
+                    data-pick-store="${d.storeName || ''}"
                     data-pick-zone="${d.zone || 'ENTRANCE_LEDWALL'}"
                     data-pick-cat="${d.category || 'ANDROID_BOX'}"
                     data-pick-profile="${d.screenProfile || '16:9'}"
                     data-pick-invert="${d.invert180 ? '1' : '0'}"
-                    class="px-2.5 py-1.5 rounded bg-[#E1A924] hover:bg-amber-400 text-black font-bold text-[11px] transition"
+                    class="px-3 py-1.5 rounded-lg bg-[#E1A924] hover:bg-amber-400 text-black font-bold text-xs transition shadow"
                   >
-                    ${d.status === 'PENDING_APPROVAL' ? '⚡ Emparelhar Esta Box' : '✎ Configurar'}
+                    ${d.status === 'PENDING_APPROVAL' ? '⚡ Emparelhar' : '✎ Configurar'}
                   </button>
                   <button
                     type="button"
                     data-remove-device="${d.hardwareUid}"
-                    class="px-2 py-1.5 rounded bg-slate-900 hover:bg-rose-500/20 text-rose-400 border border-slate-800 text-[11px] transition"
+                    class="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-rose-500/20 text-rose-400 border border-slate-800 text-xs transition"
                     title="Remover equipamento da lista"
                   >
                     ✕
@@ -630,8 +738,12 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
 
           document.querySelectorAll('[data-pick-device]').forEach((btn) => {
             btn.addEventListener('click', () => {
+              const devName = btn.getAttribute('data-pick-name');
+              if (pairingModalTitle) {
+                pairingModalTitle.textContent = `Configurar Terminal: ${devName}`;
+              }
               document.getElementById('pair-code').value = btn.getAttribute('data-pick-device');
-              document.getElementById('pair-name').value = btn.getAttribute('data-pick-name');
+              document.getElementById('pair-name').value = devName;
               const stName = btn.getAttribute('data-pick-store');
               if (stName) document.getElementById('pair-store').value = stName;
               const zn = btn.getAttribute('data-pick-zone');
@@ -643,8 +755,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
               const inv = btn.getAttribute('data-pick-invert') === '1';
               const invEl = document.getElementById('pair-invert180');
               if (invEl) invEl.checked = inv;
-              document.getElementById('pairing-section')?.scrollIntoView({ behavior: 'smooth' });
-              document.getElementById('pair-name').focus();
+              openPairingModal(false);
             });
           });
 
@@ -658,39 +769,6 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
             });
           });
         }
-
-        // Stack de Prioridades
-        const levels = [
-          { code: 'EXCLUSIVA', label: '1. EXCLUSIVA (Override Total)', desc: 'Silencia Prioritária, Normal e Fallback.' },
-          { code: 'PRIORITARIA', label: '2. PRIORITÁRIA (Campanha)', desc: 'Silencia a 100% a Normal.' },
-          { code: 'NORMAL', label: '3. NORMAL (Slots / SoV)', desc: 'Programação regular de loja.' },
-          { code: 'FALLBACK', label: '4. FALLBACK (Segurança)', desc: 'Toca quando não há campanha superior.' },
-        ];
-
-        const winningPriority = st.effectivePlayback?.activePriority || 'FALLBACK';
-        document.getElementById('priority-stack-list').innerHTML = levels
-          .map((lvl) => {
-            const count = (st.playlists || []).filter(
-              (p) => p.priority === lvl.code && p.isActive && p.items?.length > 0
-            ).length;
-            const isWinning = winningPriority === lvl.code;
-            return `
-              <div class="p-3 rounded-lg bg-slate-950 border ${
-                isWinning ? 'border-[#E1A924] ring-1 ring-[#E1A924]' : 'border-slate-800'
-              } flex items-center justify-between">
-                <div>
-                  <span class="text-xs font-black text-white uppercase">${lvl.label}</span>
-                  <p class="text-[11px] text-slate-400 mt-0.5">${lvl.desc}</p>
-                </div>
-                <span class="font-mono text-[11px] px-2 py-1 rounded ${
-                  isWinning ? 'bg-emerald-500 text-black font-black' : 'bg-slate-800 text-slate-300'
-                }">
-                  ${isWinning ? '● NO AR' : `${count} Ativa(s)`}
-                </span>
-              </div>
-            `;
-          })
-          .join('');
       } catch {
         // ignore
       }
@@ -729,6 +807,9 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
         pairFeedback.classList.remove('hidden');
         pairFeedback.textContent = `✓ [GUARDADO VIA WEBSOCKET] Terminal "${data.device.name}" (${data.device.storeName} • ${data.device.category} • ${data.device.screenProfile}${data.device.invert180 ? ' • 🔄 180° Invertido' : ''}) atualizado com sucesso!`;
         refreshDevicesPage();
+        setTimeout(() => {
+          closePairingModal();
+        }, 1200);
       }
     });
 
@@ -772,7 +853,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
       } finally {
         if (adbSubmitBtn) {
           adbSubmitBtn.disabled = false;
-          adbSubmitBtn.textContent = '🚀 Provisionar & Abrir Player na Box';
+          adbSubmitBtn.textContent = '🚀 Provisionar Box';
         }
       }
     });
@@ -781,4 +862,3 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     setInterval(refreshDevicesPage, 3000);
   </script>
 </DashboardLayout>
-

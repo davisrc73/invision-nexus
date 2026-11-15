@@ -85,14 +85,17 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     }
 
     function renderTables() {
+      const activeBrand = localStorage.getItem('invision_brand') || 'FNAC';
       const popBody = document.getElementById('pop-table-body');
-      const popRecords = latestState.popRecords || [];
+      const popRecords = (latestState.popRecords || []).filter(
+        (r) => !r.brand || r.brand === activeBrand
+      );
 
       if (popRecords.length === 0) {
         popBody.innerHTML = `
           <tr>
             <td colspan="6" class="py-6 px-3 text-slate-400 text-center">
-              A aguardar conclusão do primeiro vídeo/imagem no Player (a cada ~8s o Player envia automaticamente o registo de Proof of Play)...
+              A aguardar conclusão do primeiro vídeo/imagem no Player da <strong>${activeBrand}</strong> (a cada ~8s o Player envia automaticamente o registo de Proof of Play)...
             </td>
           </tr>
         `;
@@ -163,22 +166,26 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     }
 
     document.getElementById('btn-export-pop-csv')?.addEventListener('click', () => {
+      const activeBrand = localStorage.getItem('invision_brand') || 'FNAC';
       const rows = [
         ['Insignia', 'Playlist', 'Conteudo', 'Prioridade', 'Modo', 'Total_Plays', 'Segundos_Exibidos'],
-        ...(latestState.popRecords || []).map((r) => [
-          r.brand,
-          r.playlistName,
-          r.mediaTitle,
-          r.priority,
-          r.schedulingMode,
-          String(r.playCount),
-          (r.totalDurationMs / 1000).toFixed(1),
-        ]),
+        ...(latestState.popRecords || [])
+          .filter((r) => !r.brand || r.brand === activeBrand)
+          .map((r) => [
+            r.brand,
+            r.playlistName,
+            r.mediaTitle,
+            r.priority,
+            r.schedulingMode,
+            String(r.playCount),
+            (r.totalDurationMs / 1000).toFixed(1),
+          ]),
       ];
-      downloadCsv('invision_nexus_live_proof_of_play.csv', rows);
+      downloadCsv(`invision_nexus_${activeBrand.toLowerCase()}_proof_of_play.csv`, rows);
     });
 
     document.getElementById('btn-export-touch-csv')?.addEventListener('click', () => {
+      const activeBrand = localStorage.getItem('invision_brand') || 'FNAC';
       const rows = [
         ['Tipo_Interacao', 'Referencia_Categoria', 'Total_Interacoes', 'Segundos_Envolvimento'],
         ...(latestState.interactionRecords || []).map((r) => [
@@ -188,9 +195,10 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
           String(r.totalSeconds),
         ]),
       ];
-      downloadCsv('invision_nexus_live_interactions.csv', rows);
+      downloadCsv(`invision_nexus_${activeBrand.toLowerCase()}_interactions.csv`, rows);
     });
 
+    window.addEventListener('invision:brand-change', () => renderTables());
     refreshTelemetryPage();
     setInterval(refreshTelemetryPage, 2500);
   </script>
