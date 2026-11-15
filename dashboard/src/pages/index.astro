@@ -327,8 +327,16 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
 
     let liveState = null;
     let mapInstance = null;
+    let mapTileLayer = null;
     let mapMarkersLayer = null;
     let isMapCollapsed = false;
+
+    function getMapTileUrl() {
+      const effectiveTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+      return effectiveTheme === 'light'
+        ? 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
+        : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+    }
 
     function initMapIfNeeded() {
       if (mapInstance || typeof window.L === 'undefined') return;
@@ -342,14 +350,20 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
         attributionControl: false,
       });
 
-      // CartoDB Dark Matter Tiles (100% Gratuito, limpo e sem marca de água!)
-      window.L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      // CartoDB Tiles (Alterna automaticamente entre Voyager Light no Modo Dia e Dark Matter no Modo Noite!)
+      mapTileLayer = window.L.tileLayer(getMapTileUrl(), {
         maxZoom: 18,
         subdomains: 'abcd',
       }).addTo(mapInstance);
 
       mapMarkersLayer = window.L.layerGroup().addTo(mapInstance);
     }
+
+    window.addEventListener('invision:theme-change', () => {
+      if (mapTileLayer) {
+        mapTileLayer.setUrl(getMapTileUrl());
+      }
+    });
 
     function computeStoreRows() {
       if (!liveState) return [];

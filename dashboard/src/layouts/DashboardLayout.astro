@@ -8,12 +8,114 @@ const { title, activeNav = 'overview' } = Astro.props;
 ---
 
 <!doctype html>
-<html lang="pt" translate="no" class="dark notranslate">
+<html lang="pt" translate="no" data-theme="dark" class="dark notranslate">
   <head>
     <meta charset="UTF-8" />
     <meta name="google" content="notranslate" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title} | Invision Nexus — Fnac & Darty</title>
+    <style is:global>
+      /* ===================================================================== */
+      /* TEMA DIA / NOITE (LIGHT & DARK MODE ENGINE — AUTO / MANUAL)           */
+      /* ===================================================================== */
+      html[data-theme='light'] body {
+        background-color: #f1f5f9 !important;
+        color: #0f172a !important;
+      }
+
+      /* Superfícies e Cartões no Modo Dia (Inspirado no Bizcastz Clean Light) */
+      html[data-theme='light'] .bg-slate-950,
+      html[data-theme='light'] .bg-slate-950\/90,
+      html[data-theme='light'] .bg-slate-950\/60,
+      html[data-theme='light'] .bg-slate-950\/50,
+      html[data-theme='light'] .bg-slate-950\/40 {
+        background-color: #f8fafc !important;
+      }
+
+      html[data-theme='light'] .bg-slate-900,
+      html[data-theme='light'] .bg-slate-900\/90,
+      html[data-theme='light'] .bg-slate-900\/70,
+      html[data-theme='light'] .bg-slate-900\/60 {
+        background-color: #ffffff !important;
+        box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.06), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+      }
+
+      html[data-theme='light'] .bg-slate-800 {
+        background-color: #e2e8f0 !important;
+      }
+
+      html[data-theme='light'] .hover\:bg-slate-800:hover,
+      html[data-theme='light'] .hover\:bg-slate-800\/60:hover,
+      html[data-theme='light'] .hover\:bg-slate-800\/50:hover {
+        background-color: #f1f5f9 !important;
+      }
+
+      /* Bordas e Divisores no Modo Dia */
+      html[data-theme='light'] .border-slate-800,
+      html[data-theme='light'] .border-slate-800\/80,
+      html[data-theme='light'] .border-slate-900 {
+        border-color: #e2e8f0 !important;
+      }
+
+      html[data-theme='light'] .border-slate-700 {
+        border-color: #cbd5e1 !important;
+      }
+
+      html[data-theme='light'] .divide-slate-800\/70 > :not([hidden]) ~ :not([hidden]) {
+        border-color: #e2e8f0 !important;
+      }
+
+      /* Tipografia e Contraste no Modo Dia */
+      html[data-theme='light'] .text-white,
+      html[data-theme='light'] .text-slate-100,
+      html[data-theme='light'] .text-slate-200 {
+        color: #0f172a !important;
+      }
+
+      html[data-theme='light'] .text-slate-300 {
+        color: #334155 !important;
+      }
+
+      html[data-theme='light'] .text-slate-400,
+      html[data-theme='light'] .text-slate-500 {
+        color: #64748b !important;
+      }
+
+      /* Cores de Acento Mais Legíveis sobre Fundo Claro */
+      html[data-theme='light'] .text-amber-300,
+      html[data-theme='light'] .text-amber-400 {
+        color: #b45309 !important;
+      }
+
+      html[data-theme='light'] .text-emerald-300,
+      html[data-theme='light'] .text-emerald-400 {
+        color: #047857 !important;
+      }
+
+      html[data-theme='light'] .text-sky-300,
+      html[data-theme='light'] .text-sky-400 {
+        color: #0369a1 !important;
+      }
+
+      html[data-theme='light'] .text-purple-300,
+      html[data-theme='light'] .text-purple-400 {
+        color: #6d28d9 !important;
+      }
+
+      html[data-theme='light'] .text-indigo-300 {
+        color: #4338ca !important;
+      }
+
+      html[data-theme='light'] .text-rose-300,
+      html[data-theme='light'] .text-rose-400 {
+        color: #be123c !important;
+      }
+
+      /* Preserva texto branco em badges vermelhos Darty */
+      html[data-theme='light'] .bg-\[\#E30613\].text-white {
+        color: #ffffff !important;
+      }
+    </style>
   </head>
   <body
     id="app-body"
@@ -220,12 +322,43 @@ const { title, activeNav = 'overview' } = Astro.props;
     <!-- ÁREA PRINCIPAL -->
     <div class="flex-1 flex flex-col min-w-0">
       <!-- Topbar -->
-      <header class="h-16 bg-slate-900/70 border-b border-slate-800 px-8 flex items-center justify-between">
+      <header class="h-16 bg-slate-900/70 border-b border-slate-800 px-8 flex items-center justify-between gap-4">
         <div>
           <h2 class="text-lg font-bold text-white">{title}</h2>
         </div>
-        <div class="flex items-center gap-4">
-          <div id="rbac-banner" class="px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/30">
+        <div class="flex items-center gap-3">
+          <!-- Módulo de Tema Dia / Noite / Auto -->
+          <div class="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
+            <button
+              type="button"
+              data-theme-mode="LIGHT"
+              class="theme-mode-btn px-2.5 py-1 rounded-md text-xs font-bold transition flex items-center gap-1"
+              title="Modo Dia (Claro)"
+            >
+              <span>☀️</span>
+              <span class="hidden sm:inline">Dia</span>
+            </button>
+            <button
+              type="button"
+              data-theme-mode="DARK"
+              class="theme-mode-btn px-2.5 py-1 rounded-md text-xs font-bold transition flex items-center gap-1"
+              title="Modo Noite (Escuro)"
+            >
+              <span>🌙</span>
+              <span class="hidden sm:inline">Noite</span>
+            </button>
+            <button
+              type="button"
+              data-theme-mode="AUTO"
+              class="theme-mode-btn px-2.5 py-1 rounded-md text-xs font-bold transition flex items-center gap-1"
+              title="Automático (Dia 07:00–19:59 / Noite 20:00–06:59)"
+            >
+              <span>🔄</span>
+              <span id="theme-auto-label" class="hidden sm:inline">Auto</span>
+            </button>
+          </div>
+
+          <div id="rbac-banner" class="hidden xl:block px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/30">
             Modo: GLOBAL_ADMIN (Controlo Total Multimédia & Hardware)
           </div>
         </div>
@@ -332,8 +465,73 @@ const { title, activeNav = 'overview' } = Astro.props;
         roleSelector.addEventListener('change', (e) => applyRole(e.target.value));
       }
 
+      // =====================================================================
+      // MOTOR DE TEMA DIA / NOITE (MANUAL & AUTOMÁTICO POR HORÁRIO)
+      // =====================================================================
+      const themeBtns = document.querySelectorAll('[data-theme-mode]');
+      const autoLabel = document.getElementById('theme-auto-label');
+
+      function resolveEffectiveTheme(mode) {
+        if (mode === 'LIGHT') return 'light';
+        if (mode === 'DARK') return 'dark';
+        // Modo AUTO: Dia entre as 07:00 e as 19:59; Noite entre as 20:00 e as 06:59
+        const hour = new Date().getHours();
+        return hour >= 7 && hour < 20 ? 'light' : 'dark';
+      }
+
+      function applyThemeMode(mode) {
+        const cleanMode = ['LIGHT', 'DARK', 'AUTO'].includes(mode) ? mode : 'AUTO';
+        localStorage.setItem('invision_theme_mode', cleanMode);
+
+        const effective = resolveEffectiveTheme(cleanMode);
+        document.documentElement.setAttribute('data-theme', effective);
+        if (effective === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+
+        if (autoLabel) {
+          autoLabel.textContent =
+            cleanMode === 'AUTO'
+              ? `Auto (${effective === 'light' ? 'Dia' : 'Noite'})`
+              : 'Auto';
+        }
+
+        themeBtns.forEach((btn) => {
+          const m = btn.getAttribute('data-theme-mode');
+          if (m === cleanMode) {
+            btn.className =
+              'theme-mode-btn px-2.5 py-1 rounded-md text-xs font-bold bg-[#E1A924] text-black shadow transition flex items-center gap-1';
+          } else {
+            btn.className =
+              'theme-mode-btn px-2.5 py-1 rounded-md text-xs font-bold text-slate-400 hover:text-white transition flex items-center gap-1';
+          }
+        });
+
+        window.dispatchEvent(
+          new CustomEvent('invision:theme-change', {
+            detail: { mode: cleanMode, effective },
+          })
+        );
+      }
+
+      themeBtns.forEach((btn) => {
+        btn.addEventListener('click', () =>
+          applyThemeMode(btn.getAttribute('data-theme-mode'))
+        );
+      });
+
       applyBrand(localStorage.getItem('invision_brand') || 'FNAC');
       applyRole(localStorage.getItem('invision_role') || 'GLOBAL_ADMIN');
+      applyThemeMode(localStorage.getItem('invision_theme_mode') || 'AUTO');
+
+      // Reavalia a cada 60 segundos caso esteja em modo AUTO (transição automática às 07:00 e às 20:00)
+      setInterval(() => {
+        if ((localStorage.getItem('invision_theme_mode') || 'AUTO') === 'AUTO') {
+          applyThemeMode('AUTO');
+        }
+      }, 60000);
     </script>
   </body>
 </html>
