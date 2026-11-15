@@ -18,6 +18,8 @@ data/redis/
 data/storage/media/*
 data/storage/thumbs/*
 data/storage/live_state.json
+data/storage/kiosk_boxes.conf
+data/storage/kiosk_watchdog.pid
 !data/storage/media/.gitkeep
 !data/storage/thumbs/.gitkeep
 

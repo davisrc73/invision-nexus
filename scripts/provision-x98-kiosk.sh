@@ -113,13 +113,20 @@ if ! "${ADB_BIN}" devices | grep -q "${BOX_IP}:5555.*device"; then
   exit 1
 fi
 
-echo "==> [2/7] A desativar Sleep, Screensaver Android e Standby HDMI-CEC..."
+echo "==> [2/7] A ativar ADB persistente no arranque e a desativar Sleep / Standby HDMI-CEC..."
+# Garante que mesmo após desligar a Box da tomada, a porta 5555 ADB continua ativa após o boot
+"${ADB_BIN}" -s "${BOX_IP}:5555" shell setprop persist.adb.tcp.port 5555 || true
+"${ADB_BIN}" -s "${BOX_IP}:5555" shell setprop service.adb.tcp.port 5555 || true
 "${ADB_BIN}" -s "${BOX_IP}:5555" shell settings put global stay_on_while_plugged_in 7 || true
 "${ADB_BIN}" -s "${BOX_IP}:5555" shell settings put system screen_off_timeout 2147483647 || true
 "${ADB_BIN}" -s "${BOX_IP}:5555" shell settings put secure sleep_timeout -1 || true
 "${ADB_BIN}" -s "${BOX_IP}:5555" shell settings put secure screensaver_enabled 0 || true
 "${ADB_BIN}" -s "${BOX_IP}:5555" shell settings put global hdmi_control_auto_device_off_enabled 0 || true
 "${ADB_BIN}" -s "${BOX_IP}:5555" shell settings put global wifi_sleep_policy 2 || true
+
+# Obtém o Android ID físico da placa da Box como fallback determinístico (sem alterar o ID já guardado no localStorage!)
+RAW_ANDROID_ID="$("${ADB_BIN}" -s "${BOX_IP}:5555" shell settings get secure android_id 2>/dev/null | tr -d '[:space:]' | cut -c1-6 | tr '[:lower:]' '[:upper:]' || echo 'BOX01')"
+FALLBACK_HW_UID="X98-${RAW_ANDROID_ID}"
 
 echo "==> [3/7] A configurar fuso horário Europe/Lisbon e sincronização automática NTP..."
 "${ADB_BIN}" -s "${BOX_IP}:5555" shell settings put global auto_time 1 || true
@@ -134,18 +141,32 @@ CMDLINE_FLAGS="chrome --no-first-run --disable-fre --no-default-browser-check --
 "${ADB_BIN}" -s "${BOX_IP}:5555" shell chmod 666 /data/local/tmp/chrome-command-line || true
 "${ADB_BIN}" -s "${BOX_IP}:5555" shell am set-debug-app --persistent "${CHROME_PKG}" || true
 
-echo "==> [6/7] A reiniciar o Chrome (limpar cache visual antiga) e a abrir o Player PWA (${PLAYER_URL})..."
+echo "==> [6/7] A abrir o Player PWA (${PLAYER_URL}) preservando o ID registado no localStorage..."
 "${ADB_BIN}" -s "${BOX_IP}:5555" shell am force-stop "${CHROME_PKG}" || true
 sleep 1
-CACHE_BUST_URL="${PLAYER_URL}/?kiosk=$(date +%s)"
-"${ADB_BIN}" -s "${BOX_IP}:5555" shell am start -a android.intent.action.VIEW -d "${CACHE_BUST_URL}" "${CHROME_PKG}" 2>/dev/null || \
-"${ADB_BIN}" -s "${BOX_IP}:5555" shell am start -a android.intent.action.VIEW -d "${CACHE_BUST_URL}"
+LAUNCH_URL="${PLAYER_URL}/?hw_uid=${FALLBACK_HW_UID}"
+"${ADB_BIN}" -s "${BOX_IP}:5555" shell am start -a android.intent.action.VIEW -d "${LAUNCH_URL}" "${CHROME_PKG}" 2>/dev/null || \
+"${ADB_BIN}" -s "${BOX_IP}:5555" shell am start -a android.intent.action.VIEW -d "${LAUNCH_URL}"
 
-echo "==> [7/7] A aguardar carregamento do Player (4s) e a esconder a barra de ferramentas do Chrome..."
+echo "==> [7/7] A aguardar carregamento do Player (4s), ativar Fullscreen e registar Auto-Boot Watchdog..."
 sleep 4
 "${ADB_BIN}" -s "${BOX_IP}:5555" shell input tap 960 540 || true
 sleep 2
 "${ADB_BIN}" -s "${BOX_IP}:5555" shell input tap 960 540 || true
 
+# Regista esta Box no Watchdog de Auto-Boot pós-reinício
+mkdir -p ./data/storage
+touch ./data/storage/kiosk_boxes.conf
+grep -v "^${BOX_IP}|" ./data/storage/kiosk_boxes.conf > ./data/storage/kiosk_boxes.conf.tmp || true
+echo "${BOX_IP}|${PLAYER_URL}|${FALLBACK_HW_UID}" >> ./data/storage/kiosk_boxes.conf.tmp
+mv ./data/storage/kiosk_boxes.conf.tmp ./data/storage/kiosk_boxes.conf
+
+# Inicia o Watchdog em background se ainda não estiver a correr
+chmod +x ./scripts/kiosk-watchdog.sh 2>/dev/null || true
+if [[ ! -f "./data/storage/kiosk_watchdog.pid" ]] || ! kill -0 "$(cat ./data/storage/kiosk_watchdog.pid 2>/dev/null)" 2>/dev/null; then
+  nohup bash ./scripts/kiosk-watchdog.sh >/dev/null 2>&1 &
+fi
+
 echo "✅ Provisionamento concluído na Box X98 Plus (${BOX_IP})!"
-echo "   O Player já está aberto em ${PLAYER_URL} na TV!"
+echo "   • URL Ativo: ${PLAYER_URL} (O ID registado no localStorage é mantido após reboot)"
+echo "   • Watchdog Pós-Reboot Ativo: Se desligares/reiniciares a Box, o NAS reabre o Chrome automaticamente!"

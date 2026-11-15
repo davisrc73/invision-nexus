@@ -125,6 +125,14 @@ fi
 echo "==> [5/5] A limpar imagens Docker antigas (libertar espaço no NAS)..."
 docker image prune -f >/dev/null 2>&1 || true
 
+# Garante que o Watchdog de Auto-Boot das Boxes Android continua a correr no NAS
+chmod +x ./scripts/kiosk-watchdog.sh 2>/dev/null || true
+if [[ -f "./data/storage/kiosk_boxes.conf" ]]; then
+  if [[ ! -f "./data/storage/kiosk_watchdog.pid" ]] || ! kill -0 "$(cat ./data/storage/kiosk_watchdog.pid 2>/dev/null)" 2>/dev/null; then
+    nohup bash ./scripts/kiosk-watchdog.sh >/dev/null 2>&1 &
+  fi
+fi
+
 NAS_IP="$(hostname -I 2>/dev/null | awk '{print $1}' || echo 'IP_DO_NAS')"
 echo ""
 echo "✅ Invision Nexus 100% ONLINE no Synology NAS!"

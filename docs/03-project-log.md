@@ -329,3 +329,17 @@ Arranque do desenvolvimento de uma plataforma enterprise de Digital Signage inte
    - Função `extract_zip` com *fallbacks* nativos do Synology DSM (`python3 -m zipfile`, `/usr/syno/bin/7z`, `busybox unzip` ou contentor `alpine`).
 3. **Deteção Automática do IP e Porta do Player no NAS (`.env`):**
    - Lê automaticamente o `PLAYER_PORT` do `.env` (ex: `5174` no NAS para não colidir com o `BandOS` na `5173`) e ajusta o URL caso o utilizador passe `:5173` ou omita o segundo parâmetro.
+
+---
+
+## [2026-11-15] - Fix de Redirecionamento de Porta Nginx no Dashboard (`:4322`) & Watchdog de Auto-Boot Pós-Reboot das Boxes Android
+
+### Problemas Resolvidos e Evoluções
+1. **Validação Noturna em Produção Real (Box Android X98 Plus + Synology NAS):**
+   - A Box X98 Plus correu ininterruptamente durante toda a madrugada, registando mais de **12.500 exibições (Proof of Play)** distribuídas sequencialmente pelos 3 conteúdos da Playlist ativa (`CRÉDITO - Modalidades`, `NATAL - Solidário`, `NATAL - Kids`).
+2. **Fix de Redirecionamento Nginx nas Sub-Rotas do Dashboard (`http://192.168.68.117:4322/playlists/`):**
+   - *Causa:* No contentor `invision_dashboard` (`nginx:alpine` mapeado na porta externa `4322:80`), ao clicar num link sem barra final (`/playlists`), o Nginx emitia um redirecionamento `301` para a porta interna `80` (`http://192.168.68.117/playlists/`), perdendo a porta `:4322`.
+   - *Solução:* Criados [dashboard/nginx.conf](file:///Users/daviscorreia/Antigravity%20/invision-nexus/dashboard/nginx.conf) e [player/nginx.conf](file:///Users/daviscorreia/Antigravity%20/invision-nexus/player/nginx.conf) com `absolute_redirect off; port_in_redirect off;` e `try_files $uri $uri/index.html`, e atualizados os links em [DashboardLayout.astro](file:///Users/daviscorreia/Antigravity%20/invision-nexus/dashboard/src/layouts/DashboardLayout.astro) e [index.astro](file:///Users/daviscorreia/Antigravity%20/invision-nexus/dashboard/src/pages/index.astro) para `/playlists/`, `/store-wall/` e `/telemetry/`.
+3. **Persistência de ID (`hardwareUid`) e Auto-Arranque Pós-Reboot da Box ([scripts/kiosk-watchdog.sh](file:///Users/daviscorreia/Antigravity%20/invision-nexus/scripts/kiosk-watchdog.sh) e [scripts/provision-x98-kiosk.sh](file:///Users/daviscorreia/Antigravity%20/invision-nexus/scripts/provision-x98-kiosk.sh)):**
+   - **Persistência do ID:** O `hardwareUid`, `pairingCode` e estado de emparelhamento ficam gravados no `localStorage` do Chrome na Box e no `live_state.json` do NAS (com fallback determinístico para o `android_id` físico da motherboard da Box via `?hw_uid=X98-...`).
+   - **Auto-Boot Watchdog (`scripts/kiosk-watchdog.sh`):** Configurado `persist.adb.tcp.port=5555` na Box e criado o serviço `kiosk-watchdog.sh` que corre em background no NAS, verificando a cada 25 segundos se alguma Box registada reiniciou para o menu Home do Android e relançando automaticamente o Chrome em Fullscreen no URL do Player.

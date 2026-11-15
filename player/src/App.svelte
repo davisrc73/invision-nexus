@@ -10,9 +10,12 @@
 
   const API_BASE = `${window.location.protocol}//${window.location.hostname}:3000`;
 
-  // Cada equipamento (Box Android 1, Box Android 2, Box Android 3, Telemóvel, Mac) tem o seu próprio UID e Código Único
+  // Cada equipamento (Box Android 1, Box Android 2, Box Android 3, Telemóvel, Mac) mantém o seu UID e Código Único após reboot
+  const urlParams = new URLSearchParams(window.location.search);
+  const hwFromUrl = urlParams.get('hw_uid');
   let hardwareUid =
     localStorage.getItem('invision_hw_uid') ||
+    hwFromUrl ||
     `X98-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
   localStorage.setItem('invision_hw_uid', hardwareUid);
 
@@ -276,6 +279,10 @@
         if (data.device && data.device.name) {
           deviceName = data.device.name;
           localStorage.setItem('invision_device_name', deviceName);
+        }
+        if (data.device && data.device.status === 'ONLINE' && !isPaired) {
+          isPaired = true;
+          localStorage.setItem('invision_is_paired', 'true');
         }
         if (data.effectivePlayback) {
           applyEffectivePlayback(data.effectivePlayback, false);
