@@ -343,3 +343,17 @@ Arranque do desenvolvimento de uma plataforma enterprise de Digital Signage inte
 3. **Persistência de ID (`hardwareUid`) e Auto-Arranque Pós-Reboot da Box ([scripts/kiosk-watchdog.sh](file:///Users/daviscorreia/Antigravity%20/invision-nexus/scripts/kiosk-watchdog.sh) e [scripts/provision-x98-kiosk.sh](file:///Users/daviscorreia/Antigravity%20/invision-nexus/scripts/provision-x98-kiosk.sh)):**
    - **Persistência do ID:** O `hardwareUid`, `pairingCode` e estado de emparelhamento ficam gravados no `localStorage` do Chrome na Box e no `live_state.json` do NAS (com fallback determinístico para o `android_id` físico da motherboard da Box via `?hw_uid=X98-...`).
    - **Auto-Boot Watchdog (`scripts/kiosk-watchdog.sh`):** Configurado `persist.adb.tcp.port=5555` na Box e criado o serviço `kiosk-watchdog.sh` que corre em background no NAS, verificando a cada 25 segundos se alguma Box registada reiniciou para o menu Home do Android e relançando automaticamente o Chrome em Fullscreen no URL do Player.
+
+---
+
+## [2026-11-15] - Fix de Separador em Branco no Chrome Android (`hostname -I` / `clear-debug-app`) & Provisionamento ADB Direto pelo Backoffice
+
+### Problemas Resolvidos e Evoluções
+1. **Fix do Separador sem Endereço no Chrome da Box Android:**
+   - *Causa 1:* No Synology DSM (BusyBox), o comando `hostname -I` não é suportado e devolvia uma string vazia `""`, gerando o URL inválido `http://:5174`.
+   - *Causa 2:* O comando `am set-debug-app --persistent com.android.chrome` com `/data/local/tmp/chrome-command-line` no Chrome Android sobrepunha o URL do Intent e abria uma tab em branco (`about:blank`).
+   - *Solução:* Substituído `hostname -I` por deteção via `ip -4 route get 1.1.1.1` / `ip -4 addr show` (com fallback `192.168.68.117`) em [scripts/provision-x98-kiosk.sh](file:///Users/daviscorreia/Antigravity%20/invision-nexus/scripts/provision-x98-kiosk.sh) e [scripts/update-nas.sh](file:///Users/daviscorreia/Antigravity%20/invision-nexus/scripts/update-nas.sh), e adicionado `am clear-debug-app` + `rm -f /data/local/tmp/chrome-command-line` antes de lançar o Intent `VIEW` com o URL limpo.
+2. **Provisionamento Kiosk ADB & Watchdog 24/7 Integrados no Backoffice (`http://192.168.68.117:4322/`):**
+   - Instalado o pacote nativo `android-tools` (`adb`) dentro do contentor `invision_backend` ([backend/Dockerfile](file:///Users/daviscorreia/Antigravity%20/invision-nexus/backend/Dockerfile)) com chaves RSA persistidas em `/app/data/storage/.android`.
+   - Adicionados os endpoints `POST /api/v1/live/adb/provision` e `POST /api/v1/live/adb/action` e o ciclo Watchdog de 25s diretamente no [backend/live-bridge.mjs](file:///Users/daviscorreia/Antigravity%20/invision-nexus/backend/live-bridge.mjs).
+   - Adicionado painel visual **"📺 Provisionamento Kiosk ADB & Auto-Boot Watchdog"** na página principal do Dashboard ([dashboard/src/pages/index.astro](file:///Users/daviscorreia/Antigravity%20/invision-nexus/dashboard/src/pages/index.astro)), permitindo provisionar novas Boxes Android, relançar o URL, forçar Fullscreen ou fazer Reboot remoto diretamente pelo navegador sem precisar de SSH/Bash.

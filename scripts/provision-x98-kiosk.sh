@@ -26,9 +26,23 @@ if [[ -f ".env" ]] && grep -q '^PLAYER_PORT=' .env; then
   ACTIVE_PLAYER_PORT="$(grep '^PLAYER_PORT=' .env | cut -d'=' -f2 | tr -d '[:space:]')"
 fi
 
+detect_lan_ip() {
+  local ip=""
+  if command -v ip >/dev/null 2>&1; then
+    ip="$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1)}' | head -n1 || true)"
+    if [[ -z "$ip" ]]; then
+      ip="$(ip -4 addr show 2>/dev/null | grep -oE '192\.168\.[0-9]+\.[0-9]+' | head -n1 || true)"
+    fi
+  fi
+  if [[ -z "$ip" ]] && command -v ifconfig >/dev/null 2>&1; then
+    ip="$(ifconfig 2>/dev/null | grep -oE '192\.168\.[0-9]+\.[0-9]+' | grep -v '\.255$' | head -n1 || true)"
+  fi
+  echo "${ip:-192.168.68.117}"
+}
+
 if [[ -z "$USER_URL" ]]; then
   if [[ "$OS_TYPE" == "Linux" ]]; then
-    HOST_IP="$(hostname -I 2>/dev/null | awk '{print $1}' || echo '192.168.68.118')"
+    HOST_IP="$(detect_lan_ip)"
     PLAYER_URL="http://${HOST_IP}:${ACTIVE_PLAYER_PORT}"
   else
     PLAYER_URL="http://192.168.68.118:5173"
@@ -135,18 +149,13 @@ echo "==> [4/7] A silenciar notificações visuais e ativar Immersive Mode (Full
 "${ADB_BIN}" -s "${BOX_IP}:5555" shell settings put global heads_up_notifications_enabled 0 || true
 "${ADB_BIN}" -s "${BOX_IP}:5555" shell settings put global policy_control "immersive.full=*" || true
 
-echo "==> [5/7] A configurar flags Chromium para Fullscreen Kiosk, Autoplay Sem Gesto e GPU Decode..."
-CMDLINE_FLAGS="chrome --no-first-run --disable-fre --no-default-browser-check --autoplay-policy=no-user-gesture-required --enable-accelerated-video-decode --ignore-gpu-blocklist --start-fullscreen --kiosk ${PLAYER_URL}"
-"${ADB_BIN}" -s "${BOX_IP}:5555" shell "echo '${CMDLINE_FLAGS}' > /data/local/tmp/chrome-command-line" || true
-"${ADB_BIN}" -s "${BOX_IP}:5555" shell chmod 666 /data/local/tmp/chrome-command-line || true
-"${ADB_BIN}" -s "${BOX_IP}:5555" shell am set-debug-app --persistent "${CHROME_PKG}" || true
+echo "==> [5/7] A limpar flags de debug antigas do Chrome (evita separador em branco sem endereço)..."
+"${ADB_BIN}" -s "${BOX_IP}:5555" shell am clear-debug-app || true
+"${ADB_BIN}" -s "${BOX_IP}:5555" shell rm -f /data/local/tmp/chrome-command-line || true
 
 echo "==> [6/7] A abrir o Player PWA (${PLAYER_URL}) preservando o ID registado no localStorage..."
-"${ADB_BIN}" -s "${BOX_IP}:5555" shell am force-stop "${CHROME_PKG}" || true
-sleep 1
-LAUNCH_URL="${PLAYER_URL}/?hw_uid=${FALLBACK_HW_UID}"
-"${ADB_BIN}" -s "${BOX_IP}:5555" shell am start -a android.intent.action.VIEW -d "${LAUNCH_URL}" "${CHROME_PKG}" 2>/dev/null || \
-"${ADB_BIN}" -s "${BOX_IP}:5555" shell am start -a android.intent.action.VIEW -d "${LAUNCH_URL}"
+"${ADB_BIN}" -s "${BOX_IP}:5555" shell am start -a android.intent.action.VIEW -c android.intent.category.BROWSABLE -d "${PLAYER_URL}" "${CHROME_PKG}" 2>/dev/null || \
+"${ADB_BIN}" -s "${BOX_IP}:5555" shell am start -a android.intent.action.VIEW -d "${PLAYER_URL}"
 
 echo "==> [7/7] A aguardar carregamento do Player (4s), ativar Fullscreen e registar Auto-Boot Watchdog..."
 sleep 4

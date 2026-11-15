@@ -90,6 +90,9 @@ services:
       MEDIA_STORAGE_PATH: /app/data/storage/media
       STATE_FILE_PATH: /app/data/storage/live_state.json
       THUMBS_STORAGE_PATH: /app/data/storage/thumbs
+      HOME: /app/data/storage
+      PUBLIC_PLAYER_PORT: ${PLAYER_PORT:-5174}
+      PUBLIC_DASHBOARD_PORT: ${DASHBOARD_PORT:-4322}
       HEARTBEAT_INTERVAL_SEC: 60
       HEARTBEAT_TIMEOUT_SEC: 180
       STAGGER_WINDOW_MAX_SEC: 900

@@ -133,7 +133,10 @@ if [[ -f "./data/storage/kiosk_boxes.conf" ]]; then
   fi
 fi
 
-NAS_IP="$(hostname -I 2>/dev/null | awk '{print $1}' || echo 'IP_DO_NAS')"
+NAS_IP="$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1)}' | head -n1 || true)"
+if [[ -z "${NAS_IP}" ]]; then
+  NAS_IP="$(ip -4 addr show 2>/dev/null | grep -oE '192\.168\.[0-9]+\.[0-9]+' | head -n1 || echo '192.168.68.117')"
+fi
 echo ""
 echo "✅ Invision Nexus 100% ONLINE no Synology NAS!"
 echo "   • Dashboard Central: http://${NAS_IP}:${FREE_DASH_PORT}"

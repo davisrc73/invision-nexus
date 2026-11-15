@@ -157,6 +157,75 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     <div id="pair-feedback" class="hidden mt-3 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-300 font-mono"></div>
   </div>
 
+  <!-- SECÇÃO: PROVISIONAMENTO & WATCHDOG KIOSK ADB DIRETAMENTE PELO BACKOFFICE -->
+  <div
+    data-rbac-hide="MEDIA_MANAGER,STORE_MANAGER,DEPT_HEAD"
+    class="bg-slate-900 border border-slate-800 rounded-xl p-6 mb-8"
+  >
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-slate-800 pb-4 mb-5">
+      <div>
+        <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+          Controlo Remoto ADB Integrado no NAS • Sem precisar de SSH/Bash
+        </span>
+        <h3 class="text-base font-bold text-white mt-1.5">
+          📺 Provisionamento Kiosk ADB & Auto-Boot Watchdog (Boxes Android X98 Plus)
+        </h3>
+        <p class="text-xs text-slate-400">
+          Ligue, abra o Player PWA em Fullscreen e ative o Watchdog Pós-Reinício em qualquer Box Android da rede local diretamente por aqui.
+        </p>
+      </div>
+    </div>
+
+    <form id="adb-provision-form" class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+      <div class="md:col-span-3">
+        <label class="block text-xs text-slate-400 mb-1">IP da Box Android X98 Plus</label>
+        <input
+          type="text"
+          id="adb-box-ip"
+          placeholder="192.168.68.115"
+          value="192.168.68.115"
+          required
+          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-emerald-300 focus:border-amber-400 focus:outline-none"
+        />
+      </div>
+      <div class="md:col-span-5">
+        <label class="block text-xs text-slate-400 mb-1">Endereço do Player PWA (NAS / Servidor)</label>
+        <input
+          type="text"
+          id="adb-player-url"
+          placeholder="http://192.168.68.117:5174"
+          required
+          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-sky-300 focus:border-amber-400 focus:outline-none"
+        />
+      </div>
+      <div class="md:col-span-4">
+        <button
+          type="submit"
+          id="adb-submit-btn"
+          class="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-black text-sm py-2 px-4 rounded-lg transition shadow"
+        >
+          🚀 Provisionar & Abrir Player na Box
+        </button>
+      </div>
+    </form>
+
+    <pre
+      id="adb-console-log"
+      class="hidden mt-4 p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-[11px] font-mono text-slate-300 whitespace-pre-wrap leading-relaxed"
+    ></pre>
+
+    <div class="mt-4">
+      <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2.5">
+        Boxes Android Monitorizadas pelo Watchdog do NAS (Auto-Arranque Pós-Reboot a cada 25s)
+      </h4>
+      <div id="adb-boxes-list" class="space-y-2.5 text-xs">
+        <div class="p-3 rounded-lg bg-slate-950 border border-dashed border-slate-800 text-slate-400">
+          Nenhuma Box Android registada no Watchdog ADB. Introduza o IP acima (ex: <code>192.168.68.115</code>) e clique em <strong>Provisionar & Abrir Player na Box</strong>.
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- TERMINAIS CONECTADOS EM TEMPO REAL & MOTOR DE 4 PRIORIDADES -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
@@ -186,11 +255,128 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
 
   <script is:inline>
     const API_BASE = `${window.location.protocol}//${window.location.hostname}:3000`;
+    let isPlayerUrlInitialized = false;
 
     async function refreshOverview() {
       try {
         const res = await fetch(`${API_BASE}/api/v1/live/state`);
         const st = await res.json();
+
+        // Preenche automaticamente o endereço real do Player no NAS (ex: http://192.168.68.117:5174)
+        const adbUrlInput = document.getElementById('adb-player-url');
+        if (adbUrlInput && !isPlayerUrlInitialized) {
+          const detectedPort =
+            window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+              ? 5173
+              : st.publicPlayerPort || 5174;
+          adbUrlInput.value = `${window.location.protocol}//${window.location.hostname}:${detectedPort}`;
+          isPlayerUrlInitialized = true;
+        }
+
+        // Renderiza lista de Boxes Android geridas por ADB & Watchdog no NAS
+        const adbBoxesEl = document.getElementById('adb-boxes-list');
+        if (adbBoxesEl) {
+          if (!st.adbBoxes || st.adbBoxes.length === 0) {
+            adbBoxesEl.innerHTML = `
+              <div class="p-3 rounded-lg bg-slate-950 border border-dashed border-slate-800 text-slate-400">
+                Nenhuma Box Android registada no Watchdog ADB. Introduza o IP acima (ex: <code>192.168.68.115</code>) e clique em <strong>Provisionar & Abrir Player na Box</strong>.
+              </div>
+            `;
+          } else {
+            adbBoxesEl.innerHTML = st.adbBoxes
+              .map(
+                (b) => `
+                <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                  <div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <span class="w-2.5 h-2.5 rounded-full ${
+                        String(b.status).startsWith('ONLINE') || String(b.status).startsWith('AUTO-RECOVERED')
+                          ? 'bg-emerald-400'
+                          : 'bg-amber-400 animate-pulse'
+                      }"></span>
+                      <strong class="text-white font-mono text-xs">Box IP: ${b.boxIp}:5555</strong>
+                      <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                        ${b.status || 'MONITORIZADO'}
+                      </span>
+                      <span class="text-[10px] font-mono px-2 py-0.5 rounded ${
+                        b.autoWatchdog !== false
+                          ? 'bg-sky-500/15 text-sky-300 border border-sky-500/30'
+                          : 'bg-slate-800 text-slate-400'
+                      }">
+                        Watchdog Pós-Reboot: ${b.autoWatchdog !== false ? 'ATIVO (25s)' : 'PAUSADO'}
+                      </span>
+                    </div>
+                    <p class="text-[11px] font-mono text-slate-400 mt-1">
+                      URL Kiosk: <span class="text-sky-300">${b.playerUrl}</span>
+                    </p>
+                  </div>
+                  <div class="flex items-center gap-2 flex-wrap shrink-0">
+                    <button
+                      type="button"
+                      data-adb-action="RELAUNCH_URL"
+                      data-adb-ip="${b.boxIp}"
+                      data-adb-url="${b.playerUrl}"
+                      class="px-2.5 py-1.5 rounded bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 font-bold text-[11px] transition"
+                    >
+                      🔄 Abrir URL Player
+                    </button>
+                    <button
+                      type="button"
+                      data-adb-action="TAP_FULLSCREEN"
+                      data-adb-ip="${b.boxIp}"
+                      class="px-2.5 py-1.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 font-bold text-[11px] transition"
+                    >
+                      ⛶ Forçar Fullscreen
+                    </button>
+                    <button
+                      type="button"
+                      data-adb-action="REBOOT_BOX"
+                      data-adb-ip="${b.boxIp}"
+                      class="px-2.5 py-1.5 rounded bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 font-bold text-[11px] transition"
+                    >
+                      🔌 Reiniciar Box
+                    </button>
+                    <button
+                      type="button"
+                      data-adb-action="REMOVE_BOX"
+                      data-adb-ip="${b.boxIp}"
+                      class="px-2 py-1.5 rounded bg-slate-900 hover:bg-rose-500/20 text-rose-400 border border-slate-800 text-[11px] transition"
+                      title="Remover Box do Watchdog"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              `
+              )
+              .join('');
+
+            document.querySelectorAll('[data-adb-action]').forEach((btn) => {
+              btn.addEventListener('click', async () => {
+                const action = btn.getAttribute('data-adb-action');
+                const boxIp = btn.getAttribute('data-adb-ip');
+                const playerUrl = btn.getAttribute('data-adb-url');
+                const logBox = document.getElementById('adb-console-log');
+                if (logBox) {
+                  logBox.classList.remove('hidden');
+                  logBox.textContent = `A executar comando ADB [${action}] na Box ${boxIp}:5555...`;
+                }
+                await fetch(`${API_BASE}/api/v1/live/adb/action`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ boxIp, action, playerUrl }),
+                });
+                if (logBox) {
+                  logBox.textContent =
+                    action === 'REBOOT_BOX'
+                      ? `✅ Comando de Reboot enviado para a Box ${boxIp}! Assim que a Box voltar a ligar (~30-45s), o Watchdog do NAS abrirá o Chrome automaticamente.`
+                      : `✅ Comando [${action}] executado com sucesso na Box ${boxIp}!`;
+                }
+                refreshOverview();
+              });
+            });
+          }
+        }
 
         const onlineDevices = (st.devices || []).filter((d) => d.status === 'ONLINE');
         document.getElementById('kpi-devices-count').textContent = String(st.devices?.length || 0);
@@ -377,6 +563,51 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
         pairFeedback.classList.remove('hidden');
         pairFeedback.textContent = `✓ [APROVADO VIA WEBSOCKET] Terminal "${data.device.name}" (${data.device.storeName} • ${data.device.zone}) desbloqueado com sucesso! Token: ${data.deviceToken}`;
         refreshOverview();
+      }
+    });
+
+    const adbForm = document.getElementById('adb-provision-form');
+    const adbLog = document.getElementById('adb-console-log');
+    const adbSubmitBtn = document.getElementById('adb-submit-btn');
+
+    adbForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const boxIp = document.getElementById('adb-box-ip').value.trim();
+      const playerUrl = document.getElementById('adb-player-url').value.trim();
+
+      if (adbLog) {
+        adbLog.classList.remove('hidden');
+        adbLog.textContent = `⏳ A ligar via ADB a ${boxIp}:5555 e a abrir ${playerUrl} na TV... (Aguarde ~4 segundos)`;
+      }
+      if (adbSubmitBtn) {
+        adbSubmitBtn.disabled = true;
+        adbSubmitBtn.textContent = '⏳ A Provisionar Box...';
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/live/adb/provision`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            boxIp,
+            playerUrl,
+            autoWatchdog: true,
+          }),
+        });
+        const data = await res.json();
+        if (adbLog) {
+          adbLog.textContent = (data.logs || []).join('\n') + (data.error ? `\n❌ ${data.error}` : '');
+        }
+        refreshOverview();
+      } catch (err) {
+        if (adbLog) {
+          adbLog.textContent = `❌ Erro ao comunicar com o Backend ADB: ${err.message || err}`;
+        }
+      } finally {
+        if (adbSubmitBtn) {
+          adbSubmitBtn.disabled = false;
+          adbSubmitBtn.textContent = '🚀 Provisionar & Abrir Player na Box';
+        }
       }
     });
 

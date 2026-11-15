@@ -2,8 +2,10 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { execFile } from 'node:child_process';
 
 const PORT = Number(process.env.PORT || 3000);
+const PUBLIC_PLAYER_PORT = Number(process.env.PUBLIC_PLAYER_PORT || 5174);
 const STORAGE_DIR = path.resolve(process.env.MEDIA_STORAGE_PATH || './data/storage/media');
 const STATE_FILE = path.resolve(process.env.STATE_FILE_PATH || './data/storage/live_state.json');
 
@@ -76,6 +78,7 @@ function createDefaultState() {
       },
     ],
     devices: [],
+    adbBoxes: [],
     incidents: [],
     popRecords: [],
     interactionRecords: [],
@@ -92,6 +95,9 @@ if (fs.existsSync(STATE_FILE)) {
       ...createDefaultState(),
       ...loaded,
     };
+    if (!Array.isArray(state.adbBoxes)) {
+      state.adbBoxes = [];
+    }
     for (const pl of state.playlists) {
       if (!Array.isArray(pl.targetDeviceIds)) {
         pl.targetDeviceIds = [];
@@ -220,6 +226,7 @@ function getEnrichedState(hardwareUid = null) {
   const effective = computeEffectivePlaybackForDevice(hardwareUid);
   return {
     ...state,
+    publicPlayerPort: PUBLIC_PLAYER_PORT,
     effectivePlayback: effective,
     playlistItems: effective.resolvedSequence,
   };
@@ -229,6 +236,229 @@ function saveState() {
   state.updatedAt = new Date().toISOString();
   fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
 }
+
+// ============================================================================
+// MOTOR DE PROVISIONAMENTO KIOSK ADB & WATCHDOG PÓS-REBOOT INTEGRADO NO BACKEND
+// ============================================================================
+function findAdbBinary() {
+  const candidates = [
+    '/usr/bin/adb',
+    '/opt/homebrew/bin/adb',
+    '/usr/local/bin/adb',
+    path.resolve('./tools/linux/platform-tools/adb'),
+    path.resolve('./tools/darwin/platform-tools/adb'),
+    path.resolve('./tools/platform-tools/adb'),
+  ];
+  for (const p of candidates) {
+    if (fs.existsSync(p)) return p;
+  }
+  return 'adb';
+}
+
+function runAdb(args, timeoutMs = 8000) {
+  return new Promise((resolve) => {
+    const adbBin = findAdbBinary();
+    execFile(adbBin, args, { timeout: timeoutMs }, (err, stdout, stderr) => {
+      resolve({
+        ok: !err,
+        stdout: String(stdout || '').trim(),
+        stderr: String(stderr || '').trim(),
+        error: err ? err.message : null,
+      });
+    });
+  });
+}
+
+async function provisionAdbBox(boxIp, rawPlayerUrl, autoWatchdog = true) {
+  const logs = [];
+  const cleanIp = String(boxIp || '').trim();
+  const cleanUrl = String(rawPlayerUrl || '').trim().replace(/\/+$/, '');
+
+  if (!cleanIp) {
+    return { ok: false, error: 'IP da Box Android em falta.', logs };
+  }
+  if (!cleanUrl || cleanUrl.includes('://:') || !/^https?:\/\/[^/:]+/.test(cleanUrl)) {
+    return {
+      ok: false,
+      error: `URL do Player inválido (${cleanUrl}). Indique ex: http://192.168.68.117:5174`,
+      logs,
+    };
+  }
+
+  logs.push(`==> [1/6] A ligar à Box Android X98 Plus em ${cleanIp}:5555...`);
+  const conn = await runAdb(['connect', `${cleanIp}:5555`]);
+  logs.push(`    ${conn.stdout || conn.stderr || 'Comando connect enviado'}`);
+
+  const devs = await runAdb(['devices']);
+  const isAuthorized = devs.stdout
+    .split('\n')
+    .some((line) => line.includes(`${cleanIp}:5555`) && /\bdevice\b/.test(line));
+
+  if (!isAuthorized) {
+    logs.push(
+      `⚠️  A Box ${cleanIp}:5555 ainda não aceitou a ligação ou mostra popup 'Permitir depuração USB?' na TV.`
+    );
+    return {
+      ok: false,
+      error: `Não foi possível autenticar em ${cleanIp}:5555. Verifique na TV se apareceu a janela 'Permitir depuração USB?' e clique em OK!`,
+      logs,
+    };
+  }
+
+  const target = `${cleanIp}:5555`;
+  logs.push(`==> [2/6] A ativar ADB persistente no arranque (porta 5555) e desativar Sleep / Standby CEC...`);
+  await runAdb(['-s', target, 'shell', 'setprop', 'persist.adb.tcp.port', '5555']);
+  await runAdb(['-s', target, 'shell', 'setprop', 'service.adb.tcp.port', '5555']);
+  await runAdb(['-s', target, 'shell', 'settings', 'put', 'global', 'stay_on_while_plugged_in', '7']);
+  await runAdb(['-s', target, 'shell', 'settings', 'put', 'system', 'screen_off_timeout', '2147483647']);
+  await runAdb(['-s', target, 'shell', 'settings', 'put', 'secure', 'sleep_timeout', '-1']);
+  await runAdb(['-s', target, 'shell', 'settings', 'put', 'secure', 'screensaver_enabled', '0']);
+  await runAdb(['-s', target, 'shell', 'settings', 'put', 'global', 'hdmi_control_auto_device_off_enabled', '0']);
+  await runAdb(['-s', target, 'shell', 'settings', 'put', 'global', 'wifi_sleep_policy', '2']);
+
+  logs.push(`==> [3/6] A ativar Immersive Mode (Full Kiosk) e silenciar notificações...`);
+  await runAdb(['-s', target, 'shell', 'settings', 'put', 'global', 'heads_up_notifications_enabled', '0']);
+  await runAdb(['-s', target, 'shell', 'settings', 'put', 'global', 'policy_control', 'immersive.full=*']);
+
+  logs.push(`==> [4/6] A limpar flags de debug antigas do Chrome (evita separador em branco)...`);
+  await runAdb(['-s', target, 'shell', 'am', 'clear-debug-app']);
+  await runAdb(['-s', target, 'shell', 'rm', '-f', '/data/local/tmp/chrome-command-line']);
+
+  logs.push(`==> [5/6] A abrir o Player PWA (${cleanUrl}) no Chrome da Box...`);
+  const launchRes = await runAdb([
+    '-s',
+    target,
+    'shell',
+    'am',
+    'start',
+    '-a',
+    'android.intent.action.VIEW',
+    '-c',
+    'android.intent.category.BROWSABLE',
+    '-d',
+    cleanUrl,
+    'com.android.chrome',
+  ]);
+  if (!launchRes.ok) {
+    await runAdb([
+      '-s',
+      target,
+      'shell',
+      'am',
+      'start',
+      '-a',
+      'android.intent.action.VIEW',
+      '-d',
+      cleanUrl,
+    ]);
+  }
+
+  logs.push(`==> [6/6] A agendar toque automático de Fullscreen (3.5s) e a ativar Watchdog Pós-Reboot...`);
+  setTimeout(async () => {
+    await runAdb(['-s', target, 'shell', 'input', 'tap', '960', '540']);
+    setTimeout(async () => {
+      await runAdb(['-s', target, 'shell', 'input', 'tap', '960', '540']);
+    }, 2000);
+  }, 3500);
+
+  const nowIso = new Date().toISOString();
+  const existing = state.adbBoxes.find((b) => b.boxIp === cleanIp);
+  if (existing) {
+    existing.playerUrl = cleanUrl;
+    existing.autoWatchdog = Boolean(autoWatchdog);
+    existing.status = 'ONLINE (Chrome Kiosk)';
+    existing.lastProvisionedAt = nowIso;
+    existing.lastCheckedAt = nowIso;
+    existing.lastLog = logs.join('\n');
+  } else {
+    state.adbBoxes.push({
+      boxIp: cleanIp,
+      playerUrl: cleanUrl,
+      autoWatchdog: Boolean(autoWatchdog),
+      status: 'ONLINE (Chrome Kiosk)',
+      lastProvisionedAt: nowIso,
+      lastCheckedAt: nowIso,
+      lastLog: logs.join('\n'),
+    });
+  }
+
+  saveState();
+  broadcastUpdate();
+  logs.push(`✅ Box ${cleanIp} provisionada com sucesso em ${cleanUrl}!`);
+  return { ok: true, logs, state: getEnrichedState() };
+}
+
+let isWatchdogRunning = false;
+async function runKioskWatchdogCycle() {
+  if (isWatchdogRunning || !Array.isArray(state.adbBoxes) || state.adbBoxes.length === 0) return;
+  isWatchdogRunning = true;
+  try {
+    let changed = false;
+    for (const box of state.adbBoxes) {
+      if (!box.boxIp || box.autoWatchdog === false) continue;
+      const target = `${box.boxIp}:5555`;
+      await runAdb(['connect', target], 4000);
+      const devs = await runAdb(['devices'], 4000);
+      const isOnline = devs.stdout
+        .split('\n')
+        .some((line) => line.includes(target) && /\bdevice\b/.test(line));
+
+      box.lastCheckedAt = new Date().toISOString();
+
+      if (!isOnline) {
+        if (box.status !== 'OFFLINE / REBOOTING') {
+          box.status = 'OFFLINE / REBOOTING';
+          changed = true;
+        }
+        continue;
+      }
+
+      const winRes = await runAdb(['-s', target, 'shell', 'dumpsys', 'window', 'windows'], 5000);
+      const focusLines = winRes.stdout
+        .split('\n')
+        .filter((l) => l.includes('mCurrentFocus') || l.includes('mFocusedApp'))
+        .join(' ');
+
+      if (focusLines && !focusLines.includes('com.android.chrome') && !focusLines.includes('com.android.systemui')) {
+        // A Box reiniciou e está no Launcher do Android! Relança automaticamente o Chrome no URL do Player
+        await runAdb(['-s', target, 'shell', 'am', 'clear-debug-app']);
+        await runAdb(['-s', target, 'shell', 'settings', 'put', 'global', 'policy_control', 'immersive.full=*']);
+        await runAdb([
+          '-s',
+          target,
+          'shell',
+          'am',
+          'start',
+          '-a',
+          'android.intent.action.VIEW',
+          '-c',
+          'android.intent.category.BROWSABLE',
+          '-d',
+          box.playerUrl,
+          'com.android.chrome',
+        ]);
+        setTimeout(async () => {
+          await runAdb(['-s', target, 'shell', 'input', 'tap', '960', '540']);
+        }, 4000);
+        box.status = 'AUTO-RECOVERED (Pós-Boot)';
+        changed = true;
+      } else if (box.status !== 'ONLINE (Chrome Kiosk)') {
+        box.status = 'ONLINE (Chrome Kiosk)';
+        changed = true;
+      }
+    }
+    if (changed) {
+      saveState();
+      broadcastUpdate();
+    }
+  } catch {
+    // ignore watchdog errors
+  } finally {
+    isWatchdogRunning = false;
+  }
+}
+
+setInterval(runKioskWatchdogCycle, 25000);
 
 // Clientes WebSocket ativos
 const wsClients = new Set();
@@ -678,6 +908,93 @@ const server = http.createServer(async (req, res) => {
     broadcastUpdate();
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(getEnrichedState()));
+    return;
+  }
+
+  // 9B. POST /api/v1/live/adb/provision (Provisionamento Kiosk via Backoffice)
+  if (req.method === 'POST' && url.pathname === '/api/v1/live/adb/provision') {
+    try {
+      const payload = await readJsonBody(req);
+      const result = await provisionAdbBox(
+        payload.boxIp,
+        payload.playerUrl,
+        payload.autoWatchdog !== false
+      );
+      res.writeHead(result.ok ? 200 : 400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(result));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: err.message || 'ADB_PROVISION_ERROR' }));
+    }
+    return;
+  }
+
+  // 9C. POST /api/v1/live/adb/action (Controlo Remoto da Box via Backoffice)
+  if (req.method === 'POST' && url.pathname === '/api/v1/live/adb/action') {
+    try {
+      const payload = await readJsonBody(req);
+      const cleanIp = String(payload.boxIp || '').trim();
+      const action = payload.action;
+      const box = state.adbBoxes.find((b) => b.boxIp === cleanIp);
+      const target = `${cleanIp}:5555`;
+
+      if (action === 'REMOVE_BOX') {
+        state.adbBoxes = state.adbBoxes.filter((b) => b.boxIp !== cleanIp);
+        saveState();
+        broadcastUpdate();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, state: getEnrichedState() }));
+        return;
+      }
+
+      if (action === 'TOGGLE_WATCHDOG' && box) {
+        box.autoWatchdog = !box.autoWatchdog;
+        saveState();
+        broadcastUpdate();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, state: getEnrichedState() }));
+        return;
+      }
+
+      await runAdb(['connect', target]);
+
+      if (action === 'TAP_FULLSCREEN') {
+        await runAdb(['-s', target, 'shell', 'settings', 'put', 'global', 'policy_control', 'immersive.full=*']);
+        await runAdb(['-s', target, 'shell', 'input', 'tap', '960', '540']);
+      } else if (action === 'RELAUNCH_URL') {
+        const targetUrl = (box && box.playerUrl) || payload.playerUrl;
+        await runAdb(['-s', target, 'shell', 'am', 'clear-debug-app']);
+        await runAdb(['-s', target, 'shell', 'rm', '-f', '/data/local/tmp/chrome-command-line']);
+        await runAdb([
+          '-s',
+          target,
+          'shell',
+          'am',
+          'start',
+          '-a',
+          'android.intent.action.VIEW',
+          '-c',
+          'android.intent.category.BROWSABLE',
+          '-d',
+          targetUrl,
+          'com.android.chrome',
+        ]);
+        setTimeout(async () => {
+          await runAdb(['-s', target, 'shell', 'input', 'tap', '960', '540']);
+        }, 3500);
+      } else if (action === 'REBOOT_BOX') {
+        if (box) box.status = 'REBOOTING (A reiniciar Box...)';
+        runAdb(['-s', target, 'reboot']);
+      }
+
+      saveState();
+      broadcastUpdate();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, state: getEnrichedState() }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: err.message || 'ADB_ACTION_ERROR' }));
+    }
     return;
   }
 
