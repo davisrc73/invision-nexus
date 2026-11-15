@@ -1,0 +1,934 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+---
+
+<DashboardLayout
+  title="Configurações & Setup de Sistema (Lojas, Sub-redes, Áreas, Formatos & Tipologias)"
+  activeNav="settings"
+>
+  <!-- ===================================================================== -->
+  <!-- MODAL POP-UP AUTOMÁTICO DE TRANSIÇÃO PARA DADOS REAIS (PURGE DEMO)    -->
+  <!-- ===================================================================== -->
+  <div
+    id="demo-purge-modal"
+    class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+  >
+    <div class="max-w-lg w-full bg-slate-900 border-2 border-[#E1A924] rounded-2xl p-6 shadow-2xl">
+      <div class="flex items-center justify-between mb-3">
+        <span class="px-2.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[11px] font-mono font-bold uppercase">
+          ⚠️ Dados de Simulação Detetados no Sistema
+        </span>
+        <button
+          type="button"
+          id="btn-close-modal"
+          class="text-slate-400 hover:text-white text-sm font-bold"
+        >
+          ✕
+        </button>
+      </div>
+      <h3 class="text-lg font-black text-white">
+        Deseja apagar os Dados de Simulação e iniciar em Modo Produção Real?
+      </h3>
+      <p class="text-xs text-slate-300 mt-2 leading-relaxed">
+        Neste momento a plataforma ainda contém <strong>lojas e contadores de simulação (Demo)</strong>.
+        Para começar a inserir as suas <strong>Lojas Reais, Áreas, Formatos e Equipamentos</strong> sem números simulados na Visão Global, pode limpar já os dados de demonstração.
+      </p>
+      <ul class="mt-3 space-y-1 text-xs text-slate-400 font-mono bg-slate-950 p-3 rounded-xl border border-slate-800">
+        <li>✓ As suas Boxes Android reais (ex: X98 Plus) e vídeos já carregados <strong>SÃO MANTIDOS</strong>.</li>
+        <li>✓ Apenas as lojas e contadores fictícios de simulação são removidos.</li>
+      </ul>
+      <div class="mt-5 flex flex-col sm:flex-row items-center justify-end gap-3">
+        <button
+          type="button"
+          id="btn-keep-demo"
+          class="w-full sm:w-auto px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition"
+        >
+          Manter Dados Demo por Agora
+        </button>
+        <button
+          type="button"
+          id="btn-confirm-purge-modal"
+          class="w-full sm:w-auto px-4 py-2 rounded-lg bg-rose-500 hover:bg-rose-400 text-black text-xs font-black transition shadow"
+        >
+          🗑️ Sim, Apagar Dados de Simulação Agora
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- BANNER DE ESTADO DO AMBIENTE (MODO PRODUÇÃO REAL vs MODO DEMO)        -->
+  <!-- ===================================================================== -->
+  <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 mb-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2.5">
+        <span
+          id="env-mode-badge"
+          class="px-2.5 py-0.5 rounded text-[11px] font-mono font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30"
+        >
+          A verificar estado...
+        </span>
+        <h3 class="text-sm font-bold text-white">
+          Controlo de Ambiente & Master Data de Equipamentos
+        </h3>
+      </div>
+      <p class="text-xs text-slate-400 mt-1">
+        Tudo o que configurar aqui (Lojas, Regiões, Sub-redes IP, Áreas de Loja, Formatos `1920x1080` / `1080x1920` e Tipologias) alimenta automaticamente os seletores de todo o Backoffice.
+      </p>
+    </div>
+
+    <div class="flex items-center gap-2.5 shrink-0">
+      <button
+        type="button"
+        id="btn-open-purge-dialog"
+        class="px-3.5 py-2 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 text-xs font-bold transition"
+      >
+        🗑️ Apagar Dados de Simulação
+      </button>
+      <button
+        type="button"
+        id="btn-restore-demo"
+        class="hidden px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-bold transition"
+      >
+        🔄 Restaurar Lojas Demo
+      </button>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- SUB-NAVEGAÇÃO POR TABS DO MÓDULO DE CONFIGURAÇÕES                     -->
+  <!-- ===================================================================== -->
+  <div class="flex items-center gap-2 flex-wrap mb-6 border-b border-slate-800 pb-3">
+    <button
+      type="button"
+      data-settings-tab="STORES"
+      class="settings-tab-btn px-4 py-2 rounded-lg text-xs font-black bg-[#E1A924] text-black shadow transition"
+    >
+      🏪 1. Lojas, Regiões & Sub-redes IP
+    </button>
+    <button
+      type="button"
+      data-settings-tab="PROFILES"
+      class="settings-tab-btn px-4 py-2 rounded-lg text-xs font-bold bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-700 transition"
+    >
+      📐 2. Formatos de Ecrã & Inversão 180°
+    </button>
+    <button
+      type="button"
+      data-settings-tab="ZONES"
+      class="settings-tab-btn px-4 py-2 rounded-lg text-xs font-bold bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-700 transition"
+    >
+      📍 3. Áreas / Zonas de Loja
+    </button>
+    <button
+      type="button"
+      data-settings-tab="CATEGORIES"
+      class="settings-tab-btn px-4 py-2 rounded-lg text-xs font-bold bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-700 transition"
+    >
+      🖥️ 4. Tipologias de Equipamento
+    </button>
+    <button
+      type="button"
+      data-settings-tab="USERS"
+      class="settings-tab-btn px-4 py-2 rounded-lg text-xs font-bold bg-slate-900 text-slate-400 border border-dashed border-slate-800 transition"
+    >
+      👥 5. Utilizadores & RBAC (Próximo Passo)
+    </button>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- TAB 1: LOJAS, REGIÕES, GATEWAY SUB-REDE & IMPORTAÇÃO CSV EM LOTE       -->
+  <!-- ===================================================================== -->
+  <section id="tab-panel-STORES" class="space-y-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Formulário Visual de Criação / Edição de Loja -->
+      <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-6">
+        <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+          Inserção Individual de Loja Real
+        </span>
+        <h4 class="text-base font-bold text-white mt-1.5 mb-4">
+          Adicionar ou Atualizar Loja (Com Deteção Automática por Sub-rede/Gateway)
+        </h4>
+
+        <form id="store-form" class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+          <input type="hidden" id="st-id" />
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Insígnia</label>
+            <select
+              id="st-brand"
+              class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs font-bold text-amber-300"
+            >
+              <option value="FNAC">FNAC</option>
+              <option value="DARTY">DARTY</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">País</label>
+            <select
+              id="st-country"
+              class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200"
+            >
+              <option value="PT">🇵🇹 Portugal (PT)</option>
+              <option value="FR">🇫🇷 França (FR)</option>
+              <option value="ES">🇪🇸 Espanha (ES)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Código / Nº da Loja</label>
+            <input
+              type="text"
+              id="st-code"
+              placeholder="Ex: 1 (Colombo)"
+              required
+              class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono text-white"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Região Comercial</label>
+            <input
+              type="text"
+              id="st-region"
+              placeholder="Ex: Grande Lisboa / Norte / Sul"
+              value="Grande Lisboa"
+              required
+              class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Cidade</label>
+            <input
+              type="text"
+              id="st-city"
+              placeholder="Ex: Lisboa"
+              required
+              class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Nome Oficial da Loja</label>
+            <input
+              type="text"
+              id="st-name"
+              placeholder="Ex: FNAC Colombo"
+              required
+              class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs font-bold text-white"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-400 mb-1" title="Permite associar automaticamente uma Box à loja pelo seu endereço IP">
+              IP Gateway / Sub-rede da Loja
+            </label>
+            <input
+              type="text"
+              id="st-gateway"
+              placeholder="Ex: 192.168.68.1/24"
+              class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono text-emerald-300"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Latitude / Longitude (Mapa)</label>
+            <div class="grid grid-cols-2 gap-1.5">
+              <input
+                type="number"
+                step="0.0001"
+                id="st-lat"
+                placeholder="38.753"
+                value="38.753"
+                class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-2 text-xs font-mono text-slate-200"
+              />
+              <input
+                type="number"
+                step="0.0001"
+                id="st-lng"
+                placeholder="-9.189"
+                value="-9.189"
+                class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-2 text-xs font-mono text-slate-200"
+              />
+            </div>
+          </div>
+
+          <div>
+            <button
+              type="submit"
+              class="w-full bg-[#E1A924] hover:bg-amber-400 text-black font-black text-xs py-2.5 px-4 rounded-lg shadow transition"
+            >
+              + Guardar Loja Real
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Importação Rápida em Lote (CSV / Texto) -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col justify-between">
+        <div>
+          <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">
+            Importação Rápida em Lote (CSV)
+          </span>
+          <h4 class="text-sm font-bold text-white mt-1.5">
+            Colar Lista de Lojas (1 por linha)
+          </h4>
+          <p class="text-[11px] text-slate-400 mt-1">
+            Formato: <code>Codigo;Insignia;Pais;Regiao;Cidade;Nome;Gateway;Lat;Lng</code>
+          </p>
+          <textarea
+            id="bulk-stores-csv"
+            rows="5"
+            placeholder="1;FNAC;PT;Grande Lisboa;Lisboa;FNAC Colombo;192.168.68.1/24;38.753;-9.189&#10;3;FNAC;PT;Norte;Matosinhos;FNAC NorteShopping;10.103.0.1/24;41.181;-8.654"
+            class="w-full mt-2 bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-[11px] font-mono text-slate-200 focus:border-amber-400 focus:outline-none"
+          ></textarea>
+        </div>
+        <button
+          type="button"
+          id="btn-bulk-import-stores"
+          class="w-full mt-3 bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs py-2 px-4 rounded-lg shadow transition"
+        >
+          ⚡ Importar Lote de Lojas Agora
+        </button>
+      </div>
+    </div>
+
+    <!-- Tabela de Lojas Configuradas -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h4 class="text-sm font-bold uppercase tracking-wider text-white">
+          Catálogo de Lojas Ativas no Sistema (<span id="stores-total-label">0</span>)
+        </h4>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="border-b border-slate-800 text-slate-400 uppercase font-mono text-[11px]">
+              <th class="py-2.5 px-3">Código #</th>
+              <th class="py-2.5 px-3">Insígnia</th>
+              <th class="py-2.5 px-3">Região</th>
+              <th class="py-2.5 px-3">Cidade & Nome da Loja</th>
+              <th class="py-2.5 px-3">Gateway / Sub-rede IP</th>
+              <th class="py-2.5 px-3">GPS (Lat, Lng)</th>
+              <th class="py-2.5 px-3">Origem</th>
+              <th class="py-2.5 px-3 text-right">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="settings-stores-tbody" class="divide-y divide-slate-800/70"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- TAB 2: FORMATOS DE ECRÃ (1920x1080, 1080x1920) & INVERSÃO 180°        -->
+  <!-- ===================================================================== -->
+  <section id="tab-panel-PROFILES" class="hidden space-y-6">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
+      <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+        Format Guardrail & Orientação Física de Montagem
+      </span>
+      <h4 class="text-base font-bold text-white mt-1.5 mb-2">
+        Configurar Resoluções e Formatos de Ecrã (Horizontal, Vertical ou LEDwall Customizado)
+      </h4>
+      <p class="text-xs text-slate-400 mb-5">
+        Se os instaladores montarem um painel LCD/LED de cabeça para baixo (muito comum em totens verticais <code>1080x1920</code>), pode ativar a opção <strong>"Inverter Ecrã 180° (Pernas p/ o Ar)"</strong> por defeito no perfil ou diretamente em cada equipamento!
+      </p>
+
+      <form id="profile-form" class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Código Curto</label>
+          <input
+            type="text"
+            id="sp-code"
+            placeholder="Ex: 1080x1920"
+            required
+            class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono text-amber-300"
+          />
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-xs text-slate-400 mb-1">Designação do Formato</label>
+          <input
+            type="text"
+            id="sp-name"
+            placeholder="Ex: Mupi Vertical Entrada (1080x1920)"
+            required
+            class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
+          />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Largura x Altura (px)</label>
+          <div class="grid grid-cols-2 gap-1.5">
+            <input
+              type="number"
+              id="sp-width"
+              placeholder="1080"
+              value="1920"
+              required
+              class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-2 text-xs font-mono text-white"
+            />
+            <input
+              type="number"
+              id="sp-height"
+              placeholder="1920"
+              value="1080"
+              required
+              class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-2 text-xs font-mono text-white"
+            />
+          </div>
+        </div>
+        <div>
+          <label class="flex items-center gap-2 text-xs text-amber-300 font-mono cursor-pointer py-2">
+            <input type="checkbox" id="sp-invert180" class="accent-[#E1A924]" />
+            <span>🔄 Inverter 180° (Pernas p/ o Ar)</span>
+          </label>
+        </div>
+        <div>
+          <button
+            type="submit"
+            class="w-full bg-[#E1A924] hover:bg-amber-400 text-black font-black text-xs py-2.5 px-4 rounded-lg shadow transition"
+          >
+            + Guardar Formato
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div id="settings-profiles-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- TAB 3: ÁREAS / ZONAS DE LOJA                                          -->
+  <!-- ===================================================================== -->
+  <section id="tab-panel-ZONES" class="hidden space-y-6">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
+      <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">
+        Departamentos & Áreas Físicas nas Lojas
+      </span>
+      <h4 class="text-base font-bold text-white mt-1.5 mb-4">
+        Configurar Áreas / Zonas de Loja (ex: Entrada, Informática, Telecom, Gaming, Clínica Fnac)
+      </h4>
+
+      <form id="zone-form" class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Código Técnico</label>
+          <input
+            type="text"
+            id="zn-code"
+            placeholder="Ex: FNAC_CLINICA"
+            required
+            class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono uppercase text-sky-300"
+          />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Nome da Área de Loja</label>
+          <input
+            type="text"
+            id="zn-name"
+            placeholder="Ex: Clínica Fnac & Reparações"
+            required
+            class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
+          />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Descrição Operacional</label>
+          <input
+            type="text"
+            id="zn-desc"
+            placeholder="Ex: Balcão de assistência técnica"
+            class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-300"
+          />
+        </div>
+        <div>
+          <button
+            type="submit"
+            class="w-full bg-[#E1A924] hover:bg-amber-400 text-black font-black text-xs py-2.5 px-4 rounded-lg shadow transition"
+          >
+            + Adicionar Área de Loja
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div id="settings-zones-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- TAB 4: TIPOLOGIAS DE EQUIPAMENTO                                      -->
+  <!-- ===================================================================== -->
+  <section id="tab-panel-CATEGORIES" class="hidden space-y-6">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
+      <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+        Tipologias de Hardware & Comportamento Padrão do Player
+      </span>
+      <h4 class="text-base font-bold text-white mt-1.5 mb-4">
+        Configurar Categorias de Equipamento (Boxes, LEDwalls, Smart TVs, Laptops, Smartphones)
+      </h4>
+
+      <form id="category-form" class="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Código da Tipologia</label>
+          <input
+            type="text"
+            id="cat-code"
+            placeholder="Ex: TOTEM_INTERATIVO"
+            required
+            class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono uppercase text-indigo-300"
+          />
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-xs text-slate-400 mb-1">Nome da Tipologia</label>
+          <input
+            type="text"
+            id="cat-name"
+            placeholder="Ex: Totem Touch Bilheteira"
+            required
+            class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
+          />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Modo Padrão do Player</label>
+          <select
+            id="cat-mode"
+            class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-amber-300 font-bold"
+          >
+            <option value="PASSIVE">PASSIVE (Loop Vídeo/Imagem)</option>
+            <option value="IDLE_SCREENSAVER">IDLE_SCREENSAVER (Touch Wake)</option>
+            <option value="INTERACTIVE_CATALOG">INTERACTIVE_CATALOG (TV Demo)</option>
+          </select>
+        </div>
+        <div>
+          <button
+            type="submit"
+            class="w-full bg-[#E1A924] hover:bg-amber-400 text-black font-black text-xs py-2.5 px-4 rounded-lg shadow transition"
+          >
+            + Adicionar Tipologia
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div id="settings-categories-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- TAB 5: UTILIZADORES & RBAC (FASE SEGUINTE)                            -->
+  <!-- ===================================================================== -->
+  <section id="tab-panel-USERS" class="hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-8 text-center">
+      <span class="text-xs font-mono uppercase px-2.5 py-1 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
+        Próximo Sub-Módulo de Setup
+      </span>
+      <h4 class="text-lg font-bold text-white mt-3">
+        Gestão e Controlo de Utilizadores & Permissões RBAC por Loja/Insígnia
+      </h4>
+      <p class="text-xs text-slate-400 max-w-xl mx-auto mt-2">
+        Assim que validarmos este setup de Lojas, Sub-redes, Formatos e Equipamentos, ativaremos aqui a criação de contas de utilizador reais (Admin Global, Equipa Multimédia, IT Ops, Diretores de Loja e Chefes de Departamento).
+      </p>
+    </div>
+  </section>
+
+  <script is:inline>
+    const API_BASE = `${window.location.protocol}//${window.location.hostname}:3000`;
+    let liveState = null;
+    let hasPromptedPurgeThisVisit = false;
+
+    // Alternância de Tabs
+    const tabBtns = document.querySelectorAll('[data-settings-tab]');
+    const tabPanels = ['STORES', 'PROFILES', 'ZONES', 'CATEGORIES', 'USERS'];
+
+    tabBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const target = btn.getAttribute('data-settings-tab');
+        tabBtns.forEach((b) => {
+          if (b.getAttribute('data-settings-tab') === target) {
+            b.className =
+              'settings-tab-btn px-4 py-2 rounded-lg text-xs font-black bg-[#E1A924] text-black shadow transition';
+          } else {
+            b.className =
+              'settings-tab-btn px-4 py-2 rounded-lg text-xs font-bold bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-700 transition';
+          }
+        });
+        tabPanels.forEach((p) => {
+          const el = document.getElementById(`tab-panel-${p}`);
+          if (el) {
+            if (p === target) el.classList.remove('hidden');
+            else el.classList.add('hidden');
+          }
+        });
+      });
+    });
+
+    async function postSettingsAction(payload) {
+      const res = await fetch(`${API_BASE}/api/v1/live/settings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (data.state) {
+        liveState = data.state;
+        renderSettings();
+      }
+    }
+
+    async function fetchSettingsState() {
+      const res = await fetch(`${API_BASE}/api/v1/live/state`);
+      liveState = await res.json();
+      renderSettings();
+    }
+
+    function renderSettings() {
+      if (!liveState) return;
+
+      const stores = liveState.storesCatalog || [];
+      const hasDemoStores = stores.some((s) => s.isDemo);
+      const isProdStrict = Boolean(liveState.productionStrictMode) && !hasDemoStores;
+
+      // Pop-up automático sempre que acede à área e ainda existem dados de simulação!
+      const modal = document.getElementById('demo-purge-modal');
+      if (!hasPromptedPurgeThisVisit && (hasDemoStores || !liveState.productionStrictMode)) {
+        hasPromptedPurgeThisVisit = true;
+        modal?.classList.remove('hidden');
+      }
+
+      const envBadge = document.getElementById('env-mode-badge');
+      const btnPurge = document.getElementById('btn-open-purge-dialog');
+      const btnRestore = document.getElementById('btn-restore-demo');
+
+      if (isProdStrict) {
+        if (envBadge) {
+          envBadge.textContent = '🟢 MODO PRODUÇÃO REAL (Sem Dados Demo)';
+          envBadge.className =
+            'px-2.5 py-0.5 rounded text-[11px] font-mono font-bold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+        }
+        btnPurge?.classList.add('hidden');
+        btnRestore?.classList.remove('hidden');
+      } else {
+        if (envBadge) {
+          envBadge.textContent = '🟡 MODO SIMULAÇÃO / DEMO ATIVO';
+          envBadge.className =
+            'px-2.5 py-0.5 rounded text-[11px] font-mono font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30';
+        }
+        btnPurge?.classList.remove('hidden');
+        btnRestore?.classList.add('hidden');
+      }
+
+      // 1. Renderiza Tabela de Lojas
+      document.getElementById('stores-total-label').textContent = String(stores.length);
+      const storesTbody = document.getElementById('settings-stores-tbody');
+      if (stores.length === 0) {
+        storesTbody.innerHTML = `
+          <tr>
+            <td colspan="8" class="py-8 text-center text-slate-400">
+              Os dados de simulação foram limpos! Utilize o formulário acima ou a Importação CSV ao lado para criar as suas Lojas Reais.
+            </td>
+          </tr>
+        `;
+      } else {
+        storesTbody.innerHTML = stores
+          .map(
+            (s) => `
+            <tr class="hover:bg-slate-800/40 transition">
+              <td class="py-2.5 px-3 font-mono font-bold text-amber-300">#${s.code}</td>
+              <td class="py-2.5 px-3 font-bold">${s.brand} (${s.country})</td>
+              <td class="py-2.5 px-3 text-slate-300">${s.region || 'Geral'}</td>
+              <td class="py-2.5 px-3">
+                <strong class="text-white">${s.name}</strong>
+                <span class="text-slate-400 ml-1">(${s.city})</span>
+              </td>
+              <td class="py-2.5 px-3 font-mono text-emerald-300">${s.gatewaySubnet || '—'}</td>
+              <td class="py-2.5 px-3 font-mono text-slate-400">${s.lat}, ${s.lng}</td>
+              <td class="py-2.5 px-3">
+                <span class="px-2 py-0.5 rounded text-[10px] font-mono ${
+                  s.isDemo
+                    ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
+                    : 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-bold'
+                }">
+                  ${s.isDemo ? 'DEMO' : 'REAL'}
+                </span>
+              </td>
+              <td class="py-2.5 px-3 text-right space-x-1.5">
+                <button
+                  type="button"
+                  data-edit-store="${s.id}"
+                  class="px-2 py-1 rounded bg-slate-800 hover:bg-amber-400 hover:text-black text-slate-300 font-bold text-[11px] transition"
+                >
+                  ✎ Editar
+                </button>
+                <button
+                  type="button"
+                  data-del-store="${s.id}"
+                  class="px-2 py-1 rounded bg-slate-950 hover:bg-rose-500/20 text-rose-400 border border-slate-800 text-[11px] transition"
+                >
+                  ✕
+                </button>
+              </td>
+            </tr>
+          `
+          )
+          .join('');
+
+        document.querySelectorAll('[data-edit-store]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const id = btn.getAttribute('data-edit-store');
+            const st = stores.find((x) => x.id === id);
+            if (!st) return;
+            document.getElementById('st-id').value = st.id;
+            document.getElementById('st-brand').value = st.brand;
+            document.getElementById('st-country').value = st.country;
+            document.getElementById('st-code').value = st.code;
+            document.getElementById('st-region').value = st.region || 'Grande Lisboa';
+            document.getElementById('st-city').value = st.city;
+            document.getElementById('st-name').value = st.name;
+            document.getElementById('st-gateway').value = st.gatewaySubnet || '';
+            document.getElementById('st-lat').value = st.lat;
+            document.getElementById('st-lng').value = st.lng;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          });
+        });
+
+        document.querySelectorAll('[data-del-store]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            postSettingsAction({
+              action: 'DELETE_STORE',
+              id: btn.getAttribute('data-del-store'),
+            });
+          });
+        });
+      }
+
+      // 2. Renderiza Formatos de Ecrã
+      const profiles = liveState.screenProfilesCatalog || [];
+      const profGrid = document.getElementById('settings-profiles-grid');
+      profGrid.innerHTML = profiles
+        .map(
+          (p) => `
+          <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 flex flex-col justify-between gap-3">
+            <div>
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  ${p.code}
+                </span>
+                <span class="text-[11px] font-mono text-emerald-300">
+                  ${p.widthPx}x${p.heightPx} (${p.aspectRatio})
+                </span>
+              </div>
+              <h5 class="text-sm font-bold text-white mt-2">${p.name}</h5>
+              <p class="text-[11px] font-mono text-slate-400 mt-1">
+                Orientação: <strong>${p.orientation}</strong> • Inversão 180° Padrão: <strong>${p.defaultInvert180 ? 'SIM (Pernas p/ o Ar)' : 'NÃO (Normal)'}</strong>
+              </p>
+            </div>
+            <div class="flex justify-end">
+              <button
+                type="button"
+                data-del-profile="${p.id}"
+                class="px-2.5 py-1 rounded bg-slate-950 hover:bg-rose-500/20 text-rose-400 border border-slate-800 text-xs transition"
+              >
+                ✕ Remover Formato
+              </button>
+            </div>
+          </div>
+        `
+        )
+        .join('');
+
+      document.querySelectorAll('[data-del-profile]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          postSettingsAction({
+            action: 'DELETE_PROFILE',
+            id: btn.getAttribute('data-del-profile'),
+          });
+        });
+      });
+
+      // 3. Renderiza Áreas de Loja
+      const zones = liveState.zonesCatalog || [];
+      const zonesGrid = document.getElementById('settings-zones-grid');
+      zonesGrid.innerHTML = zones
+        .map(
+          (z) => `
+          <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between gap-3">
+            <div>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30 font-bold">
+                ${z.code}
+              </span>
+              <h5 class="text-sm font-bold text-white mt-1.5">${z.name}</h5>
+              <p class="text-xs text-slate-400 mt-0.5">${z.description || ''}</p>
+            </div>
+            <button
+              type="button"
+              data-del-zone="${z.id}"
+              class="px-2.5 py-1.5 rounded bg-slate-950 hover:bg-rose-500/20 text-rose-400 border border-slate-800 text-xs transition"
+            >
+              ✕
+            </button>
+          </div>
+        `
+        )
+        .join('');
+
+      document.querySelectorAll('[data-del-zone]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          postSettingsAction({
+            action: 'DELETE_ZONE',
+            id: btn.getAttribute('data-del-zone'),
+          });
+        });
+      });
+
+      // 4. Renderiza Tipologias de Equipamento
+      const cats = liveState.categoriesCatalog || [];
+      const catsGrid = document.getElementById('settings-categories-grid');
+      catsGrid.innerHTML = cats
+        .map(
+          (c) => `
+          <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between gap-3">
+            <div>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">
+                ${c.code}
+              </span>
+              <h5 class="text-sm font-bold text-white mt-1.5">${c.icon || '🖥️'} ${c.name}</h5>
+              <p class="text-[11px] font-mono text-amber-300 mt-0.5">Modo Padrão: ${c.defaultMode}</p>
+            </div>
+            <button
+              type="button"
+              data-del-cat="${c.id}"
+              class="px-2.5 py-1.5 rounded bg-slate-950 hover:bg-rose-500/20 text-rose-400 border border-slate-800 text-xs transition"
+            >
+              ✕
+            </button>
+          </div>
+        `
+        )
+        .join('');
+
+      document.querySelectorAll('[data-del-cat]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          postSettingsAction({
+            action: 'DELETE_CATEGORY',
+            id: btn.getAttribute('data-del-cat'),
+          });
+        });
+      });
+    }
+
+    // Eventos do Pop-up de Purge Demo
+    const modal = document.getElementById('demo-purge-modal');
+    document.getElementById('btn-close-modal')?.addEventListener('click', () => modal?.classList.add('hidden'));
+    document.getElementById('btn-keep-demo')?.addEventListener('click', () => modal?.classList.add('hidden'));
+    document.getElementById('btn-open-purge-dialog')?.addEventListener('click', () => modal?.classList.remove('hidden'));
+
+    document.getElementById('btn-confirm-purge-modal')?.addEventListener('click', async () => {
+      await postSettingsAction({ action: 'PURGE_DEMO_DATA' });
+      modal?.classList.add('hidden');
+    });
+
+    document.getElementById('btn-restore-demo')?.addEventListener('click', async () => {
+      await postSettingsAction({ action: 'RESTORE_DEMO_DATA' });
+    });
+
+    // Submissão Loja Individual
+    document.getElementById('store-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await postSettingsAction({
+        action: 'UPSERT_STORE',
+        store: {
+          id: document.getElementById('st-id').value || undefined,
+          brand: document.getElementById('st-brand').value,
+          country: document.getElementById('st-country').value,
+          code: document.getElementById('st-code').value,
+          region: document.getElementById('st-region').value,
+          city: document.getElementById('st-city').value,
+          name: document.getElementById('st-name').value,
+          gatewaySubnet: document.getElementById('st-gateway').value,
+          lat: Number(document.getElementById('st-lat').value || 38.753),
+          lng: Number(document.getElementById('st-lng').value || -9.189),
+        },
+      });
+      document.getElementById('store-form').reset();
+      document.getElementById('st-id').value = '';
+    });
+
+    // Importação CSV em Lote
+    document.getElementById('btn-bulk-import-stores')?.addEventListener('click', async () => {
+      const raw = document.getElementById('bulk-stores-csv')?.value || '';
+      const lines = raw
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter(Boolean);
+      if (lines.length === 0) return;
+
+      const parsedStores = lines.map((line) => {
+        const parts = line.split(/[;,]/).map((s) => s.trim());
+        return {
+          code: parts[0] || '1',
+          brand: parts[1] || 'FNAC',
+          country: parts[2] || 'PT',
+          region: parts[3] || 'Geral',
+          city: parts[4] || 'Lisboa',
+          name: parts[5] || `Loja #${parts[0]}`,
+          gatewaySubnet: parts[6] || '',
+          lat: Number(parts[7] || 38.753),
+          lng: Number(parts[8] || -9.189),
+        };
+      });
+
+      await postSettingsAction({
+        action: 'BULK_IMPORT_STORES',
+        stores: parsedStores,
+      });
+      document.getElementById('bulk-stores-csv').value = '';
+    });
+
+    // Submissão Formato de Ecrã
+    document.getElementById('profile-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const w = Number(document.getElementById('sp-width').value || 1920);
+      const h = Number(document.getElementById('sp-height').value || 1080);
+      await postSettingsAction({
+        action: 'UPSERT_PROFILE',
+        profile: {
+          code: document.getElementById('sp-code').value,
+          name: document.getElementById('sp-name').value,
+          widthPx: w,
+          heightPx: h,
+          orientation: h > w ? 'VERTICAL' : 'HORIZONTAL',
+          defaultInvert180: document.getElementById('sp-invert180').checked,
+        },
+      });
+      document.getElementById('profile-form').reset();
+    });
+
+    // Submissão Área de Loja
+    document.getElementById('zone-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await postSettingsAction({
+        action: 'UPSERT_ZONE',
+        zone: {
+          code: document.getElementById('zn-code').value,
+          name: document.getElementById('zn-name').value,
+          description: document.getElementById('zn-desc').value,
+        },
+      });
+      document.getElementById('zone-form').reset();
+    });
+
+    // Submissão Tipologia
+    document.getElementById('category-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await postSettingsAction({
+        action: 'UPSERT_CATEGORY',
+        category: {
+          code: document.getElementById('cat-code').value,
+          name: document.getElementById('cat-name').value,
+          defaultMode: document.getElementById('cat-mode').value,
+        },
+      });
+      document.getElementById('category-form').reset();
+    });
+
+    fetchSettingsState();
+  </script>
+</DashboardLayout>

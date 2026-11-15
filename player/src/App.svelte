@@ -27,6 +27,7 @@
   let deviceName = localStorage.getItem('invision_device_name') || `Terminal (${hardwareUid})`;
   let isPaired = localStorage.getItem('invision_is_paired') !== 'false';
   let interactionMode = localStorage.getItem('invision_mode') || 'PASSIVE';
+  let invert180 = localStorage.getItem('invision_invert_180') === 'true';
 
   const WS_URL = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.hostname}:3000/ws/sync?hw_uid=${encodeURIComponent(hardwareUid)}`;
 
@@ -344,6 +345,7 @@
           userAgent: navigator.userAgent,
           brand: activeBrand,
           interactionMode,
+          invert180,
           currentMediaTitle: selectedTvCategory
             ? selectedTvCategory.title
             : `${currentSlot ? currentSlot.title : 'Slide'} (${currentIndex + 1}/${activeLoop.length})`,
@@ -361,6 +363,10 @@
         if (data.device && data.device.name) {
           deviceName = data.device.name;
           localStorage.setItem('invision_device_name', deviceName);
+        }
+        if (data.device && data.device.invert180 !== undefined) {
+          invert180 = Boolean(data.device.invert180);
+          localStorage.setItem('invision_invert_180', String(invert180));
         }
         if (data.device && data.device.status === 'ONLINE' && !isPaired) {
           isPaired = true;
@@ -562,6 +568,10 @@
               if (msg.device && msg.device.interactionMode) {
                 switchMode(msg.device.interactionMode);
               }
+              if (msg.device && msg.device.invert180 !== undefined) {
+                invert180 = Boolean(msg.device.invert180);
+                localStorage.setItem('invision_invert_180', String(invert180));
+              }
               sendLiveHeartbeat();
             }
           }
@@ -667,6 +677,7 @@
 <main
   class="player-root"
   class:cursor-none={interactionMode === 'PASSIVE' && !showOsd}
+  class:invert-180={invert180}
   on:click={handleUserActivationGesture}
   on:touchend={handleUserActivationGesture}
   on:mouseup={handleUserActivationGesture}
@@ -921,6 +932,17 @@
           </button>
           <button
             type="button"
+            class:active={invert180}
+            on:click={() => {
+              invert180 = !invert180;
+              localStorage.setItem('invision_invert_180', String(invert180));
+              sendLiveHeartbeat();
+            }}
+          >
+            🔄 {invert180 ? 'Ecrã Invertido 180° (Ativo)' : 'Inverter Ecrã 180° (Pernas p/ o Ar)'}
+          </button>
+          <button
+            type="button"
             on:click={() => {
               isPaired = !isPaired;
               localStorage.setItem('invision_is_paired', String(isPaired));
@@ -946,6 +968,11 @@
     padding: 0;
     overflow: hidden;
     background: #000;
+    transition: transform 0.3s ease;
+  }
+  .invert-180 {
+    transform: rotate(180deg);
+    transform-origin: center center;
   }
   .cursor-none {
     cursor: none;

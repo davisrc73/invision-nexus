@@ -406,3 +406,20 @@ Arranque do desenvolvimento de uma plataforma enterprise de Digital Signage inte
 5. **Módulo de Tema "Dia e Noite" (Manual + Automático por Horário) ([dashboard/src/layouts/DashboardLayout.astro](file:///Users/daviscorreia/Antigravity%20/invision-nexus/dashboard/src/layouts/DashboardLayout.astro) e [dashboard/src/pages/index.astro](file:///Users/daviscorreia/Antigravity%20/invision-nexus/dashboard/src/pages/index.astro)):**
    - Adicionado seletor global na barra superior do Backoffice com **3 modos**: `☀️ Dia` (Light Mode), `🌙 Noite` (Dark Mode) e `🔄 Auto` (muda automaticamente para **Dia** entre as `07:00` e as `19:59`, e para **Noite** entre as `20:00` e as `06:59`, reavaliando a cada 60 segundos).
    - O Mapa Interativo de Lojas (`Leaflet`) sincroniza em tempo real com o tema ativo, alternando automaticamente entre o mapa claro (`CartoDB Light`) durante o dia e o mapa escuro (`CartoDB Dark Matter`) durante a noite.
+
+---
+
+## [2026-11-15] - Módulo de Configurações & Setup de Sistema (`/settings/`): Limpeza de Dados Demo, Lojas com Região & Sub-rede IP, Importação CSV e Inversão de Ecrã 180°
+
+### Novas Funcionalidades & Arquitetura de Master Data
+1. **Pop-up Automático de Transição para Dados Reais (`PURGE_DEMO_DATA`):**
+   - Sempre que um utilizador acede a **`⚙️ Configurações & Setup`** ([dashboard/src/pages/settings.astro](file:///Users/daviscorreia/Antigravity%20/invision-nexus/dashboard/src/pages/settings.astro)) enquanto existirem lojas de demonstração ativas, o sistema apresenta um modal de confirmação perguntando se deseja **apagar os Dados de Simulação** e entrar em **Modo de Produção Real Estrito** (preservando os equipamentos reais ligados na LAN, as Boxes Android no Watchdog ADB e os vídeos carregados). Inclui também botão para restaurar dados de simulação caso necessário.
+2. **Catálogo de Lojas com Região, Auto-Deteção por Gateway/Sub-rede IP e Importação em Lote (CSV):**
+   - Cada Loja em `storesCatalog` inclui agora **`region`** (ex: *Grande Lisboa*, *Grande Porto*, *Algarve*, *Centro*, *Île-de-France*) e **`gatewaySubnet`** (ex: `192.168.68.` ou `10.20.1.0/24`).
+   - **Auto-Deteção de Loja por IP (`matchStoreByClientIp` em [backend/live-bridge.mjs](file:///Users/daviscorreia/Antigravity%20/invision-nexus/backend/live-bridge.mjs)):** Quando uma Box Android ou Player comunica via Heartbeat, o backend compara automaticamente o IP do equipamento com a sub-rede/gateway das lojas registadas e atribui-o à Loja correspondente sem intervenção manual.
+   - **Importação Rápida CSV / Lote (`BULK_IMPORT_STORES`):** Permite colar dezenas de lojas de uma só vez a partir do Excel (`Codigo;Insignia;Pais;Regiao;Cidade;Nome;Gateway;Lat;Lng`), além do formulário visual individual.
+3. **Formatos de Ecrã (`1920x1080`, `1080x1920`, `3840x1080`) & Inversão 180° ("Pernas para o ar"):**
+   - Suporte nativo para perfis de ecrã (`screenProfilesCatalog`) e **Inversão de Ecrã 180° (`invert180`)** em [player/src/App.svelte](file:///Users/daviscorreia/Antigravity%20/invision-nexus/player/src/App.svelte) (`.player-root.invert-180 { transform: rotate(180deg); }`), pensado especificamente para painéis LED/LCD montados de cabeça para baixo pelos instaladores.
+   - Pode ser ativado/desativado **em tempo real num único clique** diretamente no cartão de cada equipamento em **`🖥️ Equipamentos`** ([dashboard/src/pages/devices.astro](file:///Users/daviscorreia/Antigravity%20/invision-nexus/dashboard/src/pages/devices.astro) via `POST /api/v1/live/devices/invert`), como predefinição de um Formato em **`⚙️ Configurações & Setup`**, ou localmente no menu secreto OSD do Player.
+4. **Áreas / Zonas de Loja & Tipologias de Equipamento Dinâmicas:**
+   - Todos os seletores de Loja, Zona/Departamento, Formato de Ecrã e Tipologia de Equipamento em `/devices/` e `/playlists/` passam a ser alimentados dinamicamente pelos catálogos configurados em `/settings/`.

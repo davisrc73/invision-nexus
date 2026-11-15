@@ -343,6 +343,23 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     }
 
     function renderAll() {
+      if (
+        profileSelect &&
+        Array.isArray(liveState.screenProfilesCatalog) &&
+        liveState.screenProfilesCatalog.length > 0
+      ) {
+        const curProf = profileSelect.value;
+        profileSelect.innerHTML = liveState.screenProfilesCatalog
+          .map(
+            (p) =>
+              `<option value="${p.aspectRatio}">Guardrail: ${p.widthPx}x${p.heightPx} (${p.aspectRatio}) — ${p.name}</option>`
+          )
+          .join('');
+        if (curProf && Array.from(profileSelect.options).some((o) => o.value === curProf)) {
+          profileSelect.value = curProf;
+        }
+      }
+
       const eff = liveState.effectivePlayback || {};
       const bannerTitle = document.getElementById('effective-banner-title');
       const bannerSub = document.getElementById('effective-banner-sub');

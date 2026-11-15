@@ -71,35 +71,89 @@ function syncPlaylistsByTags() {
 
 function getDefaultStoresCatalog() {
   return [
-    { id: 'st-01', code: '9', brand: 'FNAC', country: 'PT', city: 'Albufeira', name: 'Fnac Algarve Shopping', lat: 37.128, lng: -8.279, baselineDevices: 105, baselineOffline: 4, baselineClicks: 28, compliancePct: 96 },
-    { id: 'st-02', code: '4', brand: 'FNAC', country: 'PT', city: 'Alcabideche', name: 'Fnac Cascaishopping', lat: 38.739, lng: -9.398, baselineDevices: 142, baselineOffline: 9, baselineClicks: 73, compliancePct: 94 },
-    { id: 'st-03', code: '7', brand: 'FNAC', country: 'PT', city: 'Almada', name: 'Fnac Almada Forum', lat: 38.660, lng: -9.175, baselineDevices: 104, baselineOffline: 5, baselineClicks: 42, compliancePct: 95 },
-    { id: 'st-04', code: '29', brand: 'FNAC', country: 'PT', city: 'Almancil', name: 'Fnac Mar Shopping Algarve', lat: 37.098, lng: -7.999, baselineDevices: 44, baselineOffline: 1, baselineClicks: 19, compliancePct: 98 },
-    { id: 'st-05', code: '32', brand: 'FNAC', country: 'PT', city: 'Amadora', name: 'Fnac UBBO / Dolce Vita Tejo', lat: 38.776, lng: -9.219, baselineDevices: 84, baselineOffline: 8, baselineClicks: 36, compliancePct: 90 },
-    { id: 'st-06', code: '33', brand: 'FNAC', country: 'PT', city: 'Aveiro', name: 'Fnac Forum Aveiro', lat: 40.641, lng: -8.653, baselineDevices: 74, baselineOffline: 6, baselineClicks: 67, compliancePct: 92 },
-    { id: 'st-07', code: '13', brand: 'FNAC', country: 'PT', city: 'Braga', name: 'Fnac Braga Parque', lat: 41.558, lng: -8.405, baselineDevices: 101, baselineOffline: 7, baselineClicks: 31, compliancePct: 93 },
-    { id: 'st-08', code: '14', brand: 'FNAC', country: 'PT', city: 'Carnaxide', name: 'Fnac Alegro Alfragide', lat: 38.729, lng: -9.218, baselineDevices: 139, baselineOffline: 11, baselineClicks: 94, compliancePct: 92 },
-    { id: 'st-09', code: '61', brand: 'FNAC', country: 'PT', city: 'Castelo Branco', name: 'Fnac Alegro Castelo Branco', lat: 39.819, lng: -7.508, baselineDevices: 18, baselineOffline: 1, baselineClicks: 12, compliancePct: 100 },
-    { id: 'st-10', code: '10', brand: 'FNAC', country: 'PT', city: 'Coimbra', name: 'Fnac Forum Coimbra', lat: 40.211, lng: -8.442, baselineDevices: 117, baselineOffline: 6, baselineClicks: 57, compliancePct: 97 },
-    { id: 'st-11', code: '1', brand: 'FNAC', country: 'PT', city: 'Lisboa', name: 'FNAC Colombo (Lisboa)', lat: 38.753, lng: -9.189, baselineDevices: 168, baselineOffline: 4, baselineClicks: 145, compliancePct: 98 },
-    { id: 'st-12', code: '2', brand: 'FNAC', country: 'PT', city: 'Lisboa', name: 'FNAC Chiado', lat: 38.710, lng: -9.140, baselineDevices: 96, baselineOffline: 3, baselineClicks: 88, compliancePct: 97 },
-    { id: 'st-13', code: '5', brand: 'FNAC', country: 'PT', city: 'Lisboa', name: 'FNAC Vasco da Gama', lat: 38.768, lng: -9.097, baselineDevices: 132, baselineOffline: 5, baselineClicks: 112, compliancePct: 96 },
-    { id: 'st-14', code: '3', brand: 'FNAC', country: 'PT', city: 'Matosinhos', name: 'FNAC NorteShopping', lat: 41.181, lng: -8.654, baselineDevices: 154, baselineOffline: 6, baselineClicks: 129, compliancePct: 96 },
-    { id: 'st-15', code: '6', brand: 'FNAC', country: 'PT', city: 'Porto', name: 'Fnac Santa Catarina', lat: 41.148, lng: -8.606, baselineDevices: 88, baselineOffline: 4, baselineClicks: 64, compliancePct: 95 },
-    { id: 'st-16', code: '8', brand: 'FNAC', country: 'PT', city: 'Vila Nova de Gaia', name: 'Fnac GaiaShopping', lat: 41.118, lng: -8.622, baselineDevices: 112, baselineOffline: 9, baselineClicks: 51, compliancePct: 92 },
-    { id: 'st-17', code: '15', brand: 'FNAC', country: 'PT', city: 'Viseu', name: 'Fnac Palácio do Gelo', lat: 40.644, lng: -7.916, baselineDevices: 68, baselineOffline: 19, baselineClicks: 24, compliancePct: 72 },
-    { id: 'st-18', code: '18', brand: 'FNAC', country: 'PT', city: 'Guimarães', name: 'Fnac GuimarãeShopping', lat: 41.442, lng: -8.302, baselineDevices: 62, baselineOffline: 3, baselineClicks: 29, compliancePct: 95 },
-    { id: 'st-19', code: '21', brand: 'FNAC', country: 'PT', city: 'Leiria', name: 'Fnac LeiriaShopping', lat: 39.734, lng: -8.821, baselineDevices: 71, baselineOffline: 4, baselineClicks: 38, compliancePct: 94 },
-    { id: 'st-20', code: '25', brand: 'FNAC', country: 'PT', city: 'Faro', name: 'Fnac Forum Algarve', lat: 37.028, lng: -7.946, baselineDevices: 79, baselineOffline: 3, baselineClicks: 44, compliancePct: 96 },
-    { id: 'st-21', code: '101', brand: 'DARTY', country: 'FR', city: 'Paris', name: 'DARTY Paris République', lat: 48.867, lng: 2.363, baselineDevices: 145, baselineOffline: 5, baselineClicks: 92, compliancePct: 97 },
-    { id: 'st-22', code: '102', brand: 'DARTY', country: 'FR', city: 'Lyon', name: 'DARTY Lyon Part-Dieu', lat: 45.760, lng: 4.859, baselineDevices: 118, baselineOffline: 7, baselineClicks: 64, compliancePct: 94 },
+    { id: 'st-01', code: '9', brand: 'FNAC', country: 'PT', region: 'Sul & Ilhas', gatewaySubnet: '10.109.0.1/24', city: 'Albufeira', name: 'Fnac Algarve Shopping', lat: 37.128, lng: -8.279, baselineDevices: 105, baselineOffline: 4, baselineClicks: 28, compliancePct: 96, isDemo: true },
+    { id: 'st-02', code: '4', brand: 'FNAC', country: 'PT', region: 'Grande Lisboa', gatewaySubnet: '10.104.0.1/24', city: 'Alcabideche', name: 'Fnac Cascaishopping', lat: 38.739, lng: -9.398, baselineDevices: 142, baselineOffline: 9, baselineClicks: 73, compliancePct: 94, isDemo: true },
+    { id: 'st-03', code: '7', brand: 'FNAC', country: 'PT', region: 'Grande Lisboa', gatewaySubnet: '10.107.0.1/24', city: 'Almada', name: 'Fnac Almada Forum', lat: 38.660, lng: -9.175, baselineDevices: 104, baselineOffline: 5, baselineClicks: 42, compliancePct: 95, isDemo: true },
+    { id: 'st-04', code: '29', brand: 'FNAC', country: 'PT', region: 'Sul & Ilhas', gatewaySubnet: '10.129.0.1/24', city: 'Almancil', name: 'Fnac Mar Shopping Algarve', lat: 37.098, lng: -7.999, baselineDevices: 44, baselineOffline: 1, baselineClicks: 19, compliancePct: 98, isDemo: true },
+    { id: 'st-05', code: '32', brand: 'FNAC', country: 'PT', region: 'Grande Lisboa', gatewaySubnet: '10.132.0.1/24', city: 'Amadora', name: 'Fnac UBBO / Dolce Vita Tejo', lat: 38.776, lng: -9.219, baselineDevices: 84, baselineOffline: 8, baselineClicks: 36, compliancePct: 90, isDemo: true },
+    { id: 'st-06', code: '33', brand: 'FNAC', country: 'PT', region: 'Centro', gatewaySubnet: '10.133.0.1/24', city: 'Aveiro', name: 'Fnac Forum Aveiro', lat: 40.641, lng: -8.653, baselineDevices: 74, baselineOffline: 6, baselineClicks: 67, compliancePct: 92, isDemo: true },
+    { id: 'st-07', code: '13', brand: 'FNAC', country: 'PT', region: 'Norte', gatewaySubnet: '10.113.0.1/24', city: 'Braga', name: 'Fnac Braga Parque', lat: 41.558, lng: -8.405, baselineDevices: 101, baselineOffline: 7, baselineClicks: 31, compliancePct: 93, isDemo: true },
+    { id: 'st-08', code: '14', brand: 'FNAC', country: 'PT', region: 'Grande Lisboa', gatewaySubnet: '10.114.0.1/24', city: 'Carnaxide', name: 'Fnac Alegro Alfragide', lat: 38.729, lng: -9.218, baselineDevices: 139, baselineOffline: 11, baselineClicks: 94, compliancePct: 92, isDemo: true },
+    { id: 'st-09', code: '61', brand: 'FNAC', country: 'PT', region: 'Centro', gatewaySubnet: '10.161.0.1/24', city: 'Castelo Branco', name: 'Fnac Alegro Castelo Branco', lat: 39.819, lng: -7.508, baselineDevices: 18, baselineOffline: 1, baselineClicks: 12, compliancePct: 100, isDemo: true },
+    { id: 'st-10', code: '10', brand: 'FNAC', country: 'PT', region: 'Centro', gatewaySubnet: '10.110.0.1/24', city: 'Coimbra', name: 'Fnac Forum Coimbra', lat: 40.211, lng: -8.442, baselineDevices: 117, baselineOffline: 6, baselineClicks: 57, compliancePct: 97, isDemo: true },
+    { id: 'st-11', code: '1', brand: 'FNAC', country: 'PT', region: 'Grande Lisboa', gatewaySubnet: '192.168.68.1/24', city: 'Lisboa', name: 'FNAC Colombo (Lisboa)', lat: 38.753, lng: -9.189, baselineDevices: 168, baselineOffline: 4, baselineClicks: 145, compliancePct: 98, isDemo: true },
+    { id: 'st-12', code: '2', brand: 'FNAC', country: 'PT', region: 'Grande Lisboa', gatewaySubnet: '10.102.0.1/24', city: 'Lisboa', name: 'FNAC Chiado', lat: 38.710, lng: -9.140, baselineDevices: 96, baselineOffline: 3, baselineClicks: 88, compliancePct: 97, isDemo: true },
+    { id: 'st-13', code: '5', brand: 'FNAC', country: 'PT', region: 'Grande Lisboa', gatewaySubnet: '10.105.0.1/24', city: 'Lisboa', name: 'FNAC Vasco da Gama', lat: 38.768, lng: -9.097, baselineDevices: 132, baselineOffline: 5, baselineClicks: 112, compliancePct: 96, isDemo: true },
+    { id: 'st-14', code: '3', brand: 'FNAC', country: 'PT', region: 'Norte', gatewaySubnet: '10.103.0.1/24', city: 'Matosinhos', name: 'FNAC NorteShopping', lat: 41.181, lng: -8.654, baselineDevices: 154, baselineOffline: 6, baselineClicks: 129, compliancePct: 96, isDemo: true },
+    { id: 'st-15', code: '6', brand: 'FNAC', country: 'PT', region: 'Norte', gatewaySubnet: '10.106.0.1/24', city: 'Porto', name: 'Fnac Santa Catarina', lat: 41.148, lng: -8.606, baselineDevices: 88, baselineOffline: 4, baselineClicks: 64, compliancePct: 95, isDemo: true },
+    { id: 'st-16', code: '8', brand: 'FNAC', country: 'PT', region: 'Norte', gatewaySubnet: '10.108.0.1/24', city: 'Vila Nova de Gaia', name: 'Fnac GaiaShopping', lat: 41.118, lng: -8.622, baselineDevices: 112, baselineOffline: 9, baselineClicks: 51, compliancePct: 92, isDemo: true },
+    { id: 'st-17', code: '15', brand: 'FNAC', country: 'PT', region: 'Centro', gatewaySubnet: '10.115.0.1/24', city: 'Viseu', name: 'Fnac Palácio do Gelo', lat: 40.644, lng: -7.916, baselineDevices: 68, baselineOffline: 19, baselineClicks: 24, compliancePct: 72, isDemo: true },
+    { id: 'st-18', code: '18', brand: 'FNAC', country: 'PT', region: 'Norte', gatewaySubnet: '10.118.0.1/24', city: 'Guimarães', name: 'Fnac GuimarãeShopping', lat: 41.442, lng: -8.302, baselineDevices: 62, baselineOffline: 3, baselineClicks: 29, compliancePct: 95, isDemo: true },
+    { id: 'st-19', code: '21', brand: 'FNAC', country: 'PT', region: 'Centro', gatewaySubnet: '10.121.0.1/24', city: 'Leiria', name: 'Fnac LeiriaShopping', lat: 39.734, lng: -8.821, baselineDevices: 71, baselineOffline: 4, baselineClicks: 38, compliancePct: 94, isDemo: true },
+    { id: 'st-20', code: '25', brand: 'FNAC', country: 'PT', region: 'Sul & Ilhas', gatewaySubnet: '10.125.0.1/24', city: 'Faro', name: 'Fnac Forum Algarve', lat: 37.028, lng: -7.946, baselineDevices: 79, baselineOffline: 3, baselineClicks: 44, compliancePct: 96, isDemo: true },
+    { id: 'st-21', code: '101', brand: 'DARTY', country: 'FR', region: 'Île-de-France', gatewaySubnet: '10.201.0.1/24', city: 'Paris', name: 'DARTY Paris République', lat: 48.867, lng: 2.363, baselineDevices: 145, baselineOffline: 5, baselineClicks: 92, compliancePct: 97, isDemo: true },
+    { id: 'st-22', code: '102', brand: 'DARTY', country: 'FR', region: 'Auvergne-Rhône-Alpes', gatewaySubnet: '10.202.0.1/24', city: 'Lyon', name: 'DARTY Lyon Part-Dieu', lat: 45.760, lng: 4.859, baselineDevices: 118, baselineOffline: 7, baselineClicks: 64, compliancePct: 94, isDemo: true },
   ];
+}
+
+function getDefaultZonesCatalog() {
+  return [
+    { id: 'zn-01', code: 'ENTRANCE_LEDWALL', name: 'LEDwall Entrada de Loja / Montra', description: 'Ecrãs de impacto na entrada principal da loja' },
+    { id: 'zn-02', code: 'IT_COMPUTERS', name: 'Informática & Portáteis Expo', description: 'Bancadas de Laptops, Monitores e Acessórios IT' },
+    { id: 'zn-03', code: 'TV_VIDEO', name: 'TVs & Som em Exposição', description: 'Mural de Smart TVs e Soundbars' },
+    { id: 'zn-04', code: 'TELECOM_MOBILES', name: 'Smartphones, Tablets & Wearables', description: 'Bancadas de exposição Telecom' },
+    { id: 'zn-05', code: 'GAMING', name: 'Gaming & Consolas', description: 'Zona Gaming, Consolas e PC Gaming' },
+    { id: 'zn-06', code: 'CHECKOUT_SERVICE', name: 'Linha de Caixas / Fnac Service / Clínica', description: 'Ecrãs de fila de espera, Crédito e Serviços' },
+  ];
+}
+
+function getDefaultScreenProfilesCatalog() {
+  return [
+    { id: 'sp-01', code: '16:9', name: 'Full HD Horizontal (1920x1080)', widthPx: 1920, heightPx: 1080, aspectRatio: '16:9', orientation: 'HORIZONTAL', defaultInvert180: false },
+    { id: 'sp-02', code: '9:16', name: 'Totem / Mupi Vertical (1080x1920)', widthPx: 1080, heightPx: 1920, aspectRatio: '9:16', orientation: 'VERTICAL', defaultInvert180: false },
+    { id: 'sp-03', code: '16:9-4K', name: '4K UHD Horizontal (3840x2160)', widthPx: 3840, heightPx: 2160, aspectRatio: '16:9', orientation: 'HORIZONTAL', defaultInvert180: false },
+    { id: 'sp-04', code: '32:9', name: 'Banner Ultra-Wide Prateleira (1920x540)', widthPx: 1920, heightPx: 540, aspectRatio: '32:9', orientation: 'ULTRA_WIDE', defaultInvert180: false },
+  ];
+}
+
+function getDefaultCategoriesCatalog() {
+  return [
+    { id: 'cat-01', code: 'ANDROID_BOX', name: 'Box Android X98 Plus (Player Kiosk)', icon: '🖥️', defaultMode: 'PASSIVE' },
+    { id: 'cat-02', code: 'LEDWALL', name: 'LEDwall / Monitor Profissional', icon: '🧱', defaultMode: 'PASSIVE' },
+    { id: 'cat-03', code: 'TV_DEMO', name: 'Smart TV em Exposição (Catálogo)', icon: '📺', defaultMode: 'INTERACTIVE_CATALOG' },
+    { id: 'cat-04', code: 'LAPTOP_EXPO', name: 'Laptop em Exposição (Idle + Touch)', icon: '💻', defaultMode: 'IDLE_SCREENSAVER' },
+    { id: 'cat-05', code: 'SMARTPHONE_EXPO', name: 'Smartphone em Exposição (Idle + Touch)', icon: '📱', defaultMode: 'IDLE_SCREENSAVER' },
+    { id: 'cat-06', code: 'TABLET_EXPO', name: 'Tablet em Exposição (Idle + Touch)', icon: '📟', defaultMode: 'IDLE_SCREENSAVER' },
+  ];
+}
+
+function matchStoreByClientIp(ipStr, stores) {
+  if (!ipStr || !Array.isArray(stores)) return null;
+  const cleanIp = String(ipStr).replace('::ffff:', '').trim();
+  const parts = cleanIp.split('.');
+  if (parts.length < 3) return null;
+  const prefix3 = `${parts[0]}.${parts[1]}.${parts[2]}.`;
+
+  for (const s of stores) {
+    if (!s.gatewaySubnet) continue;
+    const gwClean = String(s.gatewaySubnet).split('/')[0].trim();
+    const gwParts = gwClean.split('.');
+    if (gwParts.length >= 3) {
+      const gwPrefix3 = `${gwParts[0]}.${gwParts[1]}.${gwParts[2]}.`;
+      if (prefix3 === gwPrefix3) return s;
+    }
+  }
+  return null;
 }
 
 function createDefaultState() {
   return {
     brand: 'FNAC',
+    productionStrictMode: false,
     storesCatalog: getDefaultStoresCatalog(),
+    zonesCatalog: getDefaultZonesCatalog(),
+    screenProfilesCatalog: getDefaultScreenProfilesCatalog(),
+    categoriesCatalog: getDefaultCategoriesCatalog(),
     mediaCatalog: [],
     playlists: [
       {
@@ -181,7 +235,24 @@ if (fs.existsSync(STATE_FILE)) {
       state.adbBoxes = [];
     }
     if (!Array.isArray(state.storesCatalog) || state.storesCatalog.length === 0) {
-      state.storesCatalog = getDefaultStoresCatalog();
+      if (!state.productionStrictMode) {
+        state.storesCatalog = getDefaultStoresCatalog();
+      } else {
+        state.storesCatalog = [];
+      }
+    }
+    if (!Array.isArray(state.zonesCatalog) || state.zonesCatalog.length === 0) {
+      state.zonesCatalog = getDefaultZonesCatalog();
+    }
+    if (!Array.isArray(state.screenProfilesCatalog) || state.screenProfilesCatalog.length === 0) {
+      state.screenProfilesCatalog = getDefaultScreenProfilesCatalog();
+    }
+    if (!Array.isArray(state.categoriesCatalog) || state.categoriesCatalog.length === 0) {
+      state.categoriesCatalog = getDefaultCategoriesCatalog();
+    }
+    for (const s of state.storesCatalog || []) {
+      if (!s.region) s.region = 'Geral';
+      if (!s.gatewaySubnet) s.gatewaySubnet = '';
     }
     for (const asset of state.mediaCatalog || []) {
       asset.tags = parseTagsInput(asset.tags);
@@ -817,6 +888,12 @@ const server = http.createServer(async (req, res) => {
       const hwUid = payload.hardwareUid || 'UNKNOWN-DEVICE';
       let dev = state.devices.find((d) => d.hardwareUid === hwUid);
 
+      const clientIp =
+        req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+        req.socket?.remoteAddress ||
+        '';
+      const autoMatchedStore = matchStoreByClientIp(clientIp, state.storesCatalog);
+
       if (!dev) {
         const ua = payload.userAgent || '';
         const isAndroid = /Android/i.test(ua);
@@ -834,14 +911,18 @@ const server = http.createServer(async (req, res) => {
               : isMobile
               ? `Telemóvel / Tablet #${devNumber} (${hwUid})`
               : `Player Mac #${devNumber} (${hwUid})`),
-          brand: payload.brand || state.brand || 'FNAC',
-          storeName: payload.storeName || 'FNAC Colombo (Lisboa)',
+          brand: payload.brand || (autoMatchedStore ? autoMatchedStore.brand : state.brand) || 'FNAC',
+          storeName:
+            payload.storeName ||
+            (autoMatchedStore ? autoMatchedStore.name : state.storesCatalog[0]?.name || 'FNAC Colombo (Lisboa)'),
           zone: payload.zone || (isMobile ? 'TELECOM_MOBILES' : 'ENTRANCE_LEDWALL'),
           category:
             payload.category ||
             (isAndroid ? 'ANDROID_BOX' : isMobile ? 'SMARTPHONE_EXPO' : 'LEDWALL'),
           interactionMode: payload.interactionMode || 'PASSIVE',
           screenProfile: payload.screenProfile || '1920x1080 (16:9)',
+          invert180: Boolean(payload.invert180),
+          clientIp: String(clientIp).replace('::ffff:', ''),
           status: payload.isPaired === false ? 'PENDING_APPROVAL' : 'ONLINE',
           currentMediaTitle: payload.currentMediaTitle || 'Em Reprodução',
           currentMediaUrl: payload.currentMediaUrl || null,
@@ -858,6 +939,10 @@ const server = http.createServer(async (req, res) => {
         dev.pairingCode = payload.pairingCode || dev.pairingCode;
         dev.status = payload.isPaired === false ? 'PENDING_APPROVAL' : 'ONLINE';
         dev.interactionMode = payload.interactionMode || dev.interactionMode;
+        if (payload.invert180 !== undefined && dev.invert180 === undefined) {
+          dev.invert180 = Boolean(payload.invert180);
+        }
+        dev.clientIp = String(clientIp).replace('::ffff:', '') || dev.clientIp;
         dev.currentMediaTitle = payload.currentMediaTitle || dev.currentMediaTitle;
         dev.currentMediaUrl =
           payload.currentMediaUrl !== undefined ? payload.currentMediaUrl : dev.currentMediaUrl;
@@ -898,13 +983,25 @@ const server = http.createServer(async (req, res) => {
           (d.hardwareUid || '').toUpperCase() === code
       );
 
+      const catObj = (state.categoriesCatalog || []).find((c) => c.code === payload.category);
       const resolvedMode =
         payload.interactionMode ||
+        (catObj ? catObj.defaultMode : null) ||
         (payload.category === 'TV_DEMO'
           ? 'INTERACTIVE_CATALOG'
           : ['LAPTOP_EXPO', 'TABLET_EXPO', 'SMARTPHONE_EXPO'].includes(payload.category)
           ? 'IDLE_SCREENSAVER'
           : 'PASSIVE');
+
+      const profObj = (state.screenProfilesCatalog || []).find(
+        (p) => p.code === payload.screenProfile || p.name === payload.screenProfile
+      );
+      const resolvedInvert180 =
+        payload.invert180 !== undefined
+          ? Boolean(payload.invert180)
+          : profObj
+          ? Boolean(profObj.defaultInvert180)
+          : false;
 
       if (!dev) {
         dev = {
@@ -913,11 +1010,12 @@ const server = http.createServer(async (req, res) => {
           pairingCode: code,
           name: payload.name || 'Box Android X98 Plus',
           brand: payload.brand || 'FNAC',
-          storeName: payload.storeName || 'FNAC Colombo',
+          storeName: payload.storeName || 'FNAC Colombo (Lisboa)',
           zone: payload.zone || 'ENTRANCE_LEDWALL',
           category: payload.category || 'ANDROID_BOX',
           interactionMode: resolvedMode,
           screenProfile: payload.screenProfile || '1920x1080 (16:9)',
+          invert180: resolvedInvert180,
           status: 'ONLINE',
           currentMediaTitle: 'Emparelhado — A iniciar Loop',
           currentMediaUrl: null,
@@ -935,6 +1033,7 @@ const server = http.createServer(async (req, res) => {
         dev.category = payload.category || dev.category;
         dev.interactionMode = resolvedMode;
         dev.screenProfile = payload.screenProfile || dev.screenProfile;
+        dev.invert180 = resolvedInvert180;
         dev.status = 'ONLINE';
         dev.lastSeenAt = new Date().toISOString();
       }
@@ -957,6 +1056,190 @@ const server = http.createServer(async (req, res) => {
     } catch {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'PAIRING_ERROR' }));
+    }
+    return;
+  }
+
+  // 5B. POST /api/v1/live/devices/invert -> Inverte 180° ("pernas para o ar") instantaneamente num equipamento!
+  if (req.method === 'POST' && url.pathname === '/api/v1/live/devices/invert') {
+    try {
+      const payload = await readJsonBody(req);
+      const hwUid = payload.hardwareUid;
+      const dev = state.devices.find(
+        (d) => d.hardwareUid === hwUid || d.pairingCode === hwUid
+      );
+      if (!dev) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'DEVICE_NOT_FOUND' }));
+        return;
+      }
+      dev.invert180 = payload.invert180 !== undefined ? Boolean(payload.invert180) : !dev.invert180;
+      saveState();
+      broadcastUpdate({
+        type: 'DEVICE_PAIRED',
+        hardwareUid: dev.hardwareUid,
+        pairingCode: dev.pairingCode,
+        device: dev,
+      });
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, device: dev, state: getEnrichedState() }));
+    } catch {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'INVERT_ERROR' }));
+    }
+    return;
+  }
+
+  // 5C. POST /api/v1/live/settings -> Gestão Master Data (Lojas, Zonas, Formatos, Categorias & Purge Demo)
+  if (req.method === 'POST' && url.pathname === '/api/v1/live/settings') {
+    try {
+      const payload = await readJsonBody(req);
+      const action = payload.action;
+
+      if (action === 'PURGE_DEMO_DATA') {
+        state.productionStrictMode = true;
+        // Remove lojas marcadas como isDemo (ou zera o baseline se todas forem demo mas o utilizador quiser manter apenas lojas reais)
+        const realStores = (state.storesCatalog || []).filter((s) => !s.isDemo);
+        state.storesCatalog = realStores;
+        saveState();
+        broadcastUpdate();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, state: getEnrichedState() }));
+        return;
+      }
+
+      if (action === 'RESTORE_DEMO_DATA') {
+        state.productionStrictMode = false;
+        const existingReal = (state.storesCatalog || []).filter((s) => !s.isDemo);
+        state.storesCatalog = [...existingReal, ...getDefaultStoresCatalog()];
+        saveState();
+        broadcastUpdate();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, state: getEnrichedState() }));
+        return;
+      }
+
+      if (action === 'UPSERT_STORE' && payload.store) {
+        const st = payload.store;
+        const id = st.id || `st-${Date.now()}`;
+        const newStore = {
+          id,
+          code: String(st.code || '1').trim(),
+          brand: st.brand || 'FNAC',
+          country: st.country || 'PT',
+          region: st.region || 'Grande Lisboa',
+          gatewaySubnet: String(st.gatewaySubnet || '').trim(),
+          city: String(st.city || 'Lisboa').trim(),
+          name: String(st.name || 'Nova Loja Fnac').trim(),
+          lat: Number(st.lat || 38.753),
+          lng: Number(st.lng || -9.189),
+          baselineDevices: Number(st.baselineDevices || 0),
+          baselineOffline: Number(st.baselineOffline || 0),
+          baselineClicks: Number(st.baselineClicks || 0),
+          compliancePct: Number(st.compliancePct || 100),
+          isDemo: false,
+        };
+        const idx = state.storesCatalog.findIndex((s) => s.id === id || s.code === newStore.code);
+        if (idx >= 0) {
+          state.storesCatalog[idx] = newStore;
+        } else {
+          state.storesCatalog.unshift(newStore);
+        }
+      } else if (action === 'BULK_IMPORT_STORES' && Array.isArray(payload.stores)) {
+        for (const st of payload.stores) {
+          const code = String(st.code || Math.floor(100 + Math.random() * 900)).trim();
+          const newStore = {
+            id: `st-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            code,
+            brand: (st.brand || 'FNAC').toUpperCase(),
+            country: (st.country || 'PT').toUpperCase(),
+            region: st.region || 'Geral',
+            gatewaySubnet: String(st.gatewaySubnet || '').trim(),
+            city: String(st.city || 'Lisboa').trim(),
+            name: String(st.name || 'Loja').trim(),
+            lat: Number(st.lat || 38.753),
+            lng: Number(st.lng || -9.189),
+            baselineDevices: 0,
+            baselineOffline: 0,
+            baselineClicks: 0,
+            compliancePct: 100,
+            isDemo: false,
+          };
+          const existingIdx = state.storesCatalog.findIndex((s) => s.code === code && s.brand === newStore.brand);
+          if (existingIdx >= 0) {
+            state.storesCatalog[existingIdx] = { ...state.storesCatalog[existingIdx], ...newStore, isDemo: false };
+          } else {
+            state.storesCatalog.push(newStore);
+          }
+        }
+      } else if (action === 'DELETE_STORE' && payload.id) {
+        state.storesCatalog = state.storesCatalog.filter((s) => s.id !== payload.id);
+      } else if (action === 'UPSERT_ZONE' && payload.zone) {
+        const z = payload.zone;
+        const code = String(z.code || z.name || 'ZONA')
+          .trim()
+          .toUpperCase()
+          .replace(/[^A-Z0-9_]/g, '_');
+        const newZone = {
+          id: z.id || `zn-${Date.now()}`,
+          code,
+          name: String(z.name || code).trim(),
+          description: String(z.description || '').trim(),
+        };
+        const idx = state.zonesCatalog.findIndex((x) => x.code === code || x.id === newZone.id);
+        if (idx >= 0) state.zonesCatalog[idx] = newZone;
+        else state.zonesCatalog.push(newZone);
+      } else if (action === 'DELETE_ZONE' && payload.id) {
+        state.zonesCatalog = state.zonesCatalog.filter((x) => x.id !== payload.id);
+      } else if (action === 'UPSERT_PROFILE' && payload.profile) {
+        const p = payload.profile;
+        const w = Number(p.widthPx || 1920);
+        const h = Number(p.heightPx || 1080);
+        const ratio = p.aspectRatio || (w === h ? '1:1' : w > h ? '16:9' : '9:16');
+        const orientation = p.orientation || (h > w ? 'VERTICAL' : 'HORIZONTAL');
+        const code = String(p.code || `${w}x${h}`).trim();
+        const newProf = {
+          id: p.id || `sp-${Date.now()}`,
+          code,
+          name: String(p.name || `${code} (${ratio})`).trim(),
+          widthPx: w,
+          heightPx: h,
+          aspectRatio: ratio,
+          orientation,
+          defaultInvert180: Boolean(p.defaultInvert180),
+        };
+        const idx = state.screenProfilesCatalog.findIndex((x) => x.id === newProf.id || x.code === code);
+        if (idx >= 0) state.screenProfilesCatalog[idx] = newProf;
+        else state.screenProfilesCatalog.push(newProf);
+      } else if (action === 'DELETE_PROFILE' && payload.id) {
+        state.screenProfilesCatalog = state.screenProfilesCatalog.filter((x) => x.id !== payload.id);
+      } else if (action === 'UPSERT_CATEGORY' && payload.category) {
+        const c = payload.category;
+        const code = String(c.code || c.name || 'DEVICE')
+          .trim()
+          .toUpperCase()
+          .replace(/[^A-Z0-9_]/g, '_');
+        const newCat = {
+          id: c.id || `cat-${Date.now()}`,
+          code,
+          name: String(c.name || code).trim(),
+          icon: c.icon || '🖥️',
+          defaultMode: c.defaultMode || 'PASSIVE',
+        };
+        const idx = state.categoriesCatalog.findIndex((x) => x.code === code || x.id === newCat.id);
+        if (idx >= 0) state.categoriesCatalog[idx] = newCat;
+        else state.categoriesCatalog.push(newCat);
+      } else if (action === 'DELETE_CATEGORY' && payload.id) {
+        state.categoriesCatalog = state.categoriesCatalog.filter((x) => x.id !== payload.id);
+      }
+
+      saveState();
+      broadcastUpdate();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, state: getEnrichedState() }));
+    } catch (err) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message || 'SETTINGS_ERROR' }));
     }
     return;
   }

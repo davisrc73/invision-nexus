@@ -191,7 +191,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
       </div>
     </div>
 
-    <form id="pairing-form" class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
+    <form id="pairing-form" class="grid grid-cols-1 md:grid-cols-8 gap-3 items-end">
       <div>
         <label class="block text-xs text-slate-400 mb-1">Código ou UID no Ecrã</label>
         <input
@@ -219,25 +219,16 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
           id="pair-store"
           class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200"
         >
-          <option value="FNAC Colombo (Lisboa)">FNAC Colombo (Lisboa)</option>
-          <option value="FNAC Vasco da Gama">FNAC Vasco da Gama</option>
-          <option value="FNAC NorteShopping">FNAC NorteShopping</option>
-          <option value="Fnac Almada Forum">Fnac Almada Forum</option>
-          <option value="Fnac Cascaishopping">Fnac Cascaishopping</option>
-          <option value="DARTY Paris République">DARTY Paris République</option>
+          <option value="Fnac Colombo">Fnac Colombo</option>
         </select>
       </div>
       <div>
-        <label class="block text-xs text-slate-400 mb-1">Zona / Departamento</label>
+        <label class="block text-xs text-slate-400 mb-1">Zona / Área de Loja</label>
         <select
           id="pair-zone"
           class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200"
         >
           <option value="ENTRANCE_LEDWALL">LEDwall Entrada de Loja</option>
-          <option value="IT_COMPUTERS">Informática & Portáteis Expo</option>
-          <option value="TV_VIDEO">TVs em Exposição</option>
-          <option value="TELECOM_MOBILES">Smartphones & Tablets Expo</option>
-          <option value="GAMING">Gaming & Consolas</option>
         </select>
       </div>
       <div>
@@ -247,12 +238,24 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
           class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200"
         >
           <option value="ANDROID_BOX">ANDROID_BOX (X98 Plus Passivo)</option>
-          <option value="LEDWALL">LEDWALL (Entrada / Topo)</option>
-          <option value="TV_DEMO">TV_DEMO (Catálogo Interativo TV)</option>
-          <option value="LAPTOP_EXPO">LAPTOP_EXPO (Idle + Touch Wake)</option>
-          <option value="SMARTPHONE_EXPO">SMARTPHONE_EXPO (Idle + Touch Wake)</option>
-          <option value="TABLET_EXPO">TABLET_EXPO (Idle + Touch Wake)</option>
         </select>
+      </div>
+      <div>
+        <label class="block text-xs text-slate-400 mb-1">Formato Ecrã</label>
+        <select
+          id="pair-profile"
+          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-emerald-300"
+        >
+          <option value="16:9">1920x1080 (16:9)</option>
+          <option value="9:16">1080x1920 (9:16)</option>
+          <option value="32:9">3840x1080 (32:9)</option>
+        </select>
+      </div>
+      <div class="flex items-center pb-1">
+        <label class="flex items-center gap-1.5 text-xs font-bold text-amber-300 cursor-pointer bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 w-full">
+          <input type="checkbox" id="pair-invert180" class="accent-amber-400 w-4 h-4" />
+          <span>🔄 Inverter 180°</span>
+        </label>
       </div>
       <div>
         <button
@@ -320,6 +323,87 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
               : st.publicPlayerPort || 5174;
           adbUrlInput.value = `${window.location.protocol}//${window.location.hostname}:${detectedPort}`;
           isPlayerUrlInitialized = true;
+        }
+
+        // Sincroniza selects com os Catálogos Dinâmicos de /settings/
+        if (Array.isArray(st.storesCatalog) && st.storesCatalog.length > 0) {
+          const pairStoreEl = document.getElementById('pair-store');
+          if (pairStoreEl) {
+            const curVal = pairStoreEl.value;
+            pairStoreEl.innerHTML = st.storesCatalog
+              .map(
+                (s) =>
+                  `<option value="${s.name}">${s.name} (${s.region || s.city}${s.gatewaySubnet ? ' • ' + s.gatewaySubnet : ''})</option>`
+              )
+              .join('');
+            if (curVal && Array.from(pairStoreEl.options).some((o) => o.value === curVal)) {
+              pairStoreEl.value = curVal;
+            }
+          }
+          if (storeFilterEl) {
+            const curFilter = storeFilterEl.value;
+            storeFilterEl.innerHTML =
+              `<option value="ALL">Todas as Lojas (${st.storesCatalog.length})</option>` +
+              st.storesCatalog
+                .map((s) => `<option value="${s.name}">${s.name} (${s.city})</option>`)
+                .join('');
+            if (curFilter && Array.from(storeFilterEl.options).some((o) => o.value === curFilter)) {
+              storeFilterEl.value = curFilter;
+            }
+          }
+        }
+
+        if (Array.isArray(st.zonesCatalog) && st.zonesCatalog.length > 0) {
+          const pairZoneEl = document.getElementById('pair-zone');
+          if (pairZoneEl) {
+            const curVal = pairZoneEl.value;
+            pairZoneEl.innerHTML = st.zonesCatalog
+              .map((z) => `<option value="${z.code}">${z.name} (${z.code})</option>`)
+              .join('');
+            if (curVal && Array.from(pairZoneEl.options).some((o) => o.value === curVal)) {
+              pairZoneEl.value = curVal;
+            }
+          }
+        }
+
+        if (Array.isArray(st.categoriesCatalog) && st.categoriesCatalog.length > 0) {
+          const pairCatEl = document.getElementById('pair-category');
+          if (pairCatEl) {
+            const curVal = pairCatEl.value;
+            pairCatEl.innerHTML = st.categoriesCatalog
+              .map((c) => `<option value="${c.code}">${c.icon || ''} ${c.code} (${c.name})</option>`)
+              .join('');
+            if (curVal && Array.from(pairCatEl.options).some((o) => o.value === curVal)) {
+              pairCatEl.value = curVal;
+            }
+          }
+          if (catFilterEl) {
+            const curCat = catFilterEl.value;
+            catFilterEl.innerHTML =
+              `<option value="ALL">Todas as Categorias (${st.categoriesCatalog.length})</option>` +
+              st.categoriesCatalog
+                .map((c) => `<option value="${c.code}">${c.icon || ''} ${c.code} (${c.name})</option>`)
+                .join('');
+            if (curCat && Array.from(catFilterEl.options).some((o) => o.value === curCat)) {
+              catFilterEl.value = curCat;
+            }
+          }
+        }
+
+        if (Array.isArray(st.screenProfilesCatalog) && st.screenProfilesCatalog.length > 0) {
+          const pairProfEl = document.getElementById('pair-profile');
+          if (pairProfEl) {
+            const curVal = pairProfEl.value;
+            pairProfEl.innerHTML = st.screenProfilesCatalog
+              .map(
+                (p) =>
+                  `<option value="${p.aspectRatio}" data-invert="${p.invert180 ? '1' : '0'}">${p.widthPx}x${p.heightPx} (${p.aspectRatio}) — ${p.name}</option>`
+              )
+              .join('');
+            if (curVal && Array.from(pairProfEl.options).some((o) => o.value === curVal)) {
+              pairProfEl.value = curVal;
+            }
+          }
         }
 
         // Renderiza Boxes Android ADB
@@ -478,19 +562,41 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
                       ID: ${d.pairingCode || d.hardwareUid}
                     </span>
                     <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-sky-300">${d.category}</span>
-                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800">${d.storeName || 'FNAC Colombo'}</span>
+                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800">${d.storeName || 'Fnac Colombo'}</span>
+                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-900 text-emerald-300 border border-slate-800">${d.screenProfile || '16:9'}</span>
+                    ${
+                      d.invert180
+                        ? `<span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold">🔄 180° INVERTIDO</span>`
+                        : ''
+                    }
                   </div>
                   <p class="text-[11px] font-mono text-slate-400 mt-1">
-                    ▶ Em exibição: <span class="text-emerald-300 font-semibold">${d.currentMediaTitle}</span> • Prioridade: <strong>${d.activePriority || 'NORMAL'}</strong> • Modo: ${d.interactionMode}
+                    ▶ Em exibição: <span class="text-emerald-300 font-semibold">${d.currentMediaTitle}</span> • Zona: <strong>${d.zone || 'ENTRANCE_LEDWALL'}</strong> • IP: ${d.clientIp || 'LAN'}
                   </p>
                 </div>
-                <div class="flex items-center gap-2 shrink-0">
+                <div class="flex items-center gap-2 shrink-0 flex-wrap">
+                  <button
+                    type="button"
+                    data-invert-device="${d.hardwareUid}"
+                    data-invert-current="${d.invert180 ? '1' : '0'}"
+                    class="px-2.5 py-1.5 rounded ${
+                      d.invert180
+                        ? 'bg-amber-500 text-black font-black'
+                        : 'bg-slate-900 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold'
+                    } text-[11px] transition"
+                    title="Inverter Ecrã 180° (Pernas para o ar) em Tempo Real"
+                  >
+                    🔄 ${d.invert180 ? '180° ON' : 'Inverter 180°'}
+                  </button>
                   <button
                     type="button"
                     data-pick-device="${d.pairingCode || d.hardwareUid}"
                     data-pick-name="${d.name}"
-                    data-pick-store="${d.storeName || 'FNAC Colombo (Lisboa)'}"
+                    data-pick-store="${d.storeName || 'Fnac Colombo'}"
+                    data-pick-zone="${d.zone || 'ENTRANCE_LEDWALL'}"
                     data-pick-cat="${d.category || 'ANDROID_BOX'}"
+                    data-pick-profile="${d.screenProfile || '16:9'}"
+                    data-pick-invert="${d.invert180 ? '1' : '0'}"
                     class="px-2.5 py-1.5 rounded bg-[#E1A924] hover:bg-amber-400 text-black font-bold text-[11px] transition"
                   >
                     ${d.status === 'PENDING_APPROVAL' ? '⚡ Emparelhar Esta Box' : '✎ Configurar'}
@@ -509,12 +615,34 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
             )
             .join('');
 
+          document.querySelectorAll('[data-invert-device]').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+              const hardwareUid = btn.getAttribute('data-invert-device');
+              const isCur = btn.getAttribute('data-invert-current') === '1';
+              await fetch(`${API_BASE}/api/v1/live/devices/invert`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ hardwareUid, invert180: !isCur }),
+              });
+              refreshDevicesPage();
+            });
+          });
+
           document.querySelectorAll('[data-pick-device]').forEach((btn) => {
             btn.addEventListener('click', () => {
               document.getElementById('pair-code').value = btn.getAttribute('data-pick-device');
               document.getElementById('pair-name').value = btn.getAttribute('data-pick-name');
+              const stName = btn.getAttribute('data-pick-store');
+              if (stName) document.getElementById('pair-store').value = stName;
+              const zn = btn.getAttribute('data-pick-zone');
+              if (zn) document.getElementById('pair-zone').value = zn;
               const cat = btn.getAttribute('data-pick-cat');
               if (cat) document.getElementById('pair-category').value = cat;
+              const prof = btn.getAttribute('data-pick-profile');
+              if (prof) document.getElementById('pair-profile').value = prof;
+              const inv = btn.getAttribute('data-pick-invert') === '1';
+              const invEl = document.getElementById('pair-invert180');
+              if (invEl) invEl.checked = inv;
               document.getElementById('pairing-section')?.scrollIntoView({ behavior: 'smooth' });
               document.getElementById('pair-name').focus();
             });
@@ -578,6 +706,8 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
       const storeName = document.getElementById('pair-store').value;
       const zone = document.getElementById('pair-zone').value;
       const category = document.getElementById('pair-category').value;
+      const screenProfile = document.getElementById('pair-profile')?.value || '16:9';
+      const invert180 = document.getElementById('pair-invert180')?.checked || false;
 
       const res = await fetch(`${API_BASE}/api/v1/live/pairing/approve`, {
         method: 'POST',
@@ -588,6 +718,8 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
           storeName,
           zone,
           category,
+          screenProfile,
+          invert180,
           brand: localStorage.getItem('invision_brand') || 'FNAC',
         }),
       });
@@ -595,7 +727,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
       if (res.ok) {
         const data = await res.json();
         pairFeedback.classList.remove('hidden');
-        pairFeedback.textContent = `✓ [GUARDADO VIA WEBSOCKET] Terminal "${data.device.name}" (${data.device.storeName} • ${data.device.category}) atualizado com sucesso!`;
+        pairFeedback.textContent = `✓ [GUARDADO VIA WEBSOCKET] Terminal "${data.device.name}" (${data.device.storeName} • ${data.device.category} • ${data.device.screenProfile}${data.device.invert180 ? ' • 🔄 180° Invertido' : ''}) atualizado com sucesso!`;
         refreshDevicesPage();
       }
     });
