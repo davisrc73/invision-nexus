@@ -32,94 +32,37 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
   </div>
 
   <!-- ===================================================================== -->
-  <!-- 1. UPLOAD REAL DE VÍDEOS E IMAGENS                                    -->
-  <!-- ===================================================================== -->
-  <div
-    data-rbac-hide="STORE_MANAGER,DEPT_HEAD,IT_OPS"
-    class="bg-slate-900 border border-slate-800 rounded-xl p-6 mb-8"
-  >
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4 mb-5">
-      <div>
-        <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-          1. Catálogo & Upload • SHA-256 & Format Guardrail
-        </span>
-        <h3 class="text-base font-bold text-white mt-1.5">
-          Carregar Novos Vídeos (.mp4, .webm, .mov) ou Imagens (.jpg, .png, .webp)
-        </h3>
-      </div>
-    </div>
-
-    <form id="upload-form" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
-      <div class="md:col-span-2">
-        <label class="block text-xs text-slate-400 mb-1">Ficheiro de Vídeo ou Imagem</label>
-        <input
-          type="file"
-          id="media-file-input"
-          accept="video/mp4,video/webm,video/quicktime,image/jpeg,image/png,image/webp"
-          required
-          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-[#E1A924] file:text-black hover:file:bg-amber-400"
-        />
-      </div>
-
-      <div>
-        <label class="block text-xs text-slate-400 mb-1">Título da Campanha / Ativo</label>
-        <input
-          type="text"
-          id="media-title-input"
-          placeholder="Ex: Promo Fnac Gaming"
-          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
-        />
-      </div>
-
-      <div>
-        <label class="block text-xs text-slate-400 mb-1">Duração se Imagem (s)</label>
-        <input
-          type="number"
-          id="media-duration-input"
-          value="8"
-          min="2"
-          max="120"
-          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-amber-300 font-mono"
-        />
-      </div>
-
-      <div>
-        <button
-          type="submit"
-          class="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs py-2.5 px-4 rounded-lg shadow transition"
-        >
-          ⬆ Carregar & Adicionar
-        </button>
-      </div>
-    </form>
-
-    <div id="upload-status" class="hidden mt-4 p-3 rounded-lg bg-slate-950 border border-slate-700 text-xs font-mono text-emerald-300"></div>
-  </div>
-
-  <!-- ===================================================================== -->
-  <!-- 2. SELETOR E CONFIGURADOR MULTI-PLAYLIST (4 NÍVEIS + MODOS + DAYPART) -->
+  <!-- 1. SELETOR E CONFIGURADOR MULTI-PLAYLIST (4 NÍVEIS + MODOS + TAGS)    -->
   <!-- ===================================================================== -->
   <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 mb-8">
     <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-4 mb-5">
       <div>
         <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">
-          2. Motor Multi-Playlist & Override de Prioridades
+          1. Motor Multi-Playlist, Override de Prioridades & Auto-Associação por Smart TAGs
         </span>
         <h3 class="text-base font-bold text-white mt-1.5">
-          Selecione a Playlist para Editar ou Ativar Override Imediato
+          Selecione a Playlist para Configurar TAGs Automáticas, Slots ou Share of Voice (%)
         </h3>
         <p class="text-xs text-slate-400">
-          Experimente ativar a Playlist <strong>EXCLUSIVA</strong> ou <strong>PRIORITÁRIA</strong> (com pelo menos 1 vídeo/imagem lá dentro) para ver o Player interromper a playlist <strong>NORMAL</strong> no mesmo segundo!
+          Para carregar novos vídeos/imagens ou editar TAGs de media, aceda ao módulo dedicado <a href="/content/" class="text-emerald-300 font-bold underline">🎬 Conteúdos & Media</a>.
         </p>
       </div>
 
-      <button
-        type="button"
-        id="btn-new-playlist"
-        class="px-3.5 py-2 rounded-lg bg-[#E1A924] hover:bg-amber-400 text-black font-bold text-xs shadow transition shrink-0"
-      >
-        + Criar Nova Playlist
-      </button>
+      <div class="flex items-center gap-2.5 shrink-0">
+        <a
+          href="/content/"
+          class="px-3.5 py-2 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 font-bold text-xs transition"
+        >
+          ⬆ Ir para Biblioteca de Conteúdos →
+        </a>
+        <button
+          type="button"
+          id="btn-new-playlist"
+          class="px-3.5 py-2 rounded-lg bg-[#E1A924] hover:bg-amber-400 text-black font-bold text-xs shadow transition"
+        >
+          + Criar Nova Playlist
+        </button>
+      </div>
     </div>
 
     <!-- Tabs das Playlists Existentes -->
@@ -186,6 +129,33 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
             class="w-full py-2 px-3 rounded-lg text-xs font-black transition"
           >
             ● PLAYLIST ATIVA
+          </button>
+        </div>
+      </div>
+
+      <!-- Smart TAGs de Auto-Associação desta Playlist -->
+      <div class="p-3.5 rounded-lg bg-slate-900 border border-emerald-500/30 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div>
+          <span class="text-xs font-bold text-emerald-300 block">
+            🏷️ Smart TAGs desta Playlist (Auto-Associação de Conteúdos):
+          </span>
+          <span class="text-[11px] text-slate-400">
+            Qualquer vídeo ou imagem carregado em <strong>Conteúdos & Media</strong> com uma destas TAGs entra automaticamente nesta Playlist!
+          </span>
+        </div>
+        <div class="flex items-center gap-2 md:w-96">
+          <input
+            type="text"
+            id="pl-autotags"
+            placeholder="Ex: NATAL, CREDITO, FLASH_SALE"
+            class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs font-mono uppercase text-emerald-300 focus:border-amber-400 focus:outline-none"
+          />
+          <button
+            type="button"
+            id="btn-save-autotags"
+            class="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xs transition shrink-0"
+          >
+            Sincronizar TAGs
           </button>
         </div>
       </div>
@@ -283,6 +253,8 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     const plModeSelect = document.getElementById('pl-mode');
     const plStartInput = document.getElementById('pl-start');
     const plEndInput = document.getElementById('pl-end');
+    const plAutoTagsInput = document.getElementById('pl-autotags');
+    const btnSaveAutoTags = document.getElementById('btn-save-autotags');
     const btnToggleActive = document.getElementById('btn-toggle-active');
     const targetDevicesBox = document.getElementById('target-devices-checkboxes');
 
@@ -426,6 +398,16 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
               <p class="text-[11px] font-mono text-slate-400 mt-1">
                 ${pl.items?.length || 0} ficheiro(s) • ${pl.schedulingMode === 'DYNAMIC_SOV' ? 'SoV %' : 'Slots'} • ${pl.daypartStart || '00:00'}-${pl.daypartEnd || '23:59'}
               </p>
+              ${
+                Array.isArray(pl.autoTags) && pl.autoTags.length > 0
+                  ? `<div class="mt-1.5 flex flex-wrap gap-1">${pl.autoTags
+                      .map(
+                        (t) =>
+                          `<span class="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 text-[9px] font-mono font-bold">#${t}</span>`
+                      )
+                      .join('')}</div>`
+                  : ''
+              }
             </div>
           `;
         })
@@ -444,6 +426,11 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
         plModeSelect.value = currentPl.schedulingMode || 'FIXED_SLOTS';
         plStartInput.value = currentPl.daypartStart || '00:00';
         plEndInput.value = currentPl.daypartEnd || '23:59';
+        if (plAutoTagsInput) {
+          plAutoTagsInput.value = Array.isArray(currentPl.autoTags)
+            ? currentPl.autoTags.join(', ')
+            : '';
+        }
 
         if (currentPl.isActive) {
           btnToggleActive.textContent = '● PLAYLIST ATIVA (Clique p/ Desativar)';
@@ -761,6 +748,20 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
         await savePlaylistsToServer();
       }
     });
+
+    const saveAutoTagsHandler = async () => {
+      const pl = getSelectedPlaylist();
+      if (pl && plAutoTagsInput) {
+        pl.autoTags = plAutoTagsInput.value
+          .split(/[,;]+/)
+          .map((t) => t.trim().toUpperCase())
+          .filter(Boolean);
+        await savePlaylistsToServer();
+      }
+    };
+
+    btnSaveAutoTags?.addEventListener('click', saveAutoTagsHandler);
+    plAutoTagsInput?.addEventListener('change', saveAutoTagsHandler);
 
     btnToggleActive?.addEventListener('click', async () => {
       const pl = getSelectedPlaylist();

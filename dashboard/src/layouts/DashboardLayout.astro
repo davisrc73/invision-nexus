@@ -1,7 +1,7 @@
 ---
 interface Props {
   title: string;
-  activeNav?: 'overview' | 'playlists' | 'store-wall' | 'telemetry' | 'hardware';
+  activeNav?: 'overview' | 'devices' | 'content' | 'playlists' | 'store-wall' | 'telemetry' | 'sku-roadmap';
 }
 
 const { title, activeNav = 'overview' } = Astro.props;
@@ -95,7 +95,7 @@ const { title, activeNav = 'overview' } = Astro.props;
           </select>
         </div>
 
-        <!-- Menu de Navegação -->
+        <!-- Menu de Navegação Modular -->
         <nav class="p-3 space-y-1">
           <a
             href="/"
@@ -106,8 +106,41 @@ const { title, activeNav = 'overview' } = Astro.props;
                 : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200',
             ]}
           >
-            <span>Visão Global (70 Lojas)</span>
-            <span class="text-xs font-mono text-slate-400">4.012</span>
+            <span>🏠 Visão Global (Home)</span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
+              Compliance
+            </span>
+          </a>
+
+          <a
+            href="/devices/"
+            class:list={[
+              'flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition',
+              activeNav === 'devices'
+                ? 'bg-slate-800 text-white border-l-4 border-[#E1A924]'
+                : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200',
+            ]}
+          >
+            <span>🖥️ Equipamentos (Parque IT)</span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-semibold">
+              ADB & Kiosk
+            </span>
+          </a>
+
+          <a
+            href="/content/"
+            data-rbac-hide="STORE_MANAGER,DEPT_HEAD,IT_OPS"
+            class:list={[
+              'flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition',
+              activeNav === 'content'
+                ? 'bg-slate-800 text-white border-l-4 border-[#E1A924]'
+                : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200',
+            ]}
+          >
+            <span>🎬 Conteúdos & Media</span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold">
+              Smart TAGs
+            </span>
           </a>
 
           <a
@@ -120,9 +153,9 @@ const { title, activeNav = 'overview' } = Astro.props;
                 : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200',
             ]}
           >
-            <span>Playlists (Slots & SoV)</span>
+            <span>🎞️ Playlists (Slots & SoV)</span>
             <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-semibold">
-              Guardrail
+              4 Prioridades
             </span>
           </a>
 
@@ -135,7 +168,7 @@ const { title, activeNav = 'overview' } = Astro.props;
                 : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200',
             ]}
           >
-            <span>Live Wall Loja & Incidentes</span>
+            <span>🏪 Lojas & Live Wall</span>
             <span class="text-[10px] px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300">
               Auditoria
             </span>
@@ -150,11 +183,20 @@ const { title, activeNav = 'overview' } = Astro.props;
                 : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200',
             ]}
           >
-            <span>Proof of Play & Touch CSV</span>
+            <span>📊 Relatórios & Proof of Play</span>
             <span class="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300">
-              1 Ano
+              1 Ano CSV
             </span>
           </a>
+
+          <div class="pt-2 mt-2 border-t border-slate-800/80">
+            <div class="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-slate-500 bg-slate-950/40 border border-dashed border-slate-800">
+              <span>🏷️ Catálogo SKU & Preços</span>
+              <span class="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
+                Fase 6
+              </span>
+            </div>
+          </div>
         </nav>
       </div>
 

@@ -19,9 +19,87 @@ const PRIORITY_RANK = {
   FALLBACK: 1,
 };
 
+function parseTagsInput(raw) {
+  if (!raw) return [];
+  if (Array.isArray(raw)) {
+    return Array.from(
+      new Set(
+        raw
+          .map((t) => String(t || '').trim().toUpperCase())
+          .filter(Boolean)
+      )
+    );
+  }
+  return Array.from(
+    new Set(
+      String(raw)
+        .split(/[,;]+/)
+        .map((t) => t.trim().toUpperCase())
+        .filter(Boolean)
+    )
+  );
+}
+
+/**
+ * Sincroniza automaticamente conteúdos nas playlists que tenham TAGs de auto-associação (`autoTags`) coincidentes!
+ * Mantém também os conteúdos inseridos manualmente, evitando duplicados pelo `id`.
+ */
+function syncPlaylistsByTags() {
+  if (!Array.isArray(state.playlists) || !Array.isArray(state.mediaCatalog)) return;
+  for (const pl of state.playlists) {
+    pl.autoTags = parseTagsInput(pl.autoTags);
+    if (!Array.isArray(pl.items)) pl.items = [];
+    if (pl.autoTags.length === 0) continue;
+
+    for (const asset of state.mediaCatalog) {
+      const assetTags = parseTagsInput(asset.tags);
+      if (asset.brand && pl.brand && asset.brand !== pl.brand) continue;
+      const hasMatch = pl.autoTags.some((tag) => assetTags.includes(tag));
+      if (hasMatch) {
+        const alreadyIn = pl.items.some((it) => it.id === asset.id);
+        if (!alreadyIn) {
+          pl.items.push({
+            ...asset,
+            sovPct: 50,
+            addedViaTag: true,
+          });
+        }
+      }
+    }
+  }
+}
+
+function getDefaultStoresCatalog() {
+  return [
+    { id: 'st-01', code: '9', brand: 'FNAC', country: 'PT', city: 'Albufeira', name: 'Fnac Algarve Shopping', lat: 37.128, lng: -8.279, baselineDevices: 105, baselineOffline: 4, baselineClicks: 28, compliancePct: 96 },
+    { id: 'st-02', code: '4', brand: 'FNAC', country: 'PT', city: 'Alcabideche', name: 'Fnac Cascaishopping', lat: 38.739, lng: -9.398, baselineDevices: 142, baselineOffline: 9, baselineClicks: 73, compliancePct: 94 },
+    { id: 'st-03', code: '7', brand: 'FNAC', country: 'PT', city: 'Almada', name: 'Fnac Almada Forum', lat: 38.660, lng: -9.175, baselineDevices: 104, baselineOffline: 5, baselineClicks: 42, compliancePct: 95 },
+    { id: 'st-04', code: '29', brand: 'FNAC', country: 'PT', city: 'Almancil', name: 'Fnac Mar Shopping Algarve', lat: 37.098, lng: -7.999, baselineDevices: 44, baselineOffline: 1, baselineClicks: 19, compliancePct: 98 },
+    { id: 'st-05', code: '32', brand: 'FNAC', country: 'PT', city: 'Amadora', name: 'Fnac UBBO / Dolce Vita Tejo', lat: 38.776, lng: -9.219, baselineDevices: 84, baselineOffline: 8, baselineClicks: 36, compliancePct: 90 },
+    { id: 'st-06', code: '33', brand: 'FNAC', country: 'PT', city: 'Aveiro', name: 'Fnac Forum Aveiro', lat: 40.641, lng: -8.653, baselineDevices: 74, baselineOffline: 6, baselineClicks: 67, compliancePct: 92 },
+    { id: 'st-07', code: '13', brand: 'FNAC', country: 'PT', city: 'Braga', name: 'Fnac Braga Parque', lat: 41.558, lng: -8.405, baselineDevices: 101, baselineOffline: 7, baselineClicks: 31, compliancePct: 93 },
+    { id: 'st-08', code: '14', brand: 'FNAC', country: 'PT', city: 'Carnaxide', name: 'Fnac Alegro Alfragide', lat: 38.729, lng: -9.218, baselineDevices: 139, baselineOffline: 11, baselineClicks: 94, compliancePct: 92 },
+    { id: 'st-09', code: '61', brand: 'FNAC', country: 'PT', city: 'Castelo Branco', name: 'Fnac Alegro Castelo Branco', lat: 39.819, lng: -7.508, baselineDevices: 18, baselineOffline: 1, baselineClicks: 12, compliancePct: 100 },
+    { id: 'st-10', code: '10', brand: 'FNAC', country: 'PT', city: 'Coimbra', name: 'Fnac Forum Coimbra', lat: 40.211, lng: -8.442, baselineDevices: 117, baselineOffline: 6, baselineClicks: 57, compliancePct: 97 },
+    { id: 'st-11', code: '1', brand: 'FNAC', country: 'PT', city: 'Lisboa', name: 'FNAC Colombo (Lisboa)', lat: 38.753, lng: -9.189, baselineDevices: 168, baselineOffline: 4, baselineClicks: 145, compliancePct: 98 },
+    { id: 'st-12', code: '2', brand: 'FNAC', country: 'PT', city: 'Lisboa', name: 'FNAC Chiado', lat: 38.710, lng: -9.140, baselineDevices: 96, baselineOffline: 3, baselineClicks: 88, compliancePct: 97 },
+    { id: 'st-13', code: '5', brand: 'FNAC', country: 'PT', city: 'Lisboa', name: 'FNAC Vasco da Gama', lat: 38.768, lng: -9.097, baselineDevices: 132, baselineOffline: 5, baselineClicks: 112, compliancePct: 96 },
+    { id: 'st-14', code: '3', brand: 'FNAC', country: 'PT', city: 'Matosinhos', name: 'FNAC NorteShopping', lat: 41.181, lng: -8.654, baselineDevices: 154, baselineOffline: 6, baselineClicks: 129, compliancePct: 96 },
+    { id: 'st-15', code: '6', brand: 'FNAC', country: 'PT', city: 'Porto', name: 'Fnac Santa Catarina', lat: 41.148, lng: -8.606, baselineDevices: 88, baselineOffline: 4, baselineClicks: 64, compliancePct: 95 },
+    { id: 'st-16', code: '8', brand: 'FNAC', country: 'PT', city: 'Vila Nova de Gaia', name: 'Fnac GaiaShopping', lat: 41.118, lng: -8.622, baselineDevices: 112, baselineOffline: 9, baselineClicks: 51, compliancePct: 92 },
+    { id: 'st-17', code: '15', brand: 'FNAC', country: 'PT', city: 'Viseu', name: 'Fnac Palácio do Gelo', lat: 40.644, lng: -7.916, baselineDevices: 68, baselineOffline: 19, baselineClicks: 24, compliancePct: 72 },
+    { id: 'st-18', code: '18', brand: 'FNAC', country: 'PT', city: 'Guimarães', name: 'Fnac GuimarãeShopping', lat: 41.442, lng: -8.302, baselineDevices: 62, baselineOffline: 3, baselineClicks: 29, compliancePct: 95 },
+    { id: 'st-19', code: '21', brand: 'FNAC', country: 'PT', city: 'Leiria', name: 'Fnac LeiriaShopping', lat: 39.734, lng: -8.821, baselineDevices: 71, baselineOffline: 4, baselineClicks: 38, compliancePct: 94 },
+    { id: 'st-20', code: '25', brand: 'FNAC', country: 'PT', city: 'Faro', name: 'Fnac Forum Algarve', lat: 37.028, lng: -7.946, baselineDevices: 79, baselineOffline: 3, baselineClicks: 44, compliancePct: 96 },
+    { id: 'st-21', code: '101', brand: 'DARTY', country: 'FR', city: 'Paris', name: 'DARTY Paris République', lat: 48.867, lng: 2.363, baselineDevices: 145, baselineOffline: 5, baselineClicks: 92, compliancePct: 97 },
+    { id: 'st-22', code: '102', brand: 'DARTY', country: 'FR', city: 'Lyon', name: 'DARTY Lyon Part-Dieu', lat: 45.760, lng: 4.859, baselineDevices: 118, baselineOffline: 7, baselineClicks: 64, compliancePct: 94 },
+  ];
+}
+
 function createDefaultState() {
   return {
     brand: 'FNAC',
+    storesCatalog: getDefaultStoresCatalog(),
     mediaCatalog: [],
     playlists: [
       {
@@ -32,6 +110,7 @@ function createDefaultState() {
         schedulingMode: 'FIXED_SLOTS',
         screenProfile: '16:9',
         targetDeviceIds: [], // Vazio = Toca em TODOS os equipamentos emparelhados
+        autoTags: ['NORMAL', 'GERAL'],
         daypartStart: '00:00',
         daypartEnd: '23:59',
         isActive: true,
@@ -45,6 +124,7 @@ function createDefaultState() {
         schedulingMode: 'DYNAMIC_SOV',
         screenProfile: '16:9',
         targetDeviceIds: [],
+        autoTags: ['PRIORITARIA', 'CAMPANHA'],
         daypartStart: '00:00',
         daypartEnd: '23:59',
         isActive: false,
@@ -58,6 +138,7 @@ function createDefaultState() {
         schedulingMode: 'FIXED_SLOTS',
         screenProfile: '16:9',
         targetDeviceIds: [],
+        autoTags: ['FLASH_SALE', 'NATAL', 'CREDITO'],
         daypartStart: '00:00',
         daypartEnd: '23:59',
         isActive: false,
@@ -71,6 +152,7 @@ function createDefaultState() {
         schedulingMode: 'FIXED_SLOTS',
         screenProfile: '16:9',
         targetDeviceIds: [],
+        autoTags: ['FALLBACK', 'INSTITUCIONAL'],
         daypartStart: '00:00',
         daypartEnd: '23:59',
         isActive: true,
@@ -98,10 +180,17 @@ if (fs.existsSync(STATE_FILE)) {
     if (!Array.isArray(state.adbBoxes)) {
       state.adbBoxes = [];
     }
-    for (const pl of state.playlists) {
+    if (!Array.isArray(state.storesCatalog) || state.storesCatalog.length === 0) {
+      state.storesCatalog = getDefaultStoresCatalog();
+    }
+    for (const asset of state.mediaCatalog || []) {
+      asset.tags = parseTagsInput(asset.tags);
+    }
+    for (const pl of state.playlists || []) {
       if (!Array.isArray(pl.targetDeviceIds)) {
         pl.targetDeviceIds = [];
       }
+      pl.autoTags = parseTagsInput(pl.autoTags);
     }
   } catch {
     state = createDefaultState();
@@ -610,6 +699,7 @@ const server = http.createServer(async (req, res) => {
     const heightPx = Number(url.searchParams.get('height') || 1080);
     const durationMs = Number(url.searchParams.get('duration_ms') || 10000);
     const aspectRatio = url.searchParams.get('ratio') || '16:9';
+    const tags = parseTagsInput(decodeURIComponent(url.searchParams.get('tags') || ''));
 
     const ext = path.extname(fileName) || (mimeType.startsWith('image/') ? '.jpg' : '.mp4');
     const id = crypto.randomUUID();
@@ -633,6 +723,7 @@ const server = http.createServer(async (req, res) => {
         id,
         brand,
         title,
+        tags,
         fileName,
         diskFileName,
         mimeType,
@@ -648,12 +739,54 @@ const server = http.createServer(async (req, res) => {
       };
 
       state.mediaCatalog.unshift(newAsset);
+      syncPlaylistsByTags();
       saveState();
       broadcastUpdate();
 
       res.writeHead(201, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(newAsset));
     });
+    return;
+  }
+
+  // 2B. PUT /api/v1/live/media/:id/tags -> Atualiza Título e TAGs de um conteúdo e auto-associa às Playlists
+  if (
+    req.method === 'PUT' &&
+    url.pathname.startsWith('/api/v1/live/media/') &&
+    url.pathname.endsWith('/tags')
+  ) {
+    try {
+      const parts = url.pathname.split('/');
+      const id = parts[parts.length - 2];
+      const payload = await readJsonBody(req);
+      const asset = state.mediaCatalog.find((a) => a.id === id);
+      if (!asset) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'MEDIA_NOT_FOUND' }));
+        return;
+      }
+      if (payload.title) asset.title = String(payload.title).trim();
+      if (payload.tags !== undefined) asset.tags = parseTagsInput(payload.tags);
+
+      // Atualiza também nos items já existentes nas playlists
+      for (const pl of state.playlists) {
+        for (const it of pl.items || []) {
+          if (it.id === asset.id) {
+            it.title = asset.title;
+            it.tags = asset.tags;
+          }
+        }
+      }
+
+      syncPlaylistsByTags();
+      saveState();
+      broadcastUpdate();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(getEnrichedState()));
+    } catch {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'INVALID_TAG_UPDATE' }));
+    }
     return;
   }
 
@@ -665,6 +798,7 @@ const server = http.createServer(async (req, res) => {
       if (Array.isArray(payload.playlists)) {
         state.playlists = payload.playlists;
       }
+      syncPlaylistsByTags();
       saveState();
       broadcastUpdate();
       res.writeHead(200, { 'Content-Type': 'application/json' });

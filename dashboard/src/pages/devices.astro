@@ -1,0 +1,651 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+---
+
+<DashboardLayout
+  title="Gestão e Controlo de Parque Informático & Equipamentos (Boxes ADB, TVs & Bancadas)"
+  activeNav="devices"
+>
+  <!-- BARRA DE CONTEXTO DE DRILL-DOWN (QUANDO VEM DA VISÃO GLOBAL) -->
+  <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 mb-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+    <div class="flex items-center gap-3 flex-wrap">
+      <a
+        href="/"
+        class="px-3 py-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-700 text-xs font-bold transition"
+      >
+        ← Voltar à Visão Global
+      </a>
+
+      <span class="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">
+        Filtro Loja:
+      </span>
+      <select
+        id="dev-filter-store"
+        class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:border-amber-400 focus:outline-none"
+      >
+        <option value="ALL">Todas as Lojas</option>
+        <option value="FNAC Colombo (Lisboa)">FNAC Colombo (Lisboa)</option>
+        <option value="FNAC Vasco da Gama">FNAC Vasco da Gama</option>
+        <option value="FNAC NorteShopping">FNAC NorteShopping</option>
+        <option value="Fnac Almada Forum">Fnac Almada Forum</option>
+        <option value="Fnac Cascaishopping">Fnac Cascaishopping</option>
+        <option value="DARTY Paris République">DARTY Paris République</option>
+      </select>
+
+      <span class="text-xs font-bold uppercase tracking-wider text-slate-400">
+        Tipologia:
+      </span>
+      <select
+        id="dev-filter-category"
+        class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-sky-300 font-mono focus:border-amber-400 focus:outline-none"
+      >
+        <option value="ALL">Todas as Categorias</option>
+        <option value="ANDROID_BOX">🖥️ ANDROID_BOX (Box X98 Plus Passivo)</option>
+        <option value="LEDWALL">🧱 LEDWALL (Entrada / Topo)</option>
+        <option value="TV_DEMO">📺 TV_DEMO (Smart TVs Catálogo)</option>
+        <option value="LAPTOP_EXPO">💻 LAPTOP_EXPO (Portáteis Idle + Touch)</option>
+        <option value="SMARTPHONE_EXPO">📱 SMARTPHONE_EXPO (Smartphones Expo)</option>
+        <option value="TABLET_EXPO">📟 TABLET_EXPO (Tablets Expo)</option>
+      </select>
+
+      <button
+        type="button"
+        id="btn-clear-dev-filters"
+        class="text-xs text-amber-400 hover:underline font-mono"
+      >
+        Limpar Filtros
+      </button>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <span id="dev-active-badge" class="px-3 py-1 rounded-full text-xs font-mono font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+        0 Terminais Reais na LAN
+      </span>
+    </div>
+  </div>
+
+  <!-- 1. TERMINAIS REAIS ATIVOS NA REDE LOCAL (HEARTBEAT WEBSOCKET) + ESTADO DAS 4 PRIORIDADES -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+    <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+            1. Inventário Real-Time (LAN / Heartbeat)
+          </span>
+          <h3 class="text-base font-bold text-white mt-1.5">
+            Terminais e Players Conectados Agora
+          </h3>
+        </div>
+        <a href="/store-wall/" class="text-xs text-sky-400 hover:underline font-semibold">
+          Abrir Live Wall Visual →
+        </a>
+      </div>
+
+      <div id="live-devices-list" class="space-y-3 text-xs">
+        <div class="p-4 rounded-lg bg-slate-950 border border-slate-800 text-slate-400">
+          A carregar equipamentos ligados...
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+            Precedência de Programação
+          </span>
+          <h3 class="text-base font-bold text-white mt-1.5">
+            Estado das 4 Prioridades
+          </h3>
+        </div>
+        <a href="/playlists/" class="text-xs text-amber-400 hover:underline font-semibold">
+          Playlists →
+        </a>
+      </div>
+      <div id="priority-stack-list" class="space-y-3"></div>
+    </div>
+  </div>
+
+  <!-- 2. PROVISIONAMENTO & CONTROLO KIOSK ADB (BOXES ANDROID X98 PLUS) -->
+  <div
+    data-rbac-hide="MEDIA_MANAGER,STORE_MANAGER,DEPT_HEAD"
+    class="bg-slate-900 border border-slate-800 rounded-xl p-6 mb-8"
+  >
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-slate-800 pb-4 mb-5">
+      <div>
+        <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+          2. Controlo Remoto ADB Integrado no NAS • Sem precisar de SSH/Bash
+        </span>
+        <h3 class="text-base font-bold text-white mt-1.5">
+          📺 Provisionamento Kiosk ADB & Auto-Boot Watchdog (Boxes Android X98 Plus)
+        </h3>
+        <p class="text-xs text-slate-400">
+          Ligue, abra o Player PWA em Fullscreen (Single-Tab, sem barra de tradução) e mantenha o Watchdog Pós-Reboot ativo a cada 12 segundos.
+        </p>
+      </div>
+    </div>
+
+    <form id="adb-provision-form" class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+      <div class="md:col-span-3">
+        <label class="block text-xs text-slate-400 mb-1">IP da Box Android X98 Plus</label>
+        <input
+          type="text"
+          id="adb-box-ip"
+          placeholder="192.168.68.115"
+          value="192.168.68.115"
+          required
+          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-emerald-300 focus:border-amber-400 focus:outline-none"
+        />
+      </div>
+      <div class="md:col-span-5">
+        <label class="block text-xs text-slate-400 mb-1">Endereço do Player PWA (NAS / Servidor)</label>
+        <input
+          type="text"
+          id="adb-player-url"
+          placeholder="http://192.168.68.117:5174"
+          required
+          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-sky-300 focus:border-amber-400 focus:outline-none"
+        />
+      </div>
+      <div class="md:col-span-4">
+        <button
+          type="submit"
+          id="adb-submit-btn"
+          class="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-black text-sm py-2 px-4 rounded-lg transition shadow"
+        >
+          🚀 Provisionar & Abrir Player na Box
+        </button>
+      </div>
+    </form>
+
+    <pre
+      id="adb-console-log"
+      class="hidden mt-4 p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-[11px] font-mono text-slate-300 whitespace-pre-wrap leading-relaxed"
+    ></pre>
+
+    <div class="mt-5">
+      <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2.5">
+        Boxes Android Monitorizadas pelo Watchdog do NAS (Auto-Arranque Pós-Reboot a cada 12s)
+      </h4>
+      <div id="adb-boxes-list" class="space-y-2.5 text-xs"></div>
+    </div>
+  </div>
+
+  <!-- 3. EMPARELHAMENTO ZERO-TOUCH (CÓDIGO 6 DÍGITOS) & CONFIGURAÇÃO DE LOJA/ZONA -->
+  <div
+    id="pairing-section"
+    data-rbac-hide="MEDIA_MANAGER,STORE_MANAGER,DEPT_HEAD"
+    class="bg-slate-900 border border-slate-800 rounded-xl p-6"
+  >
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-slate-800 pb-4 mb-5">
+      <div>
+        <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+          3. Emparelhamento Zero-Touch & Reconfiguração de Terminal
+        </span>
+        <h3 class="text-base font-bold text-white mt-1.5">
+          Aprovar Código de 6 Dígitos ou Alterar Nome / Loja / Modo de Operação
+        </h3>
+        <p class="text-xs text-slate-400">
+          Clique em <strong>"✎ Configurar"</strong> num equipamento da lista acima para carregar o seu código aqui e mudar o nome, loja ou modo (Passivo, Catálogo TV Demo ou Touch Screensaver).
+        </p>
+      </div>
+    </div>
+
+    <form id="pairing-form" class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
+      <div>
+        <label class="block text-xs text-slate-400 mb-1">Código ou UID no Ecrã</label>
+        <input
+          type="text"
+          id="pair-code"
+          placeholder="NX-849201"
+          value="NX-849201"
+          required
+          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono uppercase text-amber-300 focus:border-amber-400 focus:outline-none"
+        />
+      </div>
+      <div>
+        <label class="block text-xs text-slate-400 mb-1">Nome do Terminal</label>
+        <input
+          type="text"
+          id="pair-name"
+          placeholder="Box X98 Entrada Colombo"
+          required
+          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-amber-400 focus:outline-none"
+        />
+      </div>
+      <div>
+        <label class="block text-xs text-slate-400 mb-1">Loja (Insígnia)</label>
+        <select
+          id="pair-store"
+          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200"
+        >
+          <option value="FNAC Colombo (Lisboa)">FNAC Colombo (Lisboa)</option>
+          <option value="FNAC Vasco da Gama">FNAC Vasco da Gama</option>
+          <option value="FNAC NorteShopping">FNAC NorteShopping</option>
+          <option value="Fnac Almada Forum">Fnac Almada Forum</option>
+          <option value="Fnac Cascaishopping">Fnac Cascaishopping</option>
+          <option value="DARTY Paris République">DARTY Paris République</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs text-slate-400 mb-1">Zona / Departamento</label>
+        <select
+          id="pair-zone"
+          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200"
+        >
+          <option value="ENTRANCE_LEDWALL">LEDwall Entrada de Loja</option>
+          <option value="IT_COMPUTERS">Informática & Portáteis Expo</option>
+          <option value="TV_VIDEO">TVs em Exposição</option>
+          <option value="TELECOM_MOBILES">Smartphones & Tablets Expo</option>
+          <option value="GAMING">Gaming & Consolas</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs text-slate-400 mb-1">Categoria / Tipologia</label>
+        <select
+          id="pair-category"
+          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200"
+        >
+          <option value="ANDROID_BOX">ANDROID_BOX (X98 Plus Passivo)</option>
+          <option value="LEDWALL">LEDWALL (Entrada / Topo)</option>
+          <option value="TV_DEMO">TV_DEMO (Catálogo Interativo TV)</option>
+          <option value="LAPTOP_EXPO">LAPTOP_EXPO (Idle + Touch Wake)</option>
+          <option value="SMARTPHONE_EXPO">SMARTPHONE_EXPO (Idle + Touch Wake)</option>
+          <option value="TABLET_EXPO">TABLET_EXPO (Idle + Touch Wake)</option>
+        </select>
+      </div>
+      <div>
+        <button
+          type="submit"
+          class="w-full bg-[#E1A924] hover:bg-amber-400 text-black font-bold text-sm py-2 px-4 rounded-lg transition shadow"
+        >
+          Guardar / Emparelhar
+        </button>
+      </div>
+    </form>
+    <div
+      id="pair-feedback"
+      class="hidden mt-3 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-300 font-mono"
+    ></div>
+  </div>
+
+  <script is:inline>
+    const API_BASE = `${window.location.protocol}//${window.location.hostname}:3000`;
+    let isPlayerUrlInitialized = false;
+
+    // Lê parâmetros de drill-down vindos da Visão Global (?store=...&category=...)
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialStore = urlParams.get('store');
+    const initialCategory = urlParams.get('category');
+
+    const storeFilterEl = document.getElementById('dev-filter-store');
+    const catFilterEl = document.getElementById('dev-filter-category');
+
+    if (initialStore && storeFilterEl) {
+      // Se a loja não existir no select, adiciona-a dinamicamente
+      const exists = Array.from(storeFilterEl.options).some((o) => o.value === initialStore);
+      if (!exists) {
+        const opt = document.createElement('option');
+        opt.value = initialStore;
+        opt.textContent = initialStore;
+        storeFilterEl.appendChild(opt);
+      }
+      storeFilterEl.value = initialStore;
+    }
+
+    if (initialCategory && catFilterEl) {
+      catFilterEl.value = initialCategory;
+    }
+
+    document.getElementById('btn-clear-dev-filters')?.addEventListener('click', () => {
+      if (storeFilterEl) storeFilterEl.value = 'ALL';
+      if (catFilterEl) catFilterEl.value = 'ALL';
+      window.history.replaceState({}, '', '/devices/');
+      refreshDevicesPage();
+    });
+
+    storeFilterEl?.addEventListener('change', refreshDevicesPage);
+    catFilterEl?.addEventListener('change', refreshDevicesPage);
+
+    async function refreshDevicesPage() {
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/live/state`);
+        const st = await res.json();
+
+        const adbUrlInput = document.getElementById('adb-player-url');
+        if (adbUrlInput && !isPlayerUrlInitialized) {
+          const detectedPort =
+            window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+              ? 5173
+              : st.publicPlayerPort || 5174;
+          adbUrlInput.value = `${window.location.protocol}//${window.location.hostname}:${detectedPort}`;
+          isPlayerUrlInitialized = true;
+        }
+
+        // Renderiza Boxes Android ADB
+        const adbBoxesEl = document.getElementById('adb-boxes-list');
+        if (adbBoxesEl) {
+          if (!st.adbBoxes || st.adbBoxes.length === 0) {
+            adbBoxesEl.innerHTML = `
+              <div class="p-3 rounded-lg bg-slate-950 border border-dashed border-slate-800 text-slate-400">
+                Nenhuma Box Android registada no Watchdog ADB. Introduza o IP acima (ex: <code>192.168.68.115</code>) e clique em <strong>Provisionar & Abrir Player na Box</strong>.
+              </div>
+            `;
+          } else {
+            adbBoxesEl.innerHTML = st.adbBoxes
+              .map(
+                (b) => `
+                <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                  <div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <span class="w-2.5 h-2.5 rounded-full ${
+                        String(b.status).startsWith('ONLINE') || String(b.status).startsWith('AUTO-RECOVERED')
+                          ? 'bg-emerald-400'
+                          : 'bg-amber-400 animate-pulse'
+                      }"></span>
+                      <strong class="text-white font-mono text-xs">Box IP: ${b.boxIp}:5555</strong>
+                      <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                        ${b.status || 'MONITORIZADO'}
+                      </span>
+                      <span class="text-[10px] font-mono px-2 py-0.5 rounded ${
+                        b.autoWatchdog !== false
+                          ? 'bg-sky-500/15 text-sky-300 border border-sky-500/30'
+                          : 'bg-slate-800 text-slate-400'
+                      }">
+                        Watchdog Pós-Reboot: ${b.autoWatchdog !== false ? 'ATIVO (12s)' : 'PAUSADO'}
+                      </span>
+                    </div>
+                    <p class="text-[11px] font-mono text-slate-400 mt-1">
+                      URL Kiosk: <span class="text-sky-300">${b.playerUrl}</span>
+                    </p>
+                  </div>
+                  <div class="flex items-center gap-2 flex-wrap shrink-0">
+                    <button
+                      type="button"
+                      data-adb-action="RELAUNCH_URL"
+                      data-adb-ip="${b.boxIp}"
+                      data-adb-url="${b.playerUrl}"
+                      class="px-2.5 py-1.5 rounded bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 font-bold text-[11px] transition"
+                    >
+                      🔄 Abrir URL Player
+                    </button>
+                    <button
+                      type="button"
+                      data-adb-action="TAP_FULLSCREEN"
+                      data-adb-ip="${b.boxIp}"
+                      class="px-2.5 py-1.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 font-bold text-[11px] transition"
+                    >
+                      ⛶ Forçar Fullscreen
+                    </button>
+                    <button
+                      type="button"
+                      data-adb-action="REBOOT_BOX"
+                      data-adb-ip="${b.boxIp}"
+                      class="px-2.5 py-1.5 rounded bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 font-bold text-[11px] transition"
+                    >
+                      🔌 Reiniciar Box
+                    </button>
+                    <button
+                      type="button"
+                      data-adb-action="REMOVE_BOX"
+                      data-adb-ip="${b.boxIp}"
+                      class="px-2 py-1.5 rounded bg-slate-900 hover:bg-rose-500/20 text-rose-400 border border-slate-800 text-[11px] transition"
+                      title="Remover Box do Watchdog"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              `
+              )
+              .join('');
+
+            document.querySelectorAll('[data-adb-action]').forEach((btn) => {
+              btn.addEventListener('click', async () => {
+                const action = btn.getAttribute('data-adb-action');
+                const boxIp = btn.getAttribute('data-adb-ip');
+                const playerUrl = btn.getAttribute('data-adb-url');
+                const logBox = document.getElementById('adb-console-log');
+                if (logBox) {
+                  logBox.classList.remove('hidden');
+                  logBox.textContent = `A executar comando ADB [${action}] na Box ${boxIp}:5555...`;
+                }
+                await fetch(`${API_BASE}/api/v1/live/adb/action`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ boxIp, action, playerUrl }),
+                });
+                if (logBox) {
+                  logBox.textContent =
+                    action === 'REBOOT_BOX'
+                      ? `✅ Comando de Reboot enviado para a Box ${boxIp}! Assim que a Box voltar a ligar (~30s), o Watchdog do NAS abrirá o Chrome automaticamente em Fullscreen.`
+                      : `✅ Comando [${action}] executado com sucesso na Box ${boxIp}!`;
+                }
+                refreshDevicesPage();
+              });
+            });
+          }
+        }
+
+        // Filtra equipamentos reais
+        const selStore = storeFilterEl?.value || 'ALL';
+        const selCat = catFilterEl?.value || 'ALL';
+
+        const allDevs = st.devices || [];
+        const filteredDevs = allDevs.filter((d) => {
+          if (selCat !== 'ALL' && d.category !== selCat) return false;
+          if (
+            selStore !== 'ALL' &&
+            d.storeName &&
+            !d.storeName.toLowerCase().includes(selStore.toLowerCase())
+          ) {
+            return false;
+          }
+          return true;
+        });
+
+        const onlineCount = allDevs.filter((d) => d.status === 'ONLINE').length;
+        const badgeEl = document.getElementById('dev-active-badge');
+        if (badgeEl) {
+          badgeEl.textContent = `${onlineCount}/${allDevs.length} Terminais Reais Online na LAN`;
+        }
+
+        const devList = document.getElementById('live-devices-list');
+        if (filteredDevs.length === 0) {
+          devList.innerHTML = `
+            <div class="p-4 rounded-lg bg-slate-950 border border-dashed border-slate-800 text-slate-400">
+              Nenhum terminal encontrado com os filtros atuais (${selStore} / ${selCat}). Clique em <strong>Limpar Filtros</strong> ou provisione uma Box Android abaixo.
+            </div>
+          `;
+        } else {
+          devList.innerHTML = filteredDevs
+            .map(
+              (d) => `
+              <div class="p-3.5 rounded-xl bg-slate-950 border ${
+                d.status === 'PENDING_APPROVAL' ? 'border-amber-400 ring-1 ring-amber-400' : 'border-slate-800'
+              } flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div>
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="w-2.5 h-2.5 rounded-full ${
+                      d.status === 'ONLINE'
+                        ? 'bg-emerald-400'
+                        : d.status === 'PENDING_APPROVAL'
+                        ? 'bg-amber-400 animate-pulse'
+                        : 'bg-rose-500'
+                    }"></span>
+                    <strong class="text-white text-xs">${d.name}</strong>
+                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">
+                      ID: ${d.pairingCode || d.hardwareUid}
+                    </span>
+                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-sky-300">${d.category}</span>
+                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800">${d.storeName || 'FNAC Colombo'}</span>
+                  </div>
+                  <p class="text-[11px] font-mono text-slate-400 mt-1">
+                    ▶ Em exibição: <span class="text-emerald-300 font-semibold">${d.currentMediaTitle}</span> • Prioridade: <strong>${d.activePriority || 'NORMAL'}</strong> • Modo: ${d.interactionMode}
+                  </p>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    data-pick-device="${d.pairingCode || d.hardwareUid}"
+                    data-pick-name="${d.name}"
+                    data-pick-store="${d.storeName || 'FNAC Colombo (Lisboa)'}"
+                    data-pick-cat="${d.category || 'ANDROID_BOX'}"
+                    class="px-2.5 py-1.5 rounded bg-[#E1A924] hover:bg-amber-400 text-black font-bold text-[11px] transition"
+                  >
+                    ${d.status === 'PENDING_APPROVAL' ? '⚡ Emparelhar Esta Box' : '✎ Configurar'}
+                  </button>
+                  <button
+                    type="button"
+                    data-remove-device="${d.hardwareUid}"
+                    class="px-2 py-1.5 rounded bg-slate-900 hover:bg-rose-500/20 text-rose-400 border border-slate-800 text-[11px] transition"
+                    title="Remover equipamento da lista"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            `
+            )
+            .join('');
+
+          document.querySelectorAll('[data-pick-device]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+              document.getElementById('pair-code').value = btn.getAttribute('data-pick-device');
+              document.getElementById('pair-name').value = btn.getAttribute('data-pick-name');
+              const cat = btn.getAttribute('data-pick-cat');
+              if (cat) document.getElementById('pair-category').value = cat;
+              document.getElementById('pairing-section')?.scrollIntoView({ behavior: 'smooth' });
+              document.getElementById('pair-name').focus();
+            });
+          });
+
+          document.querySelectorAll('[data-remove-device]').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+              const uid = btn.getAttribute('data-remove-device');
+              await fetch(`${API_BASE}/api/v1/live/devices/${encodeURIComponent(uid)}`, {
+                method: 'DELETE',
+              });
+              refreshDevicesPage();
+            });
+          });
+        }
+
+        // Stack de Prioridades
+        const levels = [
+          { code: 'EXCLUSIVA', label: '1. EXCLUSIVA (Override Total)', desc: 'Silencia Prioritária, Normal e Fallback.' },
+          { code: 'PRIORITARIA', label: '2. PRIORITÁRIA (Campanha)', desc: 'Silencia a 100% a Normal.' },
+          { code: 'NORMAL', label: '3. NORMAL (Slots / SoV)', desc: 'Programação regular de loja.' },
+          { code: 'FALLBACK', label: '4. FALLBACK (Segurança)', desc: 'Toca quando não há campanha superior.' },
+        ];
+
+        const winningPriority = st.effectivePlayback?.activePriority || 'FALLBACK';
+        document.getElementById('priority-stack-list').innerHTML = levels
+          .map((lvl) => {
+            const count = (st.playlists || []).filter(
+              (p) => p.priority === lvl.code && p.isActive && p.items?.length > 0
+            ).length;
+            const isWinning = winningPriority === lvl.code;
+            return `
+              <div class="p-3 rounded-lg bg-slate-950 border ${
+                isWinning ? 'border-[#E1A924] ring-1 ring-[#E1A924]' : 'border-slate-800'
+              } flex items-center justify-between">
+                <div>
+                  <span class="text-xs font-black text-white uppercase">${lvl.label}</span>
+                  <p class="text-[11px] text-slate-400 mt-0.5">${lvl.desc}</p>
+                </div>
+                <span class="font-mono text-[11px] px-2 py-1 rounded ${
+                  isWinning ? 'bg-emerald-500 text-black font-black' : 'bg-slate-800 text-slate-300'
+                }">
+                  ${isWinning ? '● NO AR' : `${count} Ativa(s)`}
+                </span>
+              </div>
+            `;
+          })
+          .join('');
+      } catch {
+        // ignore
+      }
+    }
+
+    const pairingForm = document.getElementById('pairing-form');
+    const pairFeedback = document.getElementById('pair-feedback');
+
+    pairingForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const pairingCode = document.getElementById('pair-code').value;
+      const name = document.getElementById('pair-name').value;
+      const storeName = document.getElementById('pair-store').value;
+      const zone = document.getElementById('pair-zone').value;
+      const category = document.getElementById('pair-category').value;
+
+      const res = await fetch(`${API_BASE}/api/v1/live/pairing/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pairingCode,
+          name,
+          storeName,
+          zone,
+          category,
+          brand: localStorage.getItem('invision_brand') || 'FNAC',
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        pairFeedback.classList.remove('hidden');
+        pairFeedback.textContent = `✓ [GUARDADO VIA WEBSOCKET] Terminal "${data.device.name}" (${data.device.storeName} • ${data.device.category}) atualizado com sucesso!`;
+        refreshDevicesPage();
+      }
+    });
+
+    const adbForm = document.getElementById('adb-provision-form');
+    const adbLog = document.getElementById('adb-console-log');
+    const adbSubmitBtn = document.getElementById('adb-submit-btn');
+
+    adbForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const boxIp = document.getElementById('adb-box-ip').value.trim();
+      const playerUrl = document.getElementById('adb-player-url').value.trim();
+
+      if (adbLog) {
+        adbLog.classList.remove('hidden');
+        adbLog.textContent = `⏳ A ligar via ADB a ${boxIp}:5555 e a abrir ${playerUrl} na TV... (Aguarde ~4 segundos)`;
+      }
+      if (adbSubmitBtn) {
+        adbSubmitBtn.disabled = true;
+        adbSubmitBtn.textContent = '⏳ A Provisionar Box...';
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/live/adb/provision`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            boxIp,
+            playerUrl,
+            autoWatchdog: true,
+          }),
+        });
+        const data = await res.json();
+        if (adbLog) {
+          adbLog.textContent = (data.logs || []).join('\n') + (data.error ? `\n❌ ${data.error}` : '');
+        }
+        refreshDevicesPage();
+      } catch (err) {
+        if (adbLog) {
+          adbLog.textContent = `❌ Erro ao comunicar com o Backend ADB: ${err.message || err}`;
+        }
+      } finally {
+        if (adbSubmitBtn) {
+          adbSubmitBtn.disabled = false;
+          adbSubmitBtn.textContent = '🚀 Provisionar & Abrir Player na Box';
+        }
+      }
+    });
+
+    refreshDevicesPage();
+    setInterval(refreshDevicesPage, 3000);
+  </script>
+</DashboardLayout>

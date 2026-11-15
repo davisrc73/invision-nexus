@@ -2,616 +2,624 @@
 import DashboardLayout from '../layouts/DashboardLayout.astro';
 ---
 
-<DashboardLayout title="Control Plane — Visão Global do Parque & Prioridades em Tempo Real" activeNav="overview">
-  <!-- KPIs DINÂMICOS LIGADOS AO SERVIDOR LIVE BRIDGE -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-    <div class="bg-slate-900 border border-slate-800 rounded-xl p-5">
-      <div class="flex items-center justify-between">
-        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">
-          Terminais Reais Conectados
-        </span>
-        <span id="kpi-online-badge" class="px-2 py-0.5 text-[11px] font-bold rounded bg-emerald-500/15 text-emerald-400">
-          Live Heartbeat
-        </span>
-      </div>
-      <p id="kpi-devices-count" class="text-3xl font-black text-white mt-2">0</p>
-      <p id="kpi-devices-sub" class="text-xs text-slate-400 mt-1">
-        Mac, Telemóvel & Boxes Android ligados na LAN
-      </p>
-    </div>
+<DashboardLayout
+  title="Controlo Central de Operações — Visão Global & Compliance de Lojas"
+  activeNav="overview"
+>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <script
+    is:inline
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
 
-    <div class="bg-slate-900 border border-slate-800 rounded-xl p-5">
-      <div class="flex items-center justify-between">
-        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">
-          Catálogo de Media Real
+  <!-- 1. BARRA DE FILTROS GLOBAIS E ATALHOS RÁPIDOS -->
+  <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 mb-6">
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div class="flex items-center gap-3 flex-wrap">
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">
+          🔎 Filtros Rápidos:
         </span>
-        <a href="/playlists/" class="text-xs text-amber-400 hover:underline font-semibold">
-          Gerir →
+        <select
+          id="filter-country"
+          class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:border-amber-400 focus:outline-none"
+        >
+          <option value="ALL">Todos os Países (PT + FR)</option>
+          <option value="PT" selected>🇵🇹 Portugal (FNAC PT)</option>
+          <option value="FR">🇫🇷 França (DARTY / FNAC)</option>
+        </select>
+
+        <select
+          id="filter-health"
+          class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:border-amber-400 focus:outline-none"
+        >
+          <option value="ALL">Todos os Estados de Saúde</option>
+          <option value="GREEN">🟢 Saudável (&gt;= 75% Conectados)</option>
+          <option value="YELLOW">🟡 Atenção (25% a 75%)</option>
+          <option value="RED">🔴 Crítico (&lt;= 25%)</option>
+        </select>
+
+        <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer ml-2">
+          <input type="checkbox" id="filter-active-only" checked class="accent-[#E1A924] rounded" />
+          Mostrar apenas Lojas Ativas
+        </label>
+      </div>
+
+      <div class="flex items-center gap-2.5">
+        <a
+          href="/devices/"
+          class="px-3.5 py-1.5 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/30 text-xs font-bold transition"
+        >
+          🖥️ Gerir Equipamentos & Boxes ADB →
+        </a>
+        <a
+          href="/content/"
+          class="px-3.5 py-1.5 rounded-lg bg-[#E1A924] hover:bg-amber-400 text-black text-xs font-black transition shadow"
+        >
+          ⬆ Carregar Conteúdos (TAGs)
         </a>
       </div>
-      <p id="kpi-media-count" class="text-3xl font-black text-white mt-2">0</p>
-      <p id="kpi-media-sub" class="text-xs text-slate-400 mt-1">
-        Vídeos e imagens validados com SHA-256
-      </p>
-    </div>
-
-    <div class="bg-slate-900 border border-slate-800 rounded-xl p-5">
-      <div class="flex items-center justify-between">
-        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">
-          Exibições Reais (PoP) & Toques
-        </span>
-        <a href="/telemetry/" class="text-xs text-sky-400 hover:underline font-semibold">
-          Ver CSV →
-        </a>
-      </div>
-      <p id="kpi-pop-count" class="text-3xl font-black text-emerald-400 mt-2">0</p>
-      <p id="kpi-touch-sub" class="text-xs text-slate-400 mt-1">
-        0 interações Touch / TV Demo registadas
-      </p>
-    </div>
-
-    <div class="bg-slate-900 border border-slate-800 rounded-xl p-5">
-      <div class="flex items-center justify-between">
-        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">
-          Incidentes de Loja Abertos
-        </span>
-        <a href="/store-wall/" class="text-xs text-amber-400 hover:underline font-semibold">
-          Ver Live Wall →
-        </a>
-      </div>
-      <p id="kpi-incidents-count" class="text-3xl font-black text-rose-400 mt-2">0</p>
-      <p class="text-xs text-slate-400 mt-1">
-        Alertas reportados pela loja em tempo real
-      </p>
     </div>
   </div>
 
-  <!-- SECÇÃO EXCLUSIVA GLOBAL_ADMIN & IT_OPS: ZERO-TOUCH PAIRING REAL -->
-  <div
-    data-rbac-hide="MEDIA_MANAGER,STORE_MANAGER,DEPT_HEAD"
-    class="bg-slate-900 border border-slate-800 rounded-xl p-6 mb-8"
-  >
-    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-slate-800 pb-4 mb-5">
+  <!-- 2. FAIXA SUMMARY: CONTAGEM POR TIPOLOGIA DE EQUIPAMENTO (DRILL-DOWN DIRETO P/ /devices/) -->
+  <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 mb-6">
+    <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
       <div>
-        <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-          Exclusivo GLOBAL_ADMIN & IT_OPS
-        </span>
-        <h3 class="text-base font-bold text-white mt-1.5">
-          Provisionamento Zero-Touch (Código 6 Dígitos) & Atribuição de Loja / Zona
+        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">
+          Resumo do Parque por Tipologia de Equipamento (Clique numa categoria para abrir a Gestão de Equipamentos)
         </h3>
-        <p class="text-xs text-slate-400">
-          Se colocar o Player no modo de Emparelhamento (ou introduzir o UID/Código do seu telemóvel/Mac), este formulário aprova e desbloqueia o ecrã remotamente via WebSocket!
-        </p>
       </div>
+      <span id="real-lan-pill" class="text-[11px] font-mono px-2.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+        0 Terminais Reais na LAN
+      </span>
     </div>
 
-    <form id="pairing-form" class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
-      <div>
-        <label class="block text-xs text-slate-400 mb-1">Código ou UID no Ecrã</label>
-        <input
-          type="text"
-          id="pair-code"
-          placeholder="NX-849201"
-          value="NX-849201"
-          required
-          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono uppercase text-amber-300 focus:border-amber-400 focus:outline-none"
-        />
-      </div>
-      <div>
-        <label class="block text-xs text-slate-400 mb-1">Nome do Terminal</label>
-        <input
-          type="text"
-          id="pair-name"
-          placeholder="LEDwall Entrada Colombo"
-          required
-          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-amber-400 focus:outline-none"
-        />
-      </div>
-      <div>
-        <label class="block text-xs text-slate-400 mb-1">Loja (Insígnia)</label>
-        <select
-          id="pair-store"
-          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200"
-        >
-          <option value="FNAC Colombo (Lisboa)">FNAC Colombo (Lisboa)</option>
-          <option value="FNAC Vasco da Gama">FNAC Vasco da Gama</option>
-          <option value="FNAC NorteShopping">FNAC NorteShopping</option>
-          <option value="DARTY Paris République">DARTY Paris République</option>
-        </select>
-      </div>
-      <div>
-        <label class="block text-xs text-slate-400 mb-1">Zona / Departamento</label>
-        <select
-          id="pair-zone"
-          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200"
-        >
-          <option value="ENTRANCE_LEDWALL">LEDwall Entrada de Loja</option>
-          <option value="IT_COMPUTERS">Informática & Portáteis Expo</option>
-          <option value="TV_VIDEO">TVs em Exposição</option>
-          <option value="TELECOM_MOBILES">Smartphones & Tablets Expo</option>
-          <option value="GAMING">Gaming & Consolas</option>
-        </select>
-      </div>
-      <div>
-        <label class="block text-xs text-slate-400 mb-1">Categoria / Tipologia</label>
-        <select
-          id="pair-category"
-          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200"
-        >
-          <option value="ANDROID_BOX">ANDROID_BOX (X98 Plus Passivo)</option>
-          <option value="LEDWALL">LEDWALL (Entrada / Topo)</option>
-          <option value="TV_DEMO">TV_DEMO (Catálogo Interativo TV)</option>
-          <option value="LAPTOP_EXPO">LAPTOP_EXPO (Idle + Touch Wake)</option>
-          <option value="SMARTPHONE_EXPO">SMARTPHONE_EXPO (Idle + Touch Wake)</option>
-        </select>
-      </div>
-      <div>
-        <button
-          type="submit"
-          class="w-full bg-[#E1A924] hover:bg-amber-400 text-black font-bold text-sm py-2 px-4 rounded-lg transition shadow"
-        >
-          Aprovar via WebSocket
-        </button>
-      </div>
-    </form>
-    <div id="pair-feedback" class="hidden mt-3 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-300 font-mono"></div>
-  </div>
+    <!-- Ícones de Tipologia (Inspirado no Bizcastz Summary Bar + Drill-down) -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+      <a
+        href="/devices/?category=TV_DEMO"
+        class="group p-3.5 rounded-xl bg-slate-950/90 border border-slate-800 hover:border-[#E1A924] transition flex items-center justify-between"
+      >
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">📺</span>
+          <div>
+            <span class="block text-[11px] text-slate-400 group-hover:text-amber-300 transition">
+              Smart TVs & Demo
+            </span>
+            <strong id="cat-count-tv" class="text-lg font-black text-white font-mono">512</strong>
+          </div>
+        </div>
+        <span class="text-xs text-slate-500 group-hover:text-amber-400">→</span>
+      </a>
 
-  <!-- SECÇÃO: PROVISIONAMENTO & WATCHDOG KIOSK ADB DIRETAMENTE PELO BACKOFFICE -->
-  <div
-    data-rbac-hide="MEDIA_MANAGER,STORE_MANAGER,DEPT_HEAD"
-    class="bg-slate-900 border border-slate-800 rounded-xl p-6 mb-8"
-  >
-    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-slate-800 pb-4 mb-5">
-      <div>
-        <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-          Controlo Remoto ADB Integrado no NAS • Sem precisar de SSH/Bash
-        </span>
-        <h3 class="text-base font-bold text-white mt-1.5">
-          📺 Provisionamento Kiosk ADB & Auto-Boot Watchdog (Boxes Android X98 Plus)
-        </h3>
-        <p class="text-xs text-slate-400">
-          Ligue, abra o Player PWA em Fullscreen e ative o Watchdog Pós-Reinício em qualquer Box Android da rede local diretamente por aqui.
-        </p>
-      </div>
+      <a
+        href="/devices/?category=LAPTOP_EXPO"
+        class="group p-3.5 rounded-xl bg-slate-950/90 border border-slate-800 hover:border-[#E1A924] transition flex items-center justify-between"
+      >
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">💻</span>
+          <div>
+            <span class="block text-[11px] text-slate-400 group-hover:text-amber-300 transition">
+              Laptops Exposição
+            </span>
+            <strong id="cat-count-laptop" class="text-lg font-black text-white font-mono">1633</strong>
+          </div>
+        </div>
+        <span class="text-xs text-slate-500 group-hover:text-amber-400">→</span>
+      </a>
+
+      <a
+        href="/devices/?category=SMARTPHONE_EXPO"
+        class="group p-3.5 rounded-xl bg-slate-950/90 border border-slate-800 hover:border-[#E1A924] transition flex items-center justify-between"
+      >
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">📱</span>
+          <div>
+            <span class="block text-[11px] text-slate-400 group-hover:text-amber-300 transition">
+              Smartphones Expo
+            </span>
+            <strong id="cat-count-phone" class="text-lg font-black text-white font-mono">276</strong>
+          </div>
+        </div>
+        <span class="text-xs text-slate-500 group-hover:text-amber-400">→</span>
+      </a>
+
+      <a
+        href="/devices/?category=TABLET_EXPO"
+        class="group p-3.5 rounded-xl bg-slate-950/90 border border-slate-800 hover:border-[#E1A924] transition flex items-center justify-between"
+      >
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">📟</span>
+          <div>
+            <span class="block text-[11px] text-slate-400 group-hover:text-amber-300 transition">
+              Tablets Expo
+            </span>
+            <strong id="cat-count-tablet" class="text-lg font-black text-white font-mono">55</strong>
+          </div>
+        </div>
+        <span class="text-xs text-slate-500 group-hover:text-amber-400">→</span>
+      </a>
+
+      <a
+        href="/devices/?category=ANDROID_BOX"
+        class="group p-3.5 rounded-xl bg-slate-950/90 border border-emerald-500/30 hover:border-emerald-400 transition flex items-center justify-between"
+      >
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">🖥️</span>
+          <div>
+            <span class="block text-[11px] text-emerald-300 font-semibold">
+              Boxes X98 & LEDwalls
+            </span>
+            <strong id="cat-count-box" class="text-lg font-black text-emerald-400 font-mono">410</strong>
+          </div>
+        </div>
+        <span class="text-xs text-emerald-400">→</span>
+      </a>
     </div>
 
-    <form id="adb-provision-form" class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-      <div class="md:col-span-3">
-        <label class="block text-xs text-slate-400 mb-1">IP da Box Android X98 Plus</label>
-        <input
-          type="text"
-          id="adb-box-ip"
-          placeholder="192.168.68.115"
-          value="192.168.68.115"
-          required
-          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-emerald-300 focus:border-amber-400 focus:outline-none"
-        />
-      </div>
-      <div class="md:col-span-5">
-        <label class="block text-xs text-slate-400 mb-1">Endereço do Player PWA (NAS / Servidor)</label>
-        <input
-          type="text"
-          id="adb-player-url"
-          placeholder="http://192.168.68.117:5174"
-          required
-          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-sky-300 focus:border-amber-400 focus:outline-none"
-        />
-      </div>
-      <div class="md:col-span-4">
-        <button
-          type="submit"
-          id="adb-submit-btn"
-          class="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-black text-sm py-2 px-4 rounded-lg transition shadow"
-        >
-          🚀 Provisionar & Abrir Player na Box
-        </button>
-      </div>
-    </form>
-
-    <pre
-      id="adb-console-log"
-      class="hidden mt-4 p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-[11px] font-mono text-slate-300 whitespace-pre-wrap leading-relaxed"
-    ></pre>
-
-    <div class="mt-4">
-      <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2.5">
-        Boxes Android Monitorizadas pelo Watchdog do NAS (Auto-Arranque Pós-Reboot a cada 25s)
-      </h4>
-      <div id="adb-boxes-list" class="space-y-2.5 text-xs">
-        <div class="p-3 rounded-lg bg-slate-950 border border-dashed border-slate-800 text-slate-400">
-          Nenhuma Box Android registada no Watchdog ADB. Introduza o IP acima (ex: <code>192.168.68.115</code>) e clique em <strong>Provisionar & Abrir Player na Box</strong>.
+    <!-- 5 Grandes KPIs Executivos (Active Stores, Total Devices, Clicks/PoP, Compliance de Programação %, Connected %) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 flex items-center gap-3.5">
+        <div class="w-11 h-11 rounded-full bg-sky-500/15 border border-sky-500/30 flex items-center justify-center text-sky-400 text-lg font-black shrink-0">
+          🏪
+        </div>
+        <div>
+          <span class="text-xs text-slate-400 block">Lojas Ativas</span>
+          <strong id="kpi-active-stores" class="text-2xl font-black text-white">20</strong>
         </div>
       </div>
+
+      <a
+        href="/devices/"
+        class="p-4 rounded-xl bg-slate-950 border border-slate-800 hover:border-amber-400/60 transition flex items-center gap-3.5"
+      >
+        <div class="w-11 h-11 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 text-lg font-black shrink-0">
+          🖥️
+        </div>
+        <div>
+          <span class="text-xs text-slate-400 block">Total Equipamentos</span>
+          <strong id="kpi-total-devices" class="text-2xl font-black text-white">2886</strong>
+        </div>
+      </a>
+
+      <a
+        href="/telemetry/"
+        class="p-4 rounded-xl bg-slate-950 border border-slate-800 hover:border-purple-400/60 transition flex items-center gap-3.5"
+      >
+        <div class="w-11 h-11 rounded-full bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400 text-lg font-black shrink-0">
+          🎯
+        </div>
+        <div>
+          <span class="text-xs text-slate-400 block">Interações & Plays (PoP)</span>
+          <strong id="kpi-total-clicks" class="text-2xl font-black text-white">1127</strong>
+        </div>
+      </a>
+
+      <a
+        href="/playlists/"
+        class="p-4 rounded-xl bg-slate-950 border border-slate-800 hover:border-emerald-400/60 transition flex items-center gap-3.5"
+      >
+        <div class="w-11 h-11 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-lg font-black shrink-0">
+          ✓
+        </div>
+        <div>
+          <span class="text-xs text-slate-400 block" title="Percentagem de equipamentos com a Playlist/Campanha certa sincronizada">
+            Compliance Programação
+          </span>
+          <strong id="kpi-compliance-pct" class="text-2xl font-black text-emerald-400">95.4 %</strong>
+        </div>
+      </a>
+
+      <a
+        href="/devices/"
+        class="p-4 rounded-xl bg-slate-950 border border-slate-800 hover:border-emerald-400/60 transition flex items-center gap-3.5"
+      >
+        <div class="w-11 h-11 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-lg font-black shrink-0">
+          ☁️
+        </div>
+        <div>
+          <span class="text-xs text-slate-400 block">Conectados (Online)</span>
+          <strong id="kpi-connected-pct" class="text-2xl font-black text-white">92.8 %</strong>
+        </div>
+      </a>
     </div>
   </div>
 
-  <!-- TERMINAIS CONECTADOS EM TEMPO REAL & MOTOR DE 4 PRIORIDADES -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-sm font-bold uppercase tracking-wider text-slate-300">
-          Terminais Reais Ativos na Tua Rede Agora
-        </h3>
-        <a href="/store-wall/" class="text-xs text-sky-400 hover:underline">Abrir Live Wall →</a>
-      </div>
-      <div id="live-devices-list" class="space-y-3 text-xs">
-        <div class="p-4 rounded-lg bg-slate-950 border border-slate-800 text-slate-400">
-          A aguardar heartbeat dos Players abertos (Mac / Telemóvel)...
+  <!-- 3. MAPA GEOGRÁFICO COLAPSÁVEL DE SAÚDE DAS LOJAS (LEAFLET DARK / SEM WATERMARK) -->
+  <div class="bg-slate-900 border border-slate-800 rounded-xl mb-6 overflow-hidden">
+    <div class="p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-800">
+      <div class="flex items-center gap-4 flex-wrap">
+        <button
+          type="button"
+          id="btn-toggle-map"
+          class="flex items-center gap-2 text-sm font-bold text-white hover:text-amber-300 transition"
+        >
+          <span>🗺️ Mapa de Saúde da Rede de Lojas</span>
+          <span id="map-chevron" class="text-xs text-amber-400 font-mono">[Recolher ▲]</span>
+        </button>
+
+        <div class="flex items-center gap-3 text-xs font-mono">
+          <span class="flex items-center gap-1 text-emerald-400">● &gt;=75%</span>
+          <span class="flex items-center gap-1 text-amber-400">● &lt;75%, &gt;25%</span>
+          <span class="flex items-center gap-1 text-rose-400">● &lt;=25%</span>
         </div>
+      </div>
+
+      <div class="flex items-center gap-4 text-xs">
+        <label class="flex items-center gap-1.5 text-slate-200 cursor-pointer">
+          <input type="radio" name="map-metric" value="CONNECTIONS" checked class="accent-[#E1A924]" />
+          <span>Conectividade (%)</span>
+        </label>
+        <label class="flex items-center gap-1.5 text-slate-200 cursor-pointer">
+          <input type="radio" name="map-metric" value="COMPLIANCE" class="accent-[#E1A924]" />
+          <span>Compliance de Programação (%)</span>
+        </label>
       </div>
     </div>
 
-    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-sm font-bold uppercase tracking-wider text-slate-300">
-          Estado Real das 4 Prioridades (Precedência Estrita)
+    <div id="map-wrapper" class="relative">
+      <div id="stores-map" class="w-full h-[360px] bg-slate-950 z-10"></div>
+    </div>
+  </div>
+
+  <!-- 4. TABELA DE COMPLIANCE POR LOJA (COM DRILL-DOWN PARA /devices/?store=...) -->
+  <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-4 mb-4">
+      <div>
+        <h3 class="text-sm font-bold uppercase tracking-wider text-white">
+          Compliance & Conectividade por Loja
         </h3>
-        <a href="/playlists/" class="text-xs text-amber-400 hover:underline">Configurar →</a>
+        <p class="text-xs text-slate-400 mt-0.5">
+          Clique em qualquer loja para abrir o módulo <strong>Equipamentos (Parque IT)</strong> filtrado por essa loja.
+        </p>
       </div>
-      <div id="priority-stack-list" class="space-y-3"></div>
+
+      <div class="flex items-center gap-3 flex-wrap">
+        <span id="active-stores-banner" class="text-xs font-mono font-bold text-amber-300 px-2.5 py-1 rounded bg-slate-950 border border-slate-800">
+          # LOJAS ATIVAS: 20/20
+        </span>
+        <input
+          type="search"
+          id="store-search"
+          placeholder="Pesquisar loja ou cidade..."
+          class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:border-amber-400 focus:outline-none w-56"
+        />
+        <button
+          type="button"
+          id="btn-export-stores-csv"
+          class="px-3 py-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-200 border border-slate-700 text-xs font-mono font-bold transition"
+        >
+          ⬇ CSV
+        </button>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse text-xs">
+        <thead>
+          <tr class="border-b border-slate-800 text-slate-400 uppercase font-mono text-[11px]">
+            <th class="py-3 px-3">Localização / Loja</th>
+            <th class="py-3 px-3 text-center text-emerald-400" title="Equipamentos Online">☁️ Online</th>
+            <th class="py-3 px-3 text-center text-rose-400" title="Equipamentos Offline">⚡ Offline</th>
+            <th class="py-3 px-3 text-center">Equipamentos</th>
+            <th class="py-3 px-3 text-center">Conectados %</th>
+            <th class="py-3 px-3 text-center">Semáforo</th>
+            <th class="py-3 px-3 text-center">Compliance Prog. %</th>
+            <th class="py-3 px-3 text-center">Interações / PoP</th>
+            <th class="py-3 px-3 text-center">Loja #</th>
+            <th class="py-3 px-3 text-right">Ação</th>
+          </tr>
+        </thead>
+        <tbody id="compliance-table-body" class="divide-y divide-slate-800/70"></tbody>
+      </table>
     </div>
   </div>
 
   <script is:inline>
     const API_BASE = `${window.location.protocol}//${window.location.hostname}:3000`;
-    let isPlayerUrlInitialized = false;
 
-    async function refreshOverview() {
-      try {
-        const res = await fetch(`${API_BASE}/api/v1/live/state`);
-        const st = await res.json();
+    let liveState = null;
+    let mapInstance = null;
+    let mapMarkersLayer = null;
+    let isMapCollapsed = false;
 
-        // Preenche automaticamente o endereço real do Player no NAS (ex: http://192.168.68.117:5174)
-        const adbUrlInput = document.getElementById('adb-player-url');
-        if (adbUrlInput && !isPlayerUrlInitialized) {
-          const detectedPort =
-            window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-              ? 5173
-              : st.publicPlayerPort || 5174;
-          adbUrlInput.value = `${window.location.protocol}//${window.location.hostname}:${detectedPort}`;
-          isPlayerUrlInitialized = true;
-        }
+    function initMapIfNeeded() {
+      if (mapInstance || typeof window.L === 'undefined') return;
+      const mapEl = document.getElementById('stores-map');
+      if (!mapEl) return;
 
-        // Renderiza lista de Boxes Android geridas por ADB & Watchdog no NAS
-        const adbBoxesEl = document.getElementById('adb-boxes-list');
-        if (adbBoxesEl) {
-          if (!st.adbBoxes || st.adbBoxes.length === 0) {
-            adbBoxesEl.innerHTML = `
-              <div class="p-3 rounded-lg bg-slate-950 border border-dashed border-slate-800 text-slate-400">
-                Nenhuma Box Android registada no Watchdog ADB. Introduza o IP acima (ex: <code>192.168.68.115</code>) e clique em <strong>Provisionar & Abrir Player na Box</strong>.
-              </div>
-            `;
-          } else {
-            adbBoxesEl.innerHTML = st.adbBoxes
-              .map(
-                (b) => `
-                <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                  <div>
-                    <div class="flex items-center gap-2 flex-wrap">
-                      <span class="w-2.5 h-2.5 rounded-full ${
-                        String(b.status).startsWith('ONLINE') || String(b.status).startsWith('AUTO-RECOVERED')
-                          ? 'bg-emerald-400'
-                          : 'bg-amber-400 animate-pulse'
-                      }"></span>
-                      <strong class="text-white font-mono text-xs">Box IP: ${b.boxIp}:5555</strong>
-                      <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                        ${b.status || 'MONITORIZADO'}
-                      </span>
-                      <span class="text-[10px] font-mono px-2 py-0.5 rounded ${
-                        b.autoWatchdog !== false
-                          ? 'bg-sky-500/15 text-sky-300 border border-sky-500/30'
-                          : 'bg-slate-800 text-slate-400'
-                      }">
-                        Watchdog Pós-Reboot: ${b.autoWatchdog !== false ? 'ATIVO (25s)' : 'PAUSADO'}
-                      </span>
-                    </div>
-                    <p class="text-[11px] font-mono text-slate-400 mt-1">
-                      URL Kiosk: <span class="text-sky-300">${b.playerUrl}</span>
-                    </p>
-                  </div>
-                  <div class="flex items-center gap-2 flex-wrap shrink-0">
-                    <button
-                      type="button"
-                      data-adb-action="RELAUNCH_URL"
-                      data-adb-ip="${b.boxIp}"
-                      data-adb-url="${b.playerUrl}"
-                      class="px-2.5 py-1.5 rounded bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 font-bold text-[11px] transition"
-                    >
-                      🔄 Abrir URL Player
-                    </button>
-                    <button
-                      type="button"
-                      data-adb-action="TAP_FULLSCREEN"
-                      data-adb-ip="${b.boxIp}"
-                      class="px-2.5 py-1.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 font-bold text-[11px] transition"
-                    >
-                      ⛶ Forçar Fullscreen
-                    </button>
-                    <button
-                      type="button"
-                      data-adb-action="REBOOT_BOX"
-                      data-adb-ip="${b.boxIp}"
-                      class="px-2.5 py-1.5 rounded bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 font-bold text-[11px] transition"
-                    >
-                      🔌 Reiniciar Box
-                    </button>
-                    <button
-                      type="button"
-                      data-adb-action="REMOVE_BOX"
-                      data-adb-ip="${b.boxIp}"
-                      class="px-2 py-1.5 rounded bg-slate-900 hover:bg-rose-500/20 text-rose-400 border border-slate-800 text-[11px] transition"
-                      title="Remover Box do Watchdog"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                </div>
-              `
-              )
-              .join('');
+      mapInstance = window.L.map('stores-map', {
+        center: [39.65, -8.1],
+        zoom: 6,
+        zoomControl: true,
+        attributionControl: false,
+      });
 
-            document.querySelectorAll('[data-adb-action]').forEach((btn) => {
-              btn.addEventListener('click', async () => {
-                const action = btn.getAttribute('data-adb-action');
-                const boxIp = btn.getAttribute('data-adb-ip');
-                const playerUrl = btn.getAttribute('data-adb-url');
-                const logBox = document.getElementById('adb-console-log');
-                if (logBox) {
-                  logBox.classList.remove('hidden');
-                  logBox.textContent = `A executar comando ADB [${action}] na Box ${boxIp}:5555...`;
-                }
-                await fetch(`${API_BASE}/api/v1/live/adb/action`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ boxIp, action, playerUrl }),
-                });
-                if (logBox) {
-                  logBox.textContent =
-                    action === 'REBOOT_BOX'
-                      ? `✅ Comando de Reboot enviado para a Box ${boxIp}! Assim que a Box voltar a ligar (~30-45s), o Watchdog do NAS abrirá o Chrome automaticamente.`
-                      : `✅ Comando [${action}] executado com sucesso na Box ${boxIp}!`;
-                }
-                refreshOverview();
-              });
-            });
+      // CartoDB Dark Matter Tiles (100% Gratuito, limpo e sem marca de água!)
+      window.L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 18,
+        subdomains: 'abcd',
+      }).addTo(mapInstance);
+
+      mapMarkersLayer = window.L.layerGroup().addTo(mapInstance);
+    }
+
+    function computeStoreRows() {
+      if (!liveState) return [];
+      const activeBrand = localStorage.getItem('invision_brand') || 'FNAC';
+      const countryFilter = document.getElementById('filter-country')?.value || 'ALL';
+      const healthFilter = document.getElementById('filter-health')?.value || 'ALL';
+      const searchQ = (document.getElementById('store-search')?.value || '').trim().toLowerCase();
+
+      const rawStores = liveState.storesCatalog || [];
+      const realDevices = liveState.devices || [];
+      const totalRealPlays = (liveState.popRecords || []).reduce((acc, r) => acc + r.playCount, 0);
+      const totalRealTouches = (liveState.interactionRecords || []).reduce((acc, r) => acc + r.count, 0);
+
+      return rawStores
+        .filter((s) => {
+          if (activeBrand !== 'ALL' && s.brand !== activeBrand) return false;
+          if (countryFilter !== 'ALL' && s.country !== countryFilter) return false;
+          if (
+            searchQ &&
+            !`${s.country}, ${s.city}, ${s.name}`.toLowerCase().includes(searchQ) &&
+            !String(s.code).includes(searchQ)
+          ) {
+            return false;
           }
-        }
+          return true;
+        })
+        .map((s) => {
+          // Junta os equipamentos reais emparelhados nesta loja ao baseline da rede
+          const storeRealDevs = realDevices.filter(
+            (d) =>
+              d.storeName &&
+              (d.storeName.toLowerCase().includes(s.city.toLowerCase()) ||
+                d.storeName.toLowerCase().includes(s.name.toLowerCase()))
+          );
+          const realOnline = storeRealDevs.filter((d) => d.status === 'ONLINE').length;
+          const realOffline = storeRealDevs.filter((d) => d.status !== 'ONLINE').length;
 
-        const onlineDevices = (st.devices || []).filter((d) => d.status === 'ONLINE');
-        document.getElementById('kpi-devices-count').textContent = String(st.devices?.length || 0);
-        document.getElementById('kpi-devices-sub').textContent = `${onlineDevices.length} ONLINE agora • Parque Produção: 4.012`;
+          const totalDevices = s.baselineDevices + storeRealDevs.length;
+          const offline = Math.max(0, s.baselineOffline + realOffline);
+          const online = Math.max(0, totalDevices - offline + realOnline - realOnline); // total - offline
+          const connectedPct = totalDevices > 0 ? Math.round((online / totalDevices) * 100) : 100;
 
-        document.getElementById('kpi-media-count').textContent = String(st.mediaCatalog?.length || 0);
-        const totalPlaylists = (st.playlists || []).filter((p) => p.isActive).length;
-        document.getElementById('kpi-media-sub').textContent = `${totalPlaylists} Playlists ativas configuradas`;
+          // Se for a loja onde a Box Android X98 está ativa, soma também os plays/interações reais
+          const extraEngagement =
+            storeRealDevs.length > 0 ? totalRealPlays + totalRealTouches : 0;
 
-        const totalPlays = (st.popRecords || []).reduce((acc, r) => acc + r.playCount, 0);
-        const totalTouches = (st.interactionRecords || []).reduce((acc, r) => acc + r.count, 0);
-        document.getElementById('kpi-pop-count').textContent = String(totalPlays);
-        document.getElementById('kpi-touch-sub').textContent = `${totalTouches} interações Touch / TV Demo registadas`;
+          const healthBand =
+            connectedPct >= 75 ? 'GREEN' : connectedPct > 25 ? 'YELLOW' : 'RED';
 
-        const openIncidents = (st.incidents || []).filter((i) => i.status === 'OPEN').length;
-        document.getElementById('kpi-incidents-count').textContent = String(openIncidents);
+          return {
+            ...s,
+            realCount: storeRealDevs.length,
+            online,
+            offline,
+            totalDevices,
+            connectedPct,
+            compliancePct: s.compliancePct || 95,
+            clicks: s.baselineClicks + extraEngagement,
+            healthBand,
+          };
+        })
+        .filter((row) => {
+          if (healthFilter !== 'ALL' && row.healthBand !== healthFilter) return false;
+          return true;
+        });
+    }
 
-        // Lista de dispositivos reais
-        const devList = document.getElementById('live-devices-list');
-        if (!st.devices || st.devices.length === 0) {
-          devList.innerHTML = `
-            <div class="p-4 rounded-lg bg-slate-950 border border-dashed border-slate-800 text-slate-400">
-              Abra o Player em <strong>http://localhost:5173</strong> ou no telemóvel para o ver aparecer aqui em tempo real!
-            </div>
-          `;
-        } else {
-          devList.innerHTML = st.devices
-            .map(
-              (d) => `
-              <div class="p-3.5 rounded-xl bg-slate-950 border ${
-                d.status === 'PENDING_APPROVAL' ? 'border-amber-400 ring-1 ring-amber-400' : 'border-slate-800'
-              } flex flex-col md:flex-row md:items-center justify-between gap-3">
-                <div>
-                  <div class="flex items-center gap-2 flex-wrap">
-                    <span class="w-2.5 h-2.5 rounded-full ${
-                      d.status === 'ONLINE'
-                        ? 'bg-emerald-400'
-                        : d.status === 'PENDING_APPROVAL'
-                        ? 'bg-amber-400 animate-pulse'
-                        : 'bg-rose-500'
-                    }"></span>
-                    <strong class="text-white text-xs">${d.name}</strong>
-                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">
-                      Código: ${d.pairingCode || d.hardwareUid}
-                    </span>
-                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-sky-300">${d.category}</span>
-                  </div>
-                  <p class="text-[11px] font-mono text-slate-400 mt-1">
-                    ▶ Agora: <span class="text-slate-200">${d.currentMediaTitle}</span> • Modo: ${d.interactionMode}
-                  </p>
-                </div>
-                <div class="flex items-center gap-2 shrink-0">
-                  <button
-                    type="button"
-                    data-pick-device="${d.pairingCode || d.hardwareUid}"
-                    data-pick-name="${d.name}"
-                    class="px-2.5 py-1.5 rounded bg-[#E1A924] hover:bg-amber-400 text-black font-bold text-[11px] transition"
-                  >
-                    ${d.status === 'PENDING_APPROVAL' ? '⚡ Emparelhar Esta Box' : '✎ Configurar'}
-                  </button>
-                  <button
-                    type="button"
-                    data-remove-device="${d.hardwareUid}"
-                    class="px-2 py-1.5 rounded bg-slate-900 hover:bg-rose-500/20 text-rose-400 border border-slate-800 text-[11px] transition"
-                    title="Remover equipamento da lista"
-                  >
-                    ✕
-                  </button>
-                </div>
-              </div>
-            `
-            )
-            .join('');
+    function renderDashboard() {
+      if (!liveState) return;
+      initMapIfNeeded();
 
-          document.querySelectorAll('[data-pick-device]').forEach((btn) => {
-            btn.addEventListener('click', () => {
-              const code = btn.getAttribute('data-pick-device');
-              const name = btn.getAttribute('data-pick-name');
-              document.getElementById('pair-code').value = code;
-              const nameInput = document.getElementById('pair-name');
-              if (!nameInput.value) nameInput.value = name;
-              nameInput.focus();
-            });
-          });
+      const rows = computeStoreRows();
+      const realDevices = liveState.devices || [];
+      const realOnline = realDevices.filter((d) => d.status === 'ONLINE').length;
 
-          document.querySelectorAll('[data-remove-device]').forEach((btn) => {
-            btn.addEventListener('click', async () => {
-              const uid = btn.getAttribute('data-remove-device');
-              await fetch(`${API_BASE}/api/v1/live/devices/${encodeURIComponent(uid)}`, {
-                method: 'DELETE',
-              });
-              refreshOverview();
-            });
-          });
-        }
+      const lanPill = document.getElementById('real-lan-pill');
+      if (lanPill) {
+        lanPill.textContent = `${realOnline} Terminal(is) Real(is) Online na LAN agora`;
+      }
 
-        // Stack de Prioridades
-        const levels = [
-          {
-            code: 'EXCLUSIVA',
-            label: '1. EXCLUSIVA (Override Total)',
-            desc: 'Silencia a 100% Prioritária, Normal e Fallback.',
-            color: 'rose',
-          },
-          {
-            code: 'PRIORITARIA',
-            label: '2. PRIORITÁRIA (Silencia Normal)',
-            desc: 'Quando ativa e com ficheiros, silencia a 100% a Normal.',
-            color: 'amber',
-          },
-          {
-            code: 'NORMAL',
-            label: '3. NORMAL (Slots ou Dynamic SoV)',
-            desc: 'Programação regular de campanha e loja.',
-            color: 'sky',
-          },
-          {
-            code: 'FALLBACK',
-            label: '4. FALLBACK (Segurança Institucional)',
-            desc: 'Toca quando nenhum nível superior tem conteúdos válidos.',
-            color: 'slate',
-          },
-        ];
+      // Contadores por tipologia (soma baseline + equipamentos reais na LAN)
+      const countByCat = (cat, base) =>
+        base + realDevices.filter((d) => d.category === cat).length;
 
-        const winningPriority = st.effectivePlayback?.activePriority || 'FALLBACK';
-        document.getElementById('priority-stack-list').innerHTML = levels
-          .map((lvl) => {
-            const count = (st.playlists || []).filter(
-              (p) => p.priority === lvl.code && p.isActive && p.items?.length > 0
-            ).length;
-            const isWinning = winningPriority === lvl.code;
+      document.getElementById('cat-count-tv').textContent = String(countByCat('TV_DEMO', 512));
+      document.getElementById('cat-count-laptop').textContent = String(countByCat('LAPTOP_EXPO', 1633));
+      document.getElementById('cat-count-phone').textContent = String(countByCat('SMARTPHONE_EXPO', 276));
+      document.getElementById('cat-count-tablet').textContent = String(countByCat('TABLET_EXPO', 55));
+      document.getElementById('cat-count-box').textContent = String(
+        countByCat('ANDROID_BOX', 409) + countByCat('LEDWALL', 0)
+      );
+
+      // KPIs Globais baseados nas lojas filtradas
+      const totalStores = rows.length;
+      const sumDevices = rows.reduce((a, r) => a + r.totalDevices, 0);
+      const sumOnline = rows.reduce((a, r) => a + r.online, 0);
+      const sumClicks = rows.reduce((a, r) => a + r.clicks, 0);
+      const avgCompliance =
+        totalStores > 0
+          ? (rows.reduce((a, r) => a + r.compliancePct, 0) / totalStores).toFixed(1)
+          : '100.0';
+      const avgConnected =
+        sumDevices > 0 ? ((sumOnline / sumDevices) * 100).toFixed(1) : '100.0';
+
+      document.getElementById('kpi-active-stores').textContent = String(totalStores);
+      document.getElementById('kpi-total-devices').textContent = String(sumDevices);
+      document.getElementById('kpi-total-clicks').textContent = String(sumClicks);
+      document.getElementById('kpi-compliance-pct').textContent = `${avgCompliance} %`;
+      document.getElementById('kpi-connected-pct').textContent = `${avgConnected} %`;
+      document.getElementById('active-stores-banner').textContent = `# LOJAS ATIVAS: ${totalStores}/${(liveState.storesCatalog || []).length}`;
+
+      // Renderiza Tabela de Compliance
+      const tbody = document.getElementById('compliance-table-body');
+      if (rows.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="10" class="py-8 text-center text-slate-400">
+              Nenhuma loja corresponde aos filtros selecionados.
+            </td>
+          </tr>
+        `;
+      } else {
+        tbody.innerHTML = rows
+          .map((r) => {
+            const semGreen = r.connectedPct >= 75 ? 'bg-emerald-500' : 'bg-slate-800';
+            const semYellow = r.connectedPct < 75 && r.connectedPct > 25 ? 'bg-amber-400' : 'bg-slate-800';
+            const semRed = r.connectedPct <= 25 ? 'bg-rose-500' : 'bg-slate-800';
+
+            const realBadge =
+              r.realCount > 0
+                ? `<span class="ml-2 px-1.5 py-0.5 text-[10px] font-mono rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">+${r.realCount} Box LAN</span>`
+                : '';
+
             return `
-              <div class="p-3 rounded-lg bg-slate-950 border ${
-                isWinning ? 'border-[#E1A924] ring-1 ring-[#E1A924]' : 'border-slate-800'
-              } flex items-center justify-between">
-                <div>
-                  <span class="text-xs font-black text-white uppercase">${lvl.label}</span>
-                  <p class="text-xs text-slate-400 mt-0.5">${lvl.desc}</p>
-                </div>
-                <div class="text-right">
-                  <span class="font-mono text-xs px-2 py-1 rounded ${
-                    isWinning
-                      ? 'bg-emerald-500 text-black font-black'
-                      : 'bg-slate-800 text-slate-300'
-                  }">
-                    ${isWinning ? '● DOMINANTE AGORA' : `${count} Ativa(s)`}
-                  </span>
-                </div>
-              </div>
+              <tr
+                data-store-drill="${encodeURIComponent(r.name)}"
+                class="hover:bg-slate-800/50 cursor-pointer transition group"
+              >
+                <td class="py-3 px-3 font-medium text-slate-200 group-hover:text-amber-300">
+                  ${r.country}, ${r.city}, <strong class="text-white">${r.name}</strong>
+                  ${realBadge}
+                </td>
+                <td class="py-3 px-3 text-center font-mono text-emerald-400 font-bold">${r.online}</td>
+                <td class="py-3 px-3 text-center font-mono ${r.offline > 10 ? 'text-rose-400 font-bold' : 'text-slate-400'}">${r.offline}</td>
+                <td class="py-3 px-3 text-center font-mono text-white font-bold">${r.totalDevices}</td>
+                <td class="py-3 px-3 text-center font-mono text-slate-200">${r.connectedPct}%</td>
+                <td class="py-3 px-3 text-center">
+                  <div class="inline-flex items-center gap-0.5 p-0.5 rounded bg-slate-950 border border-slate-800">
+                    <span class="w-3 h-2 rounded-xs ${semGreen}"></span>
+                    <span class="w-3 h-2 rounded-xs ${semYellow}"></span>
+                    <span class="w-3 h-2 rounded-xs ${semRed}"></span>
+                  </div>
+                </td>
+                <td class="py-3 px-3 text-center font-mono text-emerald-300 font-bold">${r.compliancePct}%</td>
+                <td class="py-3 px-3 text-center font-mono text-purple-300">${r.clicks}</td>
+                <td class="py-3 px-3 text-center font-mono text-slate-400">${r.code}</td>
+                <td class="py-3 px-3 text-right">
+                  <a
+                    href="/devices/?store=${encodeURIComponent(r.name)}"
+                    class="px-2.5 py-1 rounded bg-slate-800 group-hover:bg-[#E1A924] group-hover:text-black text-slate-300 font-bold text-[11px] transition"
+                  >
+                    Ver Parque →
+                  </a>
+                </td>
+              </tr>
             `;
           })
           .join('');
+
+        document.querySelectorAll('[data-store-drill]').forEach((tr) => {
+          tr.addEventListener('click', (e) => {
+            if (e.target.tagName === 'A') return;
+            const storeName = tr.getAttribute('data-store-drill');
+            window.location.href = `/devices/?store=${storeName}`;
+          });
+        });
+      }
+
+      // Atualiza Pins no Mapa Leaflet
+      if (mapInstance && mapMarkersLayer) {
+        mapMarkersLayer.clearLayers();
+        const selectedMetric =
+          document.querySelector('input[name="map-metric"]:checked')?.value || 'CONNECTIONS';
+
+        rows.forEach((r) => {
+          if (!r.lat || !r.lng) return;
+          const pct = selectedMetric === 'COMPLIANCE' ? r.compliancePct : r.connectedPct;
+          const color = pct >= 75 ? '#10b981' : pct > 25 ? '#f59e0b' : '#f43f5e';
+
+          const marker = window.L.circleMarker([r.lat, r.lng], {
+            radius: r.realCount > 0 ? 10 : 7,
+            fillColor: color,
+            color: '#0f172a',
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.9,
+          });
+
+          marker.bindPopup(`
+            <div style="font-family: sans-serif; min-width: 190px; color: #0f172a;">
+              <strong style="font-size: 13px;">${r.name}</strong><br/>
+              <span style="font-size: 11px; color: #475569;">${r.city} (Loja #${r.code})</span>
+              <hr style="margin: 6px 0; border-color: #e2e8f0;"/>
+              <div style="font-size: 12px;">
+                ☁️ Online: <b>${r.online}/${r.totalDevices} (${r.connectedPct}%)</b><br/>
+                ✓ Compliance Prog.: <b>${r.compliancePct}%</b><br/>
+                🎯 Interações/PoP: <b>${r.clicks}</b>
+              </div>
+              <a href="/devices/?store=${encodeURIComponent(r.name)}" style="display:inline-block; margin-top:8px; padding:4px 8px; background:#E1A924; color:#000; font-weight:bold; font-size:11px; border-radius:4px; text-decoration:none;">
+                Gerir Equipamentos da Loja →
+              </a>
+            </div>
+          `);
+
+          mapMarkersLayer.addLayer(marker);
+        });
+      }
+    }
+
+    async function fetchOverviewState() {
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/live/state`);
+        liveState = await res.json();
+        renderDashboard();
       } catch {
         // ignore
       }
     }
 
-    const pairingForm = document.getElementById('pairing-form');
-    const pairFeedback = document.getElementById('pair-feedback');
-
-    pairingForm?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const pairingCode = document.getElementById('pair-code').value;
-      const name = document.getElementById('pair-name').value;
-      const storeName = document.getElementById('pair-store').value;
-      const zone = document.getElementById('pair-zone').value;
-      const category = document.getElementById('pair-category').value;
-
-      const res = await fetch(`${API_BASE}/api/v1/live/pairing/approve`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          pairingCode,
-          name,
-          storeName,
-          zone,
-          category,
-          brand: localStorage.getItem('invision_brand') || 'FNAC',
-        }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        pairFeedback.classList.remove('hidden');
-        pairFeedback.textContent = `✓ [APROVADO VIA WEBSOCKET] Terminal "${data.device.name}" (${data.device.storeName} • ${data.device.zone}) desbloqueado com sucesso! Token: ${data.deviceToken}`;
-        refreshOverview();
+    // Toggle Colapsar/Expandir Mapa
+    document.getElementById('btn-toggle-map')?.addEventListener('click', () => {
+      isMapCollapsed = !isMapCollapsed;
+      const wrap = document.getElementById('map-wrapper');
+      const chev = document.getElementById('map-chevron');
+      if (isMapCollapsed) {
+        wrap?.classList.add('hidden');
+        if (chev) chev.textContent = '[Expandir ▼]';
+      } else {
+        wrap?.classList.remove('hidden');
+        if (chev) chev.textContent = '[Recolher ▲]';
+        setTimeout(() => mapInstance?.invalidateSize(), 150);
       }
     });
 
-    const adbForm = document.getElementById('adb-provision-form');
-    const adbLog = document.getElementById('adb-console-log');
-    const adbSubmitBtn = document.getElementById('adb-submit-btn');
-
-    adbForm?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const boxIp = document.getElementById('adb-box-ip').value.trim();
-      const playerUrl = document.getElementById('adb-player-url').value.trim();
-
-      if (adbLog) {
-        adbLog.classList.remove('hidden');
-        adbLog.textContent = `⏳ A ligar via ADB a ${boxIp}:5555 e a abrir ${playerUrl} na TV... (Aguarde ~4 segundos)`;
-      }
-      if (adbSubmitBtn) {
-        adbSubmitBtn.disabled = true;
-        adbSubmitBtn.textContent = '⏳ A Provisionar Box...';
-      }
-
-      try {
-        const res = await fetch(`${API_BASE}/api/v1/live/adb/provision`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            boxIp,
-            playerUrl,
-            autoWatchdog: true,
-          }),
-        });
-        const data = await res.json();
-        if (adbLog) {
-          adbLog.textContent = (data.logs || []).join('\n') + (data.error ? `\n❌ ${data.error}` : '');
-        }
-        refreshOverview();
-      } catch (err) {
-        if (adbLog) {
-          adbLog.textContent = `❌ Erro ao comunicar com o Backend ADB: ${err.message || err}`;
-        }
-      } finally {
-        if (adbSubmitBtn) {
-          adbSubmitBtn.disabled = false;
-          adbSubmitBtn.textContent = '🚀 Provisionar & Abrir Player na Box';
-        }
-      }
+    document.getElementById('filter-country')?.addEventListener('change', renderDashboard);
+    document.getElementById('filter-health')?.addEventListener('change', renderDashboard);
+    document.getElementById('store-search')?.addEventListener('input', renderDashboard);
+    document.querySelectorAll('input[name="map-metric"]').forEach((r) => {
+      r.addEventListener('change', renderDashboard);
     });
 
-    refreshOverview();
-    setInterval(refreshOverview, 3000);
+    // Exportar CSV da Tabela de Compliance
+    document.getElementById('btn-export-stores-csv')?.addEventListener('click', () => {
+      const rows = computeStoreRows();
+      const header = 'Pais,Cidade,Loja,Codigo_Loja,Online,Offline,Total_Equipamentos,Conectados_Pct,Compliance_Programacao_Pct,Interacoes_PoP\n';
+      const body = rows
+        .map(
+          (r) =>
+            `"${r.country}","${r.city}","${r.name}",${r.code},${r.online},${r.offline},${r.totalDevices},${r.connectedPct},${r.compliancePct},${r.clicks}`
+        )
+        .join('\n');
+      const blob = new Blob([header + body], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `invision-compliance-lojas-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+    });
+
+    window.addEventListener('invision:brand-change', renderDashboard);
+    fetchOverviewState();
+    setInterval(fetchOverviewState, 4000);
   </script>
 </DashboardLayout>

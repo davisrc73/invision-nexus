@@ -379,3 +379,27 @@ Arranque do desenvolvimento de uma plataforma enterprise de Digital Signage inte
      1. **Local RAM Blob Preloader (`preloadMediaBlobs` / `URL.createObjectURL`):** Assim que a Playlist é carregada, o Player descarrega os vídeos e imagens uma única vez para a memória local da Box (`blob:http://...`). A partir do 2.º loop, a reprodução é **100% local a partir da RAM da Box**, com **zero** pedidos HTTP Range ao NAS!
      2. **Fecho Estrito de Streams no Servidor (`stream.destroy()`):** No endpoint `GET /api/v1/media/:id/stream` do [backend/live-bridge.mjs](file:///Users/daviscorreia/Antigravity%20/invision-nexus/backend/live-bridge.mjs), qualquer fecho de socket (`req.on('close')`, `res.on('close')`, `res.on('error')`) destrói imediatamente o `fs.createReadStream`.
      3. **Isolamento de Erros (`handleMediaError`):** Os eventos `on:error` deixaram de chamar `advanceSlotGapless`, garantindo que uma falha de rede nunca regista um Proof of Play falso.
+
+---
+
+## [2026-11-15] - Arquitetura Modular do Backoffice: Visão Global Executiva (Mapa + Compliance), Módulo de Equipamentos (`/devices/`) & Biblioteca de Conteúdos com Smart TAGs (`/content/`)
+
+### Decisões Arquiteturais & Operacionais Consolidadas
+1. **Separação Modular do Backoffice ([dashboard/src/layouts/DashboardLayout.astro](file:///Users/daviscorreia/Antigravity%20/invision-nexus/dashboard/src/layouts/DashboardLayout.astro)):**
+   - Para manter o Backoffice limpo, rápido e escalável rumo a um verdadeiro **"Controlo Central de Operações — Digital In-Store Customer Experience"**, a navegação lateral foi estruturada em **6 módulos independentes** (+ placeholder visível para a futura Fase 6 de Catálogo SKU & Preços):
+     1. **`🏠 Visão Global (Home)`** (`/`)
+     2. **`🖥️ Equipamentos (Parque IT)`** (`/devices/`)
+     3. **`🎬 Conteúdos & Media (Smart TAGs)`** (`/content/`)
+     4. **`🎞️ Playlists (Slots & SoV)`** (`/playlists/`)
+     5. **`🏪 Lojas & Live Wall`** (`/store-wall/`)
+     6. **`📊 Relatórios & Proof of Play`** (`/telemetry/`)
+2. **Nova `Visão Global` Executiva & Mapa de Saúde da Rede ([dashboard/src/pages/index.astro](file:///Users/daviscorreia/Antigravity%20/invision-nexus/dashboard/src/pages/index.astro)):**
+   - **Faixa de Resumo por Tipologia com Drill-Down Direto:** 5 cartões com contagem por categoria (`📺 Smart TVs & Demo`, `💻 Laptops Exposição`, `📱 Smartphones Expo`, `📟 Tablets Expo`, `🖥️ Boxes X98 & LEDwalls`) que ao clicar encaminham diretamente para `/devices/?category=...`.
+   - **5 KPIs Executivos:** *Lojas Ativas*, *Total Equipamentos*, *Interações & Plays (PoP)*, *Compliance de Programação (%)* e *Conectados Online (%)*.
+   - **Mapa Interativo Colapsável (Leaflet + CartoDB Dark Matter):** Sem marcas de água e sem necessidade de chave paga, com pins semafóricos (🟢 `>=75%`, 🟡 `25-75%`, 🔴 `<=25%`), alternância entre *Conectividade (%)* e *Compliance de Programação (%)* e popup de drill-down por loja.
+   - **Tabela de Compliance por Loja:** Com pesquisa instantânea, filtros por país/saúde, exportação CSV e *drill-down* direto para `/devices/?store=...` ao clicar em qualquer loja.
+3. **Novo Módulo Dedicado `Gestão e Controlo de Parque Informático & Equipamentos` ([dashboard/src/pages/devices.astro](file:///Users/daviscorreia/Antigravity%20/invision-nexus/dashboard/src/pages/devices.astro)):**
+   - Isola toda a operação técnica (Inventário Real-Time LAN/Heartbeat, Provisionamento Kiosk ADB & Auto-Boot Watchdog das Boxes Android X98 Plus, Comandos Remotos *Abrir URL / Fullscreen / Reboot*, e Emparelhamento Zero-Touch de 6 dígitos), suportando filtros automáticos vindos do *drill-down* da Visão Global (`?store=...&category=...`).
+4. **Novo Módulo Dedicado `Biblioteca de Conteúdos & Media` com Motor de Smart TAGs ([dashboard/src/pages/content.astro](file:///Users/daviscorreia/Antigravity%20/invision-nexus/dashboard/src/pages/content.astro), [dashboard/src/pages/playlists.astro](file:///Users/daviscorreia/Antigravity%20/invision-nexus/dashboard/src/pages/playlists.astro) e [backend/live-bridge.mjs](file:///Users/daviscorreia/Antigravity%20/invision-nexus/backend/live-bridge.mjs)):**
+   - Separa o upload e curadoria de ficheiros da gestão de Playlists.
+   - **Auto-Binding por Smart TAGs (`syncPlaylistsByTags`):** Ao fazer upload de um vídeo/imagem com TAGs (ex: `NATAL, CREDITO, FLASH_SALE`) ou ao editar as TAGs de um conteúdo existente (`PUT /api/v1/live/media/:id/tags`), o backend associa-o **automaticamente** a todas as Playlists que tenham essas mesmas `autoTags` configuradas, mantendo também a possibilidade de adição/remoção manual e ajuste de *Share of Voice (%)*.
