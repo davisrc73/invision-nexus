@@ -1061,12 +1061,28 @@ const server = http.createServer(async (req, res) => {
         'Content-Range': `bytes ${start}-${end}/${totalSize}`,
         'Content-Length': chunkSize,
       });
-      fs.createReadStream(filePath, { start, end }).pipe(res);
+      const stream = fs.createReadStream(filePath, { start, end });
+      const cleanup = () => {
+        if (!stream.destroyed) stream.destroy();
+      };
+      req.on('close', cleanup);
+      res.on('close', cleanup);
+      res.on('error', cleanup);
+      stream.on('error', cleanup);
+      stream.pipe(res);
       return;
     }
 
     res.writeHead(200, { 'Content-Length': totalSize });
-    fs.createReadStream(filePath).pipe(res);
+    const stream = fs.createReadStream(filePath);
+    const cleanup = () => {
+      if (!stream.destroyed) stream.destroy();
+    };
+    req.on('close', cleanup);
+    res.on('close', cleanup);
+    res.on('error', cleanup);
+    stream.on('error', cleanup);
+    stream.pipe(res);
     return;
   }
 

@@ -135,6 +135,46 @@
 
   const syncEngine = new MillisecondSyncEngine(WS_URL, window.location.origin);
   let liveSocket = null;
+  let blobUrlMap = {};
+  let preloadingUrls = new Set();
+
+  /**
+   * Faz download dos ficheiros de vídeo/imagem para a RAM local da Box (`Blob` ObjectURL).
+   * Após a 1.ª transferência, os loops seguintes correm 100% da memória local com ZERO sockets HTTP abertos!
+   */
+  async function preloadMediaBlobs(items) {
+    if (!Array.isArray(items)) return;
+    for (const item of items) {
+      const remoteUrl = item.remoteUrl || item.streamUrl;
+      if (
+        !remoteUrl ||
+        remoteUrl.startsWith('blob:') ||
+        blobUrlMap[remoteUrl] ||
+        preloadingUrls.has(remoteUrl)
+      ) {
+        continue;
+      }
+      preloadingUrls.add(remoteUrl);
+      try {
+        const res = await fetch(remoteUrl);
+        if (res.ok) {
+          const blob = await res.blob();
+          if (blob && blob.size > 0) {
+            const localBlobUrl = URL.createObjectURL(blob);
+            blobUrlMap[remoteUrl] = localBlobUrl;
+            // Atualiza os slots para usarem o ObjectURL local na próxima passagem
+            activeLoop = activeLoop.map((slot) =>
+              slot.remoteUrl === remoteUrl ? { ...slot, streamUrl: localBlobUrl } : slot
+            );
+          }
+        }
+      } catch {
+        // Fallback para stream HTTP direto se falhar
+      } finally {
+        preloadingUrls.delete(remoteUrl);
+      }
+    }
+  }
 
   /**
    * Aplica o Manifesto enviado para este equipamento específico:
@@ -157,26 +197,31 @@
 
     const resolvedItems = eff.resolvedSequence || [];
     if (Array.isArray(resolvedItems) && resolvedItems.length > 0) {
-      activeLoop = resolvedItems.map((item, idx) => ({
-        id: item.id,
-        playlistId: eff.activePlaylistId || 'aaaa0000-0000-0000-0000-000000000001',
-        title: item.title,
-        subtitle: `${activePlaylistName} • Item ${idx + 1} de ${resolvedItems.length} (${activeSchedulingMode === 'DYNAMIC_SOV' ? `SoV ${item.sovPct || 50}%` : `Slot #0${idx + 1}`}) • ${item.widthPx}x${item.heightPx} (${item.aspectRatio})`,
-        badge: `ITEM ${idx + 1}/${resolvedItems.length} • ${item.mediaType} • ${activePriority}`,
-        mediaType: item.mediaType,
-        streamUrl: `${API_BASE}${item.streamUrl}`,
-        durationMs: Math.max(3000, Number(item.durationMs || 8000)),
-        bgGradient: 'linear-gradient(135deg, #090d16 0%, #000000 100%)',
-        accentColor: '#E1A924',
-      }));
+      activeLoop = resolvedItems.map((item, idx) => {
+        const remoteUrl = `${API_BASE}${item.streamUrl}`;
+        return {
+          id: item.id,
+          playlistId: eff.activePlaylistId || 'aaaa0000-0000-0000-0000-000000000001',
+          title: item.title,
+          subtitle: `${activePlaylistName} • Item ${idx + 1} de ${resolvedItems.length} (${activeSchedulingMode === 'DYNAMIC_SOV' ? `SoV ${item.sovPct || 50}%` : `Slot #0${idx + 1}`}) • ${item.widthPx}x${item.heightPx} (${item.aspectRatio})`,
+          badge: `ITEM ${idx + 1}/${resolvedItems.length} • ${item.mediaType} • ${activePriority}`,
+          mediaType: item.mediaType,
+          remoteUrl,
+          streamUrl: blobUrlMap[remoteUrl] || remoteUrl,
+          durationMs: Math.max(3000, Number(item.durationMs || 8000)),
+          bgGradient: 'linear-gradient(135deg, #090d16 0%, #000000 100%)',
+          accentColor: '#E1A924',
+        };
+      });
       lastSyncStatus = `Playlist "${activePlaylistName}" [${activePriority}] (${activeLoop.length} itens)`;
+      preloadMediaBlobs(activeLoop);
     } else {
       activeLoop = [...fallbackSlides];
       lastSyncStatus = 'A exibir Slides Fallback (Nenhuma Playlist atribuída)';
     }
 
     currentIndex = 0;
-    currentSlot = activeLoop[0];
+    currentSlot = { ...activeLoop[0] };
     slotProgressPct = 0;
     slotElapsedMs = 0;
     playCurrentVideoIfAny();
@@ -187,7 +232,14 @@
     setTimeout(() => {
       if (currentSlot && currentSlot.mediaType === 'VIDEO' && videoElement) {
         try {
+          videoElement.pause();
           videoElement.muted = true;
+          const targetSrc =
+            (currentSlot.remoteUrl && blobUrlMap[currentSlot.remoteUrl]) ||
+            currentSlot.streamUrl;
+          if (videoElement.getAttribute('src') !== targetSrc) {
+            videoElement.setAttribute('src', targetSrc);
+          }
           videoElement.currentTime = 0;
           videoElement.load();
           const p = videoElement.play();
@@ -196,7 +248,24 @@
           // ignore
         }
       }
-    }, 50);
+    }, 40);
+  }
+
+  /**
+   * Caso um ficheiro de media dê erro de rede ou descodificação, avança para o próximo slot
+   * SEM registar um Proof of Play falso!
+   */
+  function handleMediaError() {
+    if (isAdvancing || isCustomerUsingDevice || selectedTvCategory) return;
+    isAdvancing = true;
+    setTimeout(() => {
+      currentIndex = (currentIndex + 1) % activeLoop.length;
+      currentSlot = { ...activeLoop[currentIndex] };
+      slotProgressPct = 0;
+      slotElapsedMs = 0;
+      playCurrentVideoIfAny();
+      isAdvancing = false;
+    }, 600);
   }
 
   function handleVideoMetadataLoaded() {
@@ -648,7 +717,7 @@
               src={currentSlot.streamUrl}
               alt={currentSlot.title}
               class="fullscreen-media"
-              on:error={advanceSlotGapless}
+              on:error={handleMediaError}
             />
           {:else if currentSlot.mediaType === 'VIDEO' && currentSlot.streamUrl}
             <video
@@ -662,7 +731,7 @@
               on:loadedmetadata={handleVideoMetadataLoaded}
               on:timeupdate={handleVideoTimeUpdate}
               on:ended={advanceSlotGapless}
-              on:error={advanceSlotGapless}
+              on:error={handleMediaError}
               on:stalled={() => {
                 if (videoElement) videoElement.play().catch(() => {});
               }}
