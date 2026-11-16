@@ -543,3 +543,4 @@ Arranque do desenvolvimento de uma plataforma enterprise de Digital Signage inte
    - Botão **"Exportar Auditoria PoP (CSV)"** para auditoria detalhada de conformidade.
    - Botão **"Exportar Resumo SoV (CSV)"** para processamento financeiro e faturação comercial.
    - Botão **"Certificado PDF"**: Gera um layout formal de impressão A4 (*Certificado Oficial de Exibição Publicitária*) com identidade corporativa FNAC DARTY, resumo de exibições e linhas de assinatura para Diretor de Loja e Auditor Multimédia.
+   - **Isolamento de Impressão via Iframe Técnico & Zero-Leak Layout**: Implementada a emissão de impressão em sandbox dedicada (`printOfficialCertificate`) com regras globais `@media print` no Dashboard e Layout, garantindo que o documento PDF gerado contém rigorosamente uma única página A4 com os dados executivos, sem poluição da barra lateral de navegação ou tabelas de fundo.
