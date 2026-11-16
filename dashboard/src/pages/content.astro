@@ -20,24 +20,16 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     data-rbac-hide="STORE_MANAGER,DEPT_HEAD,IT_OPS"
     class="bg-slate-900 border border-slate-800 rounded-xl p-6 mb-8"
   >
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4 mb-5">
-      <div>
-        <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-          1. Upload de Conteúdos • SHA-256 + Smart TAGs Auto-Binding
-        </span>
-        <h3 class="text-base font-bold text-white mt-1.5">
-          Carregar Novos Vídeos (.mp4, .webm, .mov) ou Imagens (.jpg, .png, .webp)
-        </h3>
-        <p class="text-xs text-slate-400 mt-0.5">
-          Ao atribuir <strong>TAGs</strong> ao ficheiro (ex: <code>NATAL, CREDITO, GAMING</code>), o sistema associa-o <strong>automaticamente</strong> a todas as Playlists que tenham essas mesmas TAGs configuradas!
-        </p>
-      </div>
-      <a
-        href="/playlists/"
-        class="px-3.5 py-2 rounded-lg bg-slate-950 hover:bg-slate-800 text-amber-300 border border-amber-500/30 text-xs font-bold transition shrink-0"
-      >
-        Ir para Playlists & Prioridades →
-      </a>
+    <div class="border-b border-slate-800 pb-4 mb-5">
+      <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+        1. Upload de Conteúdos • SHA-256 + Smart TAGs Auto-Binding
+      </span>
+      <h3 class="text-base font-bold text-white mt-1.5">
+        Carregar Novos Vídeos (.mp4, .webm, .mov) ou Imagens (.jpg, .png, .webp)
+      </h3>
+      <p class="text-xs text-slate-400 mt-0.5">
+        Ao atribuir <strong>TAGs</strong> ao ficheiro (ex: <code>NATAL, CREDITO, GAMING</code>), o sistema associa-o <strong>automaticamente</strong> a todas as Playlists que tenham essas mesmas TAGs configuradas!
+      </p>
     </div>
 
     <form id="upload-form" class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
@@ -79,7 +71,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
         <input
           type="number"
           id="media-duration-input"
-          value="8"
+          value="10"
           min="2"
           max="120"
           class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-amber-300 font-mono"
@@ -108,7 +100,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     ></div>
   </div>
 
-  <!-- 2. BIBLIOTECA DE CONTEÚDOS GUARDADOS (FILTRO POR TAG, EDIÇÃO DE TAGS & ENVIO P/ PLAYLIST) -->
+  <!-- 2. BIBLIOTECA DE CONTEÚDOS GUARDADOS (VISUALIZAÇÃO EM LISTA E EM CARTÕES) -->
   <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
     <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-4 mb-5">
       <div>
@@ -116,14 +108,15 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
           2. Catálogo Central de Conteúdos & Gestão de TAGs
         </h3>
         <p class="text-xs text-slate-400 mt-0.5">
-          Pode editar as TAGs de qualquer vídeo ou imagem já carregado para que ele entre automaticamente nas Playlists com a mesma TAG.
+          Lista completa de vídeos e imagens guardados. Clique num conteúdo para inspecionar, editar TAGs ou enviar para Playlists.
         </p>
       </div>
 
-      <div class="flex items-center gap-3 flex-wrap">
+      <!-- CONTROLOS ALINHADOS À DIREITA: FILTROS + ALTERNADOR DE MODO (LISTA vs CARTÕES) -->
+      <div class="flex items-center gap-2.5 flex-wrap justify-end">
         <select
           id="filter-tag-select"
-          class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs font-mono text-emerald-300"
+          class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs font-mono text-emerald-300 focus:border-amber-400 focus:outline-none"
         >
           <option value="ALL">🏷️ Filtrar por TAG: Todas</option>
         </select>
@@ -134,10 +127,174 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
           placeholder="Pesquisar título ou TAG..."
           class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:border-amber-400 focus:outline-none w-52"
         />
+
+        <!-- Switcher Modo Lista / Modo Cartões -->
+        <div class="flex items-center bg-slate-950 p-1 rounded-lg border border-slate-700">
+          <button
+            type="button"
+            id="btn-view-list"
+            class="px-2.5 py-1 rounded-md text-xs font-bold transition flex items-center gap-1.5"
+            title="Visualização em Lista Compacta (Recomendado para muitos conteúdos)"
+          >
+            <span>📋</span>
+            <span>Lista</span>
+          </button>
+          <button
+            type="button"
+            id="btn-view-grid"
+            class="px-2.5 py-1 rounded-md text-xs font-bold transition flex items-center gap-1.5"
+            title="Visualização em Cartões / Grelha"
+          >
+            <span>🎴</span>
+            <span>Cartões</span>
+          </button>
+        </div>
       </div>
     </div>
 
-    <div id="catalog-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+    <!-- MODO 1: VISUALIZAÇÃO EM LISTA (TABELA COMPACTA ENTERPRISE) -->
+    <div id="catalog-list-view" class="overflow-x-auto">
+      <table class="w-full text-left border-collapse text-xs">
+        <thead>
+          <tr class="border-b border-slate-800 text-slate-400 uppercase font-mono text-[11px]">
+            <th class="py-3 px-3 w-16">Prévia</th>
+            <th class="py-3 px-3">Título do Conteúdo</th>
+            <th class="py-3 px-3">Formato / Rácio</th>
+            <th class="py-3 px-3">Duração</th>
+            <th class="py-3 px-3">Smart TAGs</th>
+            <th class="py-3 px-3">Playlists Associadas</th>
+            <th class="py-3 px-3 text-right">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="catalog-list-tbody" class="divide-y divide-slate-800/70 text-slate-200">
+          <tr>
+            <td colspan="7" class="py-8 text-center text-slate-400">
+              A carregar conteúdos...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- MODO 2: VISUALIZAÇÃO EM CARTÕES / GRELHA -->
+    <div id="catalog-grid" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL POP-UP: DETALHES, PRÉ-VISUALIZAÇÃO & EDIÇÃO DE CONTEÚDO         -->
+  <!-- ===================================================================== -->
+  <div
+    id="media-detail-modal"
+    class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+  >
+    <div class="max-w-3xl w-full bg-slate-900 border-2 border-emerald-500/60 rounded-2xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+        <div class="flex items-center gap-2.5">
+          <span id="modal-media-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-[#E1A924] text-black">
+            VÍDEO
+          </span>
+          <h3 id="modal-media-title" class="text-base font-bold text-white truncate max-w-md">
+            Título do Conteúdo
+          </h3>
+        </div>
+        <button
+          type="button"
+          id="btn-close-media-modal"
+          class="text-slate-400 hover:text-white text-lg font-bold p-1 rounded-lg hover:bg-slate-800 transition"
+        >
+          ✕
+        </button>
+      </div>
+
+      <!-- Player de Pré-visualização do Ficheiro -->
+      <div id="modal-media-player-container" class="rounded-xl overflow-hidden bg-black border border-slate-800 mb-5 flex items-center justify-center min-h-[160px] max-h-80">
+      </div>
+
+      <!-- Metadados Técnicos -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-xs font-mono mb-5">
+        <div>
+          <span class="text-slate-400 block text-[10px] uppercase">Formato / Resolução</span>
+          <strong id="modal-meta-res" class="text-emerald-300">1920x1080 (16:9)</strong>
+        </div>
+        <div>
+          <span class="text-slate-400 block text-[10px] uppercase">Duração Padrão</span>
+          <strong id="modal-meta-dur" class="text-amber-300">10.0s</strong>
+        </div>
+        <div>
+          <span class="text-slate-400 block text-[10px] uppercase">Insígnia</span>
+          <strong id="modal-meta-brand" class="text-white">FNAC</strong>
+        </div>
+        <div>
+          <span class="text-slate-400 block text-[10px] uppercase">Tipo de Media</span>
+          <strong id="modal-meta-type" class="text-sky-300">VIDEO</strong>
+        </div>
+      </div>
+
+      <!-- Editor de Smart TAGs -->
+      <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 mb-5 space-y-2">
+        <label class="block text-xs font-bold text-emerald-300">
+          🏷️ Smart TAGs deste Conteúdo (Auto-Binding nas Playlists):
+        </label>
+        <p class="text-[11px] text-slate-400">
+          Insira as TAGs separadas por vírgula. Ao guardar, o conteúdo entra instantaneamente em todas as Playlists com as mesmas TAGs.
+        </p>
+        <div class="flex gap-2">
+          <input
+            type="text"
+            id="modal-tags-input"
+            placeholder="Ex: NATAL, CREDITO, FLASH_SALE"
+            class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono uppercase text-emerald-300 focus:border-amber-400 focus:outline-none"
+          />
+          <button
+            type="button"
+            id="btn-modal-save-tags"
+            class="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs transition shadow shrink-0"
+          >
+            Guardar TAGs
+          </button>
+        </div>
+        <div id="modal-tags-feedback" class="hidden text-[11px] font-mono text-emerald-400 pt-1"></div>
+      </div>
+
+      <!-- Enviar Manualmente para Playlist -->
+      <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <span class="text-xs font-bold text-sky-300 block">🎞️ Inserção Direta em Playlist:</span>
+          <span class="text-[11px] text-slate-400">Adicione este conteúdo a uma playlist manualmente sem depender de TAGs.</span>
+        </div>
+        <div class="flex items-center gap-2 sm:w-80">
+          <select
+            id="modal-playlist-select"
+            class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
+          ></select>
+          <button
+            type="button"
+            id="btn-modal-send-playlist"
+            class="px-3.5 py-2 rounded-lg bg-[#E1A924] hover:bg-amber-400 text-black font-bold text-xs transition shadow shrink-0"
+          >
+            + Inserir
+          </button>
+        </div>
+      </div>
+
+      <!-- Ações Finais: Fechar e Apagar Ficheiro -->
+      <div class="flex items-center justify-between pt-2 border-t border-slate-800">
+        <button
+          type="button"
+          id="btn-modal-delete-media"
+          class="px-3 py-1.5 rounded-lg bg-slate-950 hover:bg-rose-500/20 text-rose-400 border border-slate-800 text-xs font-semibold transition"
+        >
+          🗑️ Apagar Ficheiro do Servidor
+        </button>
+        <button
+          type="button"
+          id="btn-modal-close-bottom"
+          class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition"
+        >
+          Fechar Janela
+        </button>
+      </div>
+    </div>
   </div>
 
   <script is:inline>
@@ -149,10 +306,73 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     const tagsInput = document.getElementById('media-tags-input');
     const durationInput = document.getElementById('media-duration-input');
     const uploadStatus = document.getElementById('upload-status');
-    const catalogGrid = document.getElementById('catalog-grid');
     const quickTagPills = document.getElementById('quick-tag-pills');
     const filterTagSelect = document.getElementById('filter-tag-select');
     const searchMediaInput = document.getElementById('search-media-input');
+
+    // Elementos de Modos de Visualização
+    const btnViewList = document.getElementById('btn-view-list');
+    const btnViewGrid = document.getElementById('btn-view-grid');
+    const catalogListView = document.getElementById('catalog-list-view');
+    const catalogListTbody = document.getElementById('catalog-list-tbody');
+    const catalogGrid = document.getElementById('catalog-grid');
+
+    // Elementos do Modal de Detalhes
+    const mediaModal = document.getElementById('media-detail-modal');
+    const btnCloseMediaModal = document.getElementById('btn-close-media-modal');
+    const btnModalCloseBottom = document.getElementById('btn-modal-close-bottom');
+    const modalMediaBadge = document.getElementById('modal-media-badge');
+    const modalMediaTitle = document.getElementById('modal-media-title');
+    const modalPlayerContainer = document.getElementById('modal-media-player-container');
+    const modalMetaRes = document.getElementById('modal-meta-res');
+    const modalMetaDur = document.getElementById('modal-meta-dur');
+    const modalMetaBrand = document.getElementById('modal-meta-brand');
+    const modalMetaType = document.getElementById('modal-meta-type');
+    const modalTagsInput = document.getElementById('modal-tags-input');
+    const btnModalSaveTags = document.getElementById('btn-modal-save-tags');
+    const modalTagsFeedback = document.getElementById('modal-tags-feedback');
+    const modalPlaylistSelect = document.getElementById('modal-playlist-select');
+    const btnModalSendPlaylist = document.getElementById('btn-modal-send-playlist');
+    const btnModalDeleteMedia = document.getElementById('btn-modal-delete-media');
+
+    let currentModalMediaId = null;
+    let currentViewMode = localStorage.getItem('invision_content_view_mode') || 'list';
+
+    function setViewMode(mode) {
+      currentViewMode = mode === 'grid' ? 'grid' : 'list';
+      localStorage.setItem('invision_content_view_mode', currentViewMode);
+
+      if (currentViewMode === 'list') {
+        catalogListView?.classList.remove('hidden');
+        catalogGrid?.classList.add('hidden');
+        btnViewList.className = 'px-2.5 py-1 rounded-md text-xs font-bold bg-[#E1A924] text-black shadow transition flex items-center gap-1.5';
+        btnViewGrid.className = 'px-2.5 py-1 rounded-md text-xs font-bold text-slate-400 hover:text-white transition flex items-center gap-1.5';
+      } else {
+        catalogListView?.classList.add('hidden');
+        catalogGrid?.classList.remove('hidden');
+        btnViewList.className = 'px-2.5 py-1 rounded-md text-xs font-bold text-slate-400 hover:text-white transition flex items-center gap-1.5';
+        btnViewGrid.className = 'px-2.5 py-1 rounded-md text-xs font-bold bg-[#E1A924] text-black shadow transition flex items-center gap-1.5';
+      }
+    }
+
+    btnViewList?.addEventListener('click', () => setViewMode('list'));
+    btnViewGrid?.addEventListener('click', () => setViewMode('grid'));
+
+    function closeMediaDetailModal() {
+      mediaModal?.classList.add('hidden');
+      if (modalPlayerContainer) modalPlayerContainer.innerHTML = '';
+      currentModalMediaId = null;
+      if (modalTagsFeedback) modalTagsFeedback.classList.add('hidden');
+    }
+
+    btnCloseMediaModal?.addEventListener('click', closeMediaDetailModal);
+    btnModalCloseBottom?.addEventListener('click', closeMediaDetailModal);
+    mediaModal?.addEventListener('click', (e) => {
+      if (e.target === mediaModal) closeMediaDetailModal();
+    });
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeMediaDetailModal();
+    });
 
     let liveState = {
       brand: 'FNAC',
@@ -187,12 +407,12 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
               width: w,
               height: h,
               ratio: calcAspectRatio(w, h),
-              durationMs: (parseInt(durationInput.value, 10) || 8) * 1000,
+              durationMs: (parseInt(durationInput.value, 10) || 10) * 1000,
             });
           };
           img.onerror = () => {
             URL.revokeObjectURL(objectUrl);
-            resolve({ width: 1920, height: 1080, ratio: '16:9', durationMs: 8000 });
+            resolve({ width: 1920, height: 1080, ratio: '16:9', durationMs: 10000 });
           };
           img.src = objectUrl;
         } else {
@@ -225,16 +445,116 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
       renderContentLibrary();
     }
 
+    function openMediaDetailModal(assetId) {
+      const asset = (liveState.mediaCatalog || []).find((a) => a.id === assetId);
+      if (!asset) return;
+
+      currentModalMediaId = asset.id;
+      const activeBrand = localStorage.getItem('invision_brand') || 'FNAC';
+      const streamFullUrl = `${API_BASE}${asset.streamUrl}`;
+      const assetTags = Array.isArray(asset.tags) ? asset.tags : [];
+
+      if (modalMediaTitle) modalMediaTitle.textContent = asset.title;
+      if (modalMediaBadge) {
+        modalMediaBadge.textContent = `${asset.brand} • ${asset.mediaType}`;
+        modalMediaBadge.className =
+          asset.brand === 'DARTY'
+            ? 'px-2 py-0.5 rounded text-[10px] font-bold bg-[#E30613] text-white'
+            : 'px-2 py-0.5 rounded text-[10px] font-bold bg-[#E1A924] text-black';
+      }
+
+      if (modalPlayerContainer) {
+        if (asset.mediaType === 'IMAGE') {
+          modalPlayerContainer.innerHTML = `<img src="${streamFullUrl}" alt="${asset.title}" class="max-h-80 w-auto object-contain mx-auto" />`;
+        } else {
+          modalPlayerContainer.innerHTML = `<video src="${streamFullUrl}" controls autoplay loop muted playsinline class="max-h-80 w-auto object-contain mx-auto"></video>`;
+        }
+      }
+
+      if (modalMetaRes) modalMetaRes.textContent = `${asset.widthPx}x${asset.heightPx} (${asset.aspectRatio})`;
+      if (modalMetaDur) modalMetaDur.textContent = `${(asset.durationMs / 1000).toFixed(1)}s`;
+      if (modalMetaBrand) modalMetaBrand.textContent = asset.brand;
+      if (modalMetaType) modalMetaType.textContent = asset.mediaType;
+      if (modalTagsInput) modalTagsInput.value = assetTags.join(', ');
+
+      // Preenche select de playlists da marca ativa
+      if (modalPlaylistSelect) {
+        const brandPlaylists = (liveState.playlists || []).filter(
+          (pl) => !pl.brand || pl.brand === activeBrand
+        );
+        modalPlaylistSelect.innerHTML = brandPlaylists
+          .map((pl) => `<option value="${pl.id}">${pl.name} (${pl.priority})</option>`)
+          .join('');
+      }
+
+      mediaModal?.classList.remove('hidden');
+    }
+
+    // Ações dentro do Modal
+    btnModalSaveTags?.addEventListener('click', async () => {
+      if (!currentModalMediaId) return;
+      const tags = modalTagsInput ? modalTagsInput.value : '';
+      await fetch(`${API_BASE}/api/v1/live/media/${currentModalMediaId}/tags`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tags }),
+      });
+      if (modalTagsFeedback) {
+        modalTagsFeedback.classList.remove('hidden');
+        modalTagsFeedback.textContent = `✓ TAGs atualizadas com sucesso! Playlists sincronizadas automaticamente.`;
+        setTimeout(() => modalTagsFeedback.classList.add('hidden'), 2500);
+      }
+      await fetchContentState();
+    });
+
+    btnModalSendPlaylist?.addEventListener('click', async () => {
+      if (!currentModalMediaId) return;
+      const plId = modalPlaylistSelect?.value;
+      const asset = (liveState.mediaCatalog || []).find((a) => a.id === currentModalMediaId);
+      const pl = (liveState.playlists || []).find((p) => p.id === plId);
+      if (!asset || !pl) return;
+      if (!Array.isArray(pl.items)) pl.items = [];
+      pl.items.push({ ...asset, sovPct: 50 });
+
+      await fetch(`${API_BASE}/api/v1/live/playlists`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          brand: liveState.brand,
+          playlists: liveState.playlists,
+        }),
+      });
+      if (modalTagsFeedback) {
+        modalTagsFeedback.classList.remove('hidden');
+        modalTagsFeedback.textContent = `✓ Conteúdo inserido com sucesso na Playlist "${pl.name}"!`;
+        setTimeout(() => modalTagsFeedback.classList.add('hidden'), 2500);
+      }
+      await fetchContentState();
+    });
+
+    btnModalDeleteMedia?.addEventListener('click', async () => {
+      if (!currentModalMediaId) return;
+      if (confirm('Tem a certeza de que deseja apagar este ficheiro de conteúdos?')) {
+        await fetch(`${API_BASE}/api/v1/live/media/${currentModalMediaId}`, { method: 'DELETE' });
+        closeMediaDetailModal();
+        await fetchContentState();
+      }
+    });
+
     function renderContentLibrary() {
       const activeBrand = localStorage.getItem('invision_brand') || 'FNAC';
-      const allPlaylists = liveState.playlists || [];
+      const allPlaylists = (liveState.playlists || []).filter(
+        (pl) => !pl.brand || pl.brand === activeBrand
+      );
 
-      // Recolhe todas as TAGs usadas nas Playlists e nos Conteúdos
+      // Recolhe todas as TAGs usadas nas Playlists e nos Conteúdos da marca
       const allKnownTags = new Set(['NATAL', 'CREDITO', 'FLASH_SALE', 'GAMING', 'NORMAL', 'INSTITUCIONAL']);
       allPlaylists.forEach((pl) => (pl.autoTags || []).forEach((t) => allKnownTags.add(t)));
-      (liveState.mediaCatalog || []).forEach((m) => (m.tags || []).forEach((t) => allKnownTags.add(t)));
+      (liveState.mediaCatalog || [])
+        .filter((m) => !m.brand || m.brand === activeBrand)
+        .forEach((m) => (m.tags || []).forEach((t) => allKnownTags.add(t)));
 
-      // Renderiza botões rápidos de TAGs
+      // Renderiza botões rápidos de TAGs no formulário de upload
       if (quickTagPills) {
         quickTagPills.innerHTML = Array.from(allKnownTags)
           .map(
@@ -280,7 +600,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
       const searchQ = (searchMediaInput?.value || '').trim().toLowerCase();
 
       const filteredCatalog = (liveState.mediaCatalog || []).filter((m) => {
-        if (activeBrand !== 'ALL' && m.brand !== activeBrand) return false;
+        if (m.brand && m.brand !== activeBrand) return false;
         const mTags = Array.isArray(m.tags) ? m.tags : [];
         if (tagFilter !== 'ALL' && !mTags.includes(tagFilter)) return false;
         if (
@@ -293,15 +613,98 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
         return true;
       });
 
+      // =====================================================================
+      // 1. RENDERIZAÇÃO EM MODO LISTA (TABELA COMPACTA)
+      // =====================================================================
       if (filteredCatalog.length === 0) {
+        catalogListTbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="py-8 text-center text-slate-400">
+              Nenhum ficheiro encontrado para <strong>${activeBrand}</strong> com os filtros atuais. Carregue vídeos ou imagens no topo!
+            </td>
+          </tr>
+        `;
         catalogGrid.innerHTML = `
           <div class="md:col-span-3 p-8 rounded-xl bg-slate-950 border border-dashed border-slate-700 text-center text-xs text-slate-400">
-            Nenhum ficheiro encontrado para os filtros atuais. Carregue vídeos ou imagens no topo desta página!
+            Nenhum ficheiro encontrado para <strong>${activeBrand}</strong> com os filtros atuais.
           </div>
         `;
         return;
       }
 
+      catalogListTbody.innerHTML = filteredCatalog
+        .map((asset) => {
+          const streamFullUrl = `${API_BASE}${asset.streamUrl}`;
+          const assetTags = Array.isArray(asset.tags) ? asset.tags : [];
+          const thumbHtml =
+            asset.mediaType === 'IMAGE'
+              ? `<img src="${streamFullUrl}" alt="${asset.title}" class="w-14 h-9 object-cover rounded bg-black border border-slate-800" />`
+              : `<video src="${streamFullUrl}" muted playsinline class="w-14 h-9 object-cover rounded bg-black border border-slate-800"></video>`;
+
+          const matchingPlaylists = allPlaylists.filter((pl) =>
+            (pl.items || []).some((it) => it.id === asset.id)
+          );
+
+          const tagsBadges =
+            assetTags.length > 0
+              ? assetTags
+                  .map(
+                    (t) =>
+                      `<span class="px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[10px] font-mono font-bold">#${t}</span>`
+                  )
+                  .join(' ')
+              : `<span class="text-[10px] font-mono text-slate-500">—</span>`;
+
+          const plBadges =
+            matchingPlaylists.length > 0
+              ? matchingPlaylists
+                  .map(
+                    (pl) =>
+                      `<span class="px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[10px] font-mono">🎞️ ${pl.name}</span>`
+                  )
+                  .join(' ')
+              : `<span class="text-[10px] font-mono text-slate-500">Sem Playlist</span>`;
+
+          return `
+            <tr class="hover:bg-slate-800/40 transition group cursor-pointer" data-row-open="${asset.id}">
+              <td class="py-2.5 px-3">${thumbHtml}</td>
+              <td class="py-2.5 px-3">
+                <strong class="text-white text-xs group-hover:text-amber-300 transition">${asset.title}</strong>
+                <span class="block text-[10px] font-mono text-slate-500 mt-0.5">${asset.mime || asset.mediaType}</span>
+              </td>
+              <td class="py-2.5 px-3 font-mono text-emerald-300">
+                ${asset.widthPx}x${asset.heightPx} (${asset.aspectRatio})
+              </td>
+              <td class="py-2.5 px-3 font-mono text-amber-300">
+                ${(asset.durationMs / 1000).toFixed(0)}s
+              </td>
+              <td class="py-2.5 px-3">${tagsBadges}</td>
+              <td class="py-2.5 px-3">${plBadges}</td>
+              <td class="py-2.5 px-3 text-right space-x-1.5 shrink-0" onclick="event.stopPropagation()">
+                <button
+                  type="button"
+                  data-inspect-media="${asset.id}"
+                  class="px-2.5 py-1 rounded bg-[#E1A924] hover:bg-amber-400 text-black font-bold text-[11px] transition shadow"
+                >
+                  ✎ Detalhes
+                </button>
+                <button
+                  type="button"
+                  data-del-media="${asset.id}"
+                  class="px-2 py-1 rounded bg-slate-950 hover:bg-rose-500/20 text-rose-400 border border-slate-800 text-[11px] transition"
+                  title="Apagar ficheiro"
+                >
+                  ✕
+                </button>
+              </td>
+            </tr>
+          `;
+        })
+        .join('');
+
+      // =====================================================================
+      // 2. RENDERIZAÇÃO EM MODO CARTÕES / GRELHA
+      // =====================================================================
       catalogGrid.innerHTML = filteredCatalog
         .map((asset) => {
           const streamFullUrl = `${API_BASE}${asset.streamUrl}`;
@@ -311,7 +714,6 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
               ? `<img src="${streamFullUrl}" alt="${asset.title}" class="w-full h-36 object-cover rounded-lg border border-slate-800 bg-black" />`
               : `<video src="${streamFullUrl}" muted loop playsinline onmouseover="this.play()" onmouseout="this.pause()" class="w-full h-36 object-cover rounded-lg border border-slate-800 bg-black"></video>`;
 
-          // Verifica em que Playlists este ficheiro está presente
           const matchingPlaylists = allPlaylists.filter((pl) =>
             (pl.items || []).some((it) => it.id === asset.id)
           );
@@ -363,101 +765,49 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
                 </div>
               </div>
 
-              <!-- Editor Rápido de TAGs do Ficheiro -->
-              <div class="pt-2 border-t border-slate-800 space-y-2">
-                <div class="flex gap-1.5">
-                  <input
-                    type="text"
-                    data-tag-input-for="${asset.id}"
-                    value="${assetTags.join(', ')}"
-                    placeholder="TAGs: ex. NATAL, CREDITO"
-                    class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-[11px] font-mono uppercase text-emerald-300 focus:border-amber-400 focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    data-save-tags="${asset.id}"
-                    class="px-2.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-[11px] font-bold transition"
-                  >
-                    Guardar TAGs
-                  </button>
-                </div>
-
-                <div class="flex items-center justify-between gap-2">
-                  <select
-                    data-manual-pl-for="${asset.id}"
-                    class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-slate-200"
-                  >
-                    ${allPlaylists
-                      .map((pl) => `<option value="${pl.id}">+ Enviar p/ ${pl.name}</option>`)
-                      .join('')}
-                  </select>
-                  <button
-                    type="button"
-                    data-send-to-pl="${asset.id}"
-                    class="px-2.5 py-1.5 rounded-lg bg-[#E1A924] hover:bg-amber-400 text-black font-bold text-[11px] transition"
-                  >
-                    Inserir
-                  </button>
-                  <button
-                    type="button"
-                    data-del-media="${asset.id}"
-                    class="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-rose-500/20 text-rose-400 border border-slate-800 text-[11px] transition"
-                    title="Apagar ficheiro do servidor"
-                  >
-                    ✕
-                  </button>
-                </div>
+              <div class="pt-2 border-t border-slate-800 flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  data-inspect-media="${asset.id}"
+                  class="flex-1 px-3 py-2 rounded-lg bg-[#E1A924] hover:bg-amber-400 text-black font-bold text-xs transition shadow"
+                >
+                  ✎ Detalhes & TAGs
+                </button>
+                <button
+                  type="button"
+                  data-del-media="${asset.id}"
+                  class="px-2.5 py-2 rounded-lg bg-slate-900 hover:bg-rose-500/20 text-rose-400 border border-slate-800 text-xs transition"
+                  title="Apagar ficheiro"
+                >
+                  ✕
+                </button>
               </div>
             </div>
           `;
         })
         .join('');
 
-      // Eventos Guardar TAGs
-      document.querySelectorAll('[data-save-tags]').forEach((btn) => {
-        btn.addEventListener('click', async () => {
-          const id = btn.getAttribute('data-save-tags');
-          const inp = document.querySelector(`[data-tag-input-for="${id}"]`);
-          const tags = inp ? inp.value : '';
-          await fetch(`${API_BASE}/api/v1/live/media/${id}/tags`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tags }),
-          });
-          await fetchContentState();
+      // Associa cliques para abrir o Modal
+      document.querySelectorAll('[data-row-open]').forEach((row) => {
+        row.addEventListener('click', () => {
+          openMediaDetailModal(row.getAttribute('data-row-open'));
         });
       });
 
-      // Eventos Enviar Manualmente para Playlist
-      document.querySelectorAll('[data-send-to-pl]').forEach((btn) => {
-        btn.addEventListener('click', async () => {
-          const id = btn.getAttribute('data-send-to-pl');
-          const sel = document.querySelector(`[data-manual-pl-for="${id}"]`);
-          const plId = sel ? sel.value : null;
-          const asset = liveState.mediaCatalog.find((a) => a.id === id);
-          const pl = liveState.playlists.find((p) => p.id === plId);
-          if (!asset || !pl) return;
-          if (!Array.isArray(pl.items)) pl.items = [];
-          pl.items.push({ ...asset, sovPct: 50 });
-
-          await fetch(`${API_BASE}/api/v1/live/playlists`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              brand: liveState.brand,
-              playlists: liveState.playlists,
-            }),
-          });
-          await fetchContentState();
+      document.querySelectorAll('[data-inspect-media]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          openMediaDetailModal(btn.getAttribute('data-inspect-media'));
         });
       });
 
-      // Eventos Apagar Ficheiro
+      // Associa cliques para Apagar Ficheiro
       document.querySelectorAll('[data-del-media]').forEach((btn) => {
         btn.addEventListener('click', async () => {
           const id = btn.getAttribute('data-del-media');
-          await fetch(`${API_BASE}/api/v1/live/media/${id}`, { method: 'DELETE' });
-          await fetchContentState();
+          if (confirm('Deseja apagar este ficheiro de conteúdos?')) {
+            await fetch(`${API_BASE}/api/v1/live/media/${id}`, { method: 'DELETE' });
+            await fetchContentState();
+          }
         });
       });
     }
@@ -502,7 +852,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
             ? `✓ Upload concluído! O conteúdo "${created.title}" foi associado automaticamente a todas as Playlists com a(s) TAG(s): ${created.tags.join(', ')}!`
             : `✓ Upload concluído e guardado na Biblioteca de Conteúdos!`;
         uploadForm.reset();
-        durationInput.value = '8';
+        durationInput.value = '10';
         await fetchContentState();
       }
     });
@@ -510,7 +860,9 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     filterTagSelect?.addEventListener('change', renderContentLibrary);
     searchMediaInput?.addEventListener('input', renderContentLibrary);
     window.addEventListener('invision:brand-change', renderContentLibrary);
+
+    // Inicializa o modo de visualização guardado
+    setViewMode(currentViewMode);
     fetchContentState();
   </script>
 </DashboardLayout>
-
