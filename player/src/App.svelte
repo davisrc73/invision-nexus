@@ -1,6 +1,7 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
   import { ensurePersistentStorage } from './lib/offlineStorage';
+  import { verifyManifestSignature } from './lib/cryptoSign';
   import {
     recordLocalProofOfPlay,
     recordLocalInteraction,
@@ -180,11 +181,59 @@
 
   /**
    * Aplica o Manifesto enviado para este equipamento específico:
+   * - Executa verificação criptográfica da assinatura HMAC-SHA256 (Pilar 3: Anti-Defacement & Anti-MITM).
+   * - Se a assinatura for inválida, rejeita o manifesto, emite alerta e mantém o cache seguro em disco.
    * - Só reinicia o Loop se a assinatura (`manifestSignature`) tiver mudado!
-   *   Isto impede que um heartbeat ou uma alteração noutro ecrã interrompa a reprodução do Slot #2, #3, etc.
    */
-  function applyEffectivePlayback(eff, forceRestart = false) {
+  async function applyEffectivePlayback(eff, forceRestart = false) {
     if (!eff) return;
+
+    // 1. Verificação Criptográfica da Assinatura HMAC-SHA256
+    const isSignatureValid = await verifyManifestSignature(eff);
+    if (!isSignatureValid) {
+      console.warn('[SECURITY] Assinatura digital do manifesto inválida! Possível tentativa de MITM.');
+      fetch(`${API_BASE}/api/v1/live/security/tamper-alert`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Device-Token': deviceToken,
+        },
+        body: JSON.stringify({
+          hardwareUid,
+          deviceName,
+          reason: 'SIGNATURE_VERIFICATION_FAILED',
+          receivedSignature: eff.manifestSignature,
+          details: `Assinatura HMAC-SHA256 não confere com o manifesto recebido (${eff.activePlaylistName || 'N/A'})`,
+        }),
+      }).catch(() => {});
+
+      // Fail-Safe: Mantém o manifesto previamente verificado em disco
+      const cached = localStorage.getItem('invision_verified_manifest');
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (parsed && parsed.manifestSignature !== eff.manifestSignature) {
+            console.log('[Fail-Safe] A repor último manifesto verificado da cache local...');
+            eff = parsed;
+          }
+        } catch {
+          // ignore
+        }
+      } else {
+        lastSyncStatus = '⚠️ Alerta de Segurança: Assinatura Inválida! A exibir Fallback Seguro.';
+        activeLoop = [...fallbackSlides];
+        currentIndex = 0;
+        currentSlot = { ...activeLoop[0] };
+        return;
+      }
+    } else {
+      // Manifesto autêntico: persiste em cache offline resiliente
+      try {
+        localStorage.setItem('invision_verified_manifest', JSON.stringify(eff));
+      } catch {
+        // quota
+      }
+    }
 
     const newSignature = eff.manifestSignature || 'DEFAULT';
     if (!forceRestart && newSignature === currentManifestSignature) {
@@ -616,6 +665,19 @@
     document.addEventListener('touchend', triggerFsOnGesture, true);
     document.addEventListener('mouseup', triggerFsOnGesture, true);
 
+    // Modo Fail-Safe Offline: Recupera imediatamente o último manifesto verificado antes da rede
+    const cachedManifest = localStorage.getItem('invision_verified_manifest');
+    if (cachedManifest) {
+      try {
+        const parsed = JSON.parse(cachedManifest);
+        if (parsed && Array.isArray(parsed.resolvedSequence) && parsed.resolvedSequence.length > 0) {
+          applyEffectivePlayback(parsed, true);
+        }
+      } catch {
+        // ignore
+      }
+    }
+
     try {
       const res = await fetch(
         `${API_BASE}/api/v1/live/state?hw_uid=${encodeURIComponent(hardwareUid)}`
@@ -627,7 +689,7 @@
         }
       }
     } catch {
-      // Offline
+      // Continua em modo autónomo offline com a cache local
     }
 
     connectLiveManifestSocket();

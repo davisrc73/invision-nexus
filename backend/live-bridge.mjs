@@ -23,12 +23,25 @@ const PRIORITY_RANK = {
 // CIBERSEGURANÇA & GOVERNANCE: CONFIGURAÇÃO DE SESSÕES, SSO & HARDENING
 // ============================================================================
 const SESSION_SECRET = process.env.SESSION_SECRET || 'invision_nexus_enterprise_session_secret_2026';
+const MANIFEST_SIGNING_SECRET =
+  process.env.MANIFEST_SIGNING_SECRET || 'invision-nexus-signing-key-2026-pt-fnac-darty';
 const AZURE_TENANT_ID = (process.env.AZURE_TENANT_ID || '').trim();
 const AZURE_CLIENT_ID = (process.env.AZURE_CLIENT_ID || '').trim();
 const AZURE_CLIENT_SECRET = (process.env.AZURE_CLIENT_SECRET || '').trim();
 const AZURE_REDIRECT_URI = (process.env.AZURE_REDIRECT_URI || '').trim();
 const ADMIN_USERNAME = (process.env.ADMIN_USERNAME || 'admin').trim();
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'invision2026!';
+
+function generateManifestSignature(playlistId, brand, priority, mode, items = []) {
+  const itemsDigest = (items || [])
+    .map((it) => `${it.id}:${it.streamUrl}:${it.durationMs}`)
+    .join('|');
+  const canonical = `${playlistId || 'FALLBACK'}:${brand || 'FNAC'}:${priority || 'NORMAL'}:${mode || 'FIXED_SLOTS'}:${itemsDigest}`;
+  return crypto
+    .createHmac('sha256', MANIFEST_SIGNING_SECRET)
+    .update(canonical)
+    .digest('hex');
+}
 
 function hashPassword(password, salt = null) {
   const s = salt || crypto.randomBytes(16).toString('hex');
@@ -527,8 +540,17 @@ function computeEffectivePlaybackForDevice(hardwareUid = null) {
 
   const winningPlaylist = candidates[0] || null;
   if (!winningPlaylist) {
+    const fallbackSig = generateManifestSignature(
+      'FALLBACK',
+      state.brand || 'FNAC',
+      'FALLBACK',
+      'FIXED_SLOTS',
+      []
+    );
     return {
-      manifestSignature: 'FALLBACK_DEFAULT',
+      manifestSignature: fallbackSig,
+      signatureAlgorithm: 'HMAC-SHA256',
+      signatureTimestamp: Date.now(),
       activePlaylistId: null,
       activePlaylistName: 'Fallback Demo Integrado',
       activePriority: 'FALLBACK',
@@ -546,19 +568,18 @@ function computeEffectivePlaybackForDevice(hardwareUid = null) {
           sequenceSlot: idx + 1,
         }));
 
-  const signaturePayload = JSON.stringify({
-    plId: winningPlaylist.id,
-    prio: winningPlaylist.priority,
-    mode: winningPlaylist.schedulingMode,
-    items: resolvedSequence.map((i) => `${i.id}:${i.durationMs}:${i.sovPct || 50}`),
-  });
-  const manifestSignature = crypto
-    .createHash('md5')
-    .update(signaturePayload)
-    .digest('hex');
+  const manifestSignature = generateManifestSignature(
+    winningPlaylist.id,
+    winningPlaylist.brand || state.brand || 'FNAC',
+    winningPlaylist.priority,
+    winningPlaylist.schedulingMode,
+    resolvedSequence
+  );
 
   return {
     manifestSignature,
+    signatureAlgorithm: 'HMAC-SHA256',
+    signatureTimestamp: Date.now(),
     activePlaylistId: winningPlaylist.id,
     activePlaylistName: winningPlaylist.name,
     activePriority: winningPlaylist.priority,
@@ -595,6 +616,8 @@ function getEnrichedState(hardwareUid = null) {
       portsHardened: true,
       magicBytesGuardrail: true,
       deviceTokensActive: true,
+      antiDefacementHmac: true,
+      failSafeKioskActive: true,
     },
     auditLogs: (state.auditLogs || []).slice(0, 50),
     publicPlayerPort: PUBLIC_PLAYER_PORT,
@@ -1532,6 +1555,91 @@ const server = http.createServer(async (req, res) => {
     } catch {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'INVERT_ERROR' }));
+    }
+    return;
+  }
+
+  // 5B-2. POST /api/v1/live/security/tamper-alert -> Recebe alertas de tentativa de MITM / assinatura inválida no Player
+  if (req.method === 'POST' && url.pathname === '/api/v1/live/security/tamper-alert') {
+    try {
+      const payload = await readJsonBody(req);
+      const hwUid = payload.hardwareUid;
+      const devName = payload.deviceName || hwUid || 'Terminal Desconhecido';
+      const dev = state.devices.find(
+        (d) => d.hardwareUid === hwUid || d.name === devName
+      );
+      if (dev) {
+        dev.securityAlert = true;
+        dev.securityAlertReason = payload.reason || 'SIGNATURE_VERIFICATION_FAILED';
+        dev.securityAlertAt = new Date().toISOString();
+        dev.securityAlertDetails = payload.details || 'Assinatura digital do manifesto não confere com a chave do servidor';
+      }
+
+      logAuditEvent({
+        action: 'SECURITY_TAMPER_ALERT',
+        actor: devName,
+        role: 'PLAYER_KIOSK',
+        target: dev ? `${dev.name} (${dev.storeName})` : devName,
+        details: `Tentativa de adulteração bloqueada: ${payload.reason || 'Assinatura HMAC-SHA256 inválida'}. O terminal manteve o cache seguro.`,
+        clientIp: req.socket?.remoteAddress || '',
+        success: false,
+      });
+
+      saveState();
+      broadcastUpdate({
+        type: 'SECURITY_ALERT',
+        hardwareUid: hwUid,
+        deviceName: devName,
+        alert: {
+          reason: payload.reason || 'SIGNATURE_MISMATCH',
+          at: new Date().toISOString(),
+        },
+      });
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, status: 'ALERT_LOGGED' }));
+    } catch {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'TAMPER_ALERT_PARSE_ERROR' }));
+    }
+    return;
+  }
+
+  // 5B-3. POST /api/v1/live/security/reset-alert -> Permite ao operador limpar o alerta de segurança no Dashboard
+  if (req.method === 'POST' && url.pathname === '/api/v1/live/security/reset-alert') {
+    try {
+      const payload = await readJsonBody(req);
+      const hwUid = payload.hardwareUid;
+      const dev = state.devices.find((d) => d.hardwareUid === hwUid);
+      if (dev) {
+        dev.securityAlert = false;
+        delete dev.securityAlertReason;
+        delete dev.securityAlertAt;
+        delete dev.securityAlertDetails;
+      }
+
+      logAuditEvent({
+        action: 'SECURITY_ALERT_RESET',
+        actor: 'OPERATOR',
+        role: 'IT_OPS',
+        target: dev ? `${dev.name} (${dev.storeName})` : hwUid,
+        details: 'Alerta de adulteração reposto pelo operador de consola.',
+        clientIp: req.socket?.remoteAddress || '',
+        success: true,
+      });
+
+      saveState();
+      broadcastUpdate({
+        type: 'DEVICE_UPDATED',
+        hardwareUid: hwUid,
+        device: dev,
+      });
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, device: dev, state: getEnrichedState() }));
+    } catch {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'RESET_ALERT_ERROR' }));
     }
     return;
   }

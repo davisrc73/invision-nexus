@@ -676,12 +676,29 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
                         ? `<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold">🔄 180° INVERTIDO</span>`
                         : ''
                     }
+                    ${
+                      d.securityAlert
+                        ? `<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/50 font-bold animate-pulse">🚨 ALERTA MITM / ASSINATURA INVÁLIDA</span>`
+                        : ''
+                    }
                   </div>
                   <p class="text-xs font-mono text-slate-400">
                     ▶ Em exibição: <span class="text-emerald-300 font-semibold">${d.currentMediaTitle}</span> • Zona: <strong class="text-slate-300">${d.zone || 'ENTRANCE_LEDWALL'}</strong> • IP: <span class="text-sky-300">${d.clientIp || 'LAN'}</span> • Prioridade: <strong>${d.activePriority || 'NORMAL'}</strong>
                   </p>
                 </div>
                 <div class="flex items-center gap-2 shrink-0 flex-wrap">
+                  ${
+                    d.securityAlert
+                      ? `<button
+                          type="button"
+                          data-reset-alert="${d.hardwareUid}"
+                          class="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition shadow animate-pulse"
+                          title="Reconhecer e limpar alerta de segurança"
+                        >
+                          🛡️ Repor Alerta
+                        </button>`
+                      : ''
+                  }
                   <button
                     type="button"
                     data-invert-device="${d.hardwareUid}"
@@ -730,6 +747,18 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ hardwareUid, invert180: !isCur }),
+              });
+              refreshDevicesPage();
+            });
+          });
+
+          document.querySelectorAll('[data-reset-alert]').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+              const hardwareUid = btn.getAttribute('data-reset-alert');
+              await fetch(`${API_BASE}/api/v1/live/security/reset-alert`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ hardwareUid }),
               });
               refreshDevicesPage();
             });

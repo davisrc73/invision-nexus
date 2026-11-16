@@ -491,3 +491,31 @@ Arranque do desenvolvimento de uma plataforma enterprise de Digital Signage inte
    - Inclui Painel de Hardening em Camadas, painel de configuração e credenciais para a equipa de TI da Fnac Darty, tabela de utilizadores locais e Tabela de Auditoria em tempo real (*Audit Trail* para conformidade NIS2 e RGPD).
 7. **Documento Técnico de Referência ([docs/05-cybersecurity-hardening.md](file:///Users/daviscorreia/Antigravity%20/invision-nexus/docs/05-cybersecurity-hardening.md)):**
    - Criado manual completo de cibersegurança com modelação de ameaças, descrição dos 5 pilares de segurança, guia de registo de aplicação no Microsoft Entra e playbook de resposta a incidentes.
+
+---
+
+## [2026-11-16] - Implementação de Cibersegurança: Passo 3 (Anti-Defacement, Assinatura HMAC-SHA256 & Fail-Safe Kiosk)
+
+### Contexto & Desafio de Segurança
+- Proteção dos ecrãs físicos em bancadas de loja (FNAC & DARTY) contra ataques de **Man-in-the-Middle (MITM)** e adulteração de playlists na rede Wi-Fi/VLAN.
+- Garantia de **resiliência total sem ecrã preto (*Zero Black Screen*)**: se a rede cair ou o manifesto for adulterado, o ecrã deve manter a emissão do cache local sem nunca exibir a área de trabalho do Android ou mensagens de erro aos clientes.
+
+### Implementações Realizadas
+1. **Assinatura Criptográfica de Manifestos no Servidor ([backend/live-bridge.mjs](file:///Users/daviscorreia/Antigravity%20/invision-nexus/backend/live-bridge.mjs)):**
+   - Implementado o gerador de assinaturas digitais determinísticas utilizando o algoritmo **HMAC-SHA256** (`generateManifestSignature`).
+   - A assinatura cobre o ID da playlist, insígnia, prioridade, modo de agendamento e o resumo ordenado de todos os ficheiros (`id:streamUrl:durationMs`).
+   - Cada manifesto emitido via *heartbeat* ou WebSocket transporta `manifestSignature`, `signatureAlgorithm` e `signatureTimestamp`.
+2. **Validação Criptográfica Nativa no Player ([player/src/lib/cryptoSign.ts](file:///Users/daviscorreia/Antigravity%20/invision-nexus/player/src/lib/cryptoSign.ts) e [player/src/App.svelte](file:///Users/daviscorreia/Antigravity%20/invision-nexus/player/src/App.svelte)):**
+   - Validação matemática de integridade via **W3C Web Cryptography API** (`window.crypto.subtle`).
+   - **Bloqueio Anti-Defacement:** Se a assinatura não coincidir (adulteração de conteúdo ou ataque MITM), o Player rejeita 100% do pacote recebido, mantém o cache local seguro e notifica de imediato o backend via `POST /api/v1/live/security/tamper-alert`.
+3. **Modo Fail-Safe Resiliente & Cache Offline:**
+   - O Player persiste automaticamente o último manifesto seguro em `localStorage` (`invision_verified_manifest`).
+   - No arranque (*boot*), o Player hidrata-se imediatamente da cache antes mesmo de contactar a rede, garantindo arranque instantâneo mesmo sem ligação à Internet.
+4. **Kiosk Lockout & Content Security Policy ([player/index.html](file:///Users/daviscorreia/Antigravity%20/invision-nexus/player/index.html)):**
+   - Configurada política **CSP (Content-Security-Policy)** estrita, impedindo injeção de scripts externos.
+   - Bloqueio de menus de contexto (`contextmenu`), atalhos de depuração (`F12`, `Ctrl+Shift+I`) e toques prolongados em ecrãs táteis.
+   - Substituição do ecrã de arranque por uma animação institucional elegante com logo corporativo, sem traces de erro expostos ao público de loja.
+5. **Gestão de Alertas de Segurança no Dashboard ([dashboard/src/pages/devices.astro](file:///Users/daviscorreia/Antigravity%20/invision-nexus/dashboard/src/pages/devices.astro) e [dashboard/src/pages/settings.astro](file:///Users/daviscorreia/Antigravity%20/invision-nexus/dashboard/src/pages/settings.astro)):**
+   - Sinalização de terminais com alerta de intrusão/MITM com badge vermelha a pulsar (`🚨 ALERTA MITM / ASSINATURA INVÁLIDA`).
+   - Botão para operadores autorizados reconhecerem e reporem o alerta (`🛡️ Repor Alerta`), comunicando com `POST /api/v1/live/security/reset-alert` e registando o evento no Audit Trail.
+   - Cartões de Hardening em Configurações atualizados para refletir os 5 pilares ativos de segurança.

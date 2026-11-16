@@ -601,41 +601,50 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
         </a>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div class="p-4 rounded-xl bg-slate-950 border border-emerald-500/30">
-          <div class="flex items-center justify-between text-xs font-bold text-emerald-400 mb-1">
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+        <div class="p-3.5 rounded-xl bg-slate-950 border border-emerald-500/30">
+          <div class="flex items-center justify-between text-[11px] font-bold text-emerald-400 mb-1">
             <span>ISOLAMENTO 127.0.0.1</span>
             <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
           </div>
           <p class="text-[11px] font-mono text-slate-300">PostgreSQL 16 & Redis 7</p>
-          <p class="text-[10px] text-slate-400 mt-1">Confinados ao loopback local do NAS. Inacessíveis a outras máquinas na rede.</p>
+          <p class="text-[10px] text-slate-400 mt-1">Confinados ao loopback local do NAS. Inacessíveis na LAN.</p>
         </div>
 
-        <div class="p-4 rounded-xl bg-slate-950 border border-emerald-500/30">
-          <div class="flex items-center justify-between text-xs font-bold text-emerald-400 mb-1">
-            <span>MAGIC BYTES GUARDRAIL</span>
+        <div class="p-3.5 rounded-xl bg-slate-950 border border-emerald-500/30">
+          <div class="flex items-center justify-between text-[11px] font-bold text-emerald-400 mb-1">
+            <span>MAGIC BYTES</span>
             <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
           </div>
           <p class="text-[11px] font-mono text-slate-300">Validador Binário Real</p>
-          <p class="text-[10px] text-slate-400 mt-1">Rejeita executáveis, PHP ou scripts maliciosos disfarçados com extensão .mp4/.jpg.</p>
+          <p class="text-[10px] text-slate-400 mt-1">Rejeita scripts ou executáveis disfarçados de .mp4/.jpg.</p>
         </div>
 
-        <div class="p-4 rounded-xl bg-slate-950 border border-emerald-500/30">
-          <div class="flex items-center justify-between text-xs font-bold text-emerald-400 mb-1">
-            <span>DEVICE HARDWARE TOKENS</span>
+        <div class="p-3.5 rounded-xl bg-slate-950 border border-emerald-500/30">
+          <div class="flex items-center justify-between text-[11px] font-bold text-emerald-400 mb-1">
+            <span>DEVICE TOKENS</span>
             <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
           </div>
           <p class="text-[11px] font-mono text-slate-300">X-Device-Token 48-Hex</p>
-          <p class="text-[10px] text-slate-400 mt-1">Chave criptográfica exclusiva por Box Android. Impede terminais impostores na LAN.</p>
+          <p class="text-[10px] text-slate-400 mt-1">Chave por terminal contra spoofing de IP/hardwareUid.</p>
         </div>
 
-        <div class="p-4 rounded-xl bg-slate-950 border border-emerald-500/30">
-          <div class="flex items-center justify-between text-xs font-bold text-emerald-400 mb-1">
-            <span>VLAN WI-FI RESERVADA</span>
+        <div class="p-3.5 rounded-xl bg-slate-950 border border-emerald-500/30">
+          <div class="flex items-center justify-between text-[11px] font-bold text-emerald-400 mb-1">
+            <span>ANTI-DEFACEMENT</span>
             <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
           </div>
-          <p class="text-[11px] font-mono text-slate-300">Rede Digital Signage</p>
-          <p class="text-[10px] text-slate-400 mt-1">Rede física isolada do Wi-Fi público de clientes e do sistema de caixas/POS.</p>
+          <p class="text-[11px] font-mono text-slate-300">Assinatura HMAC-SHA256</p>
+          <p class="text-[10px] text-slate-400 mt-1">Manifestos assinados e validados no Player contra MITM.</p>
+        </div>
+
+        <div class="p-3.5 rounded-xl bg-slate-950 border border-emerald-500/30">
+          <div class="flex items-center justify-between text-[11px] font-bold text-emerald-400 mb-1">
+            <span>FAIL-SAFE & KIOSK</span>
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          </div>
+          <p class="text-[11px] font-mono text-slate-300">CSP & Cache Offline</p>
+          <p class="text-[10px] text-slate-400 mt-1">Zero ecrã preto e bloqueio de menus do SO em loja.</p>
         </div>
       </div>
     </div>

@@ -92,10 +92,26 @@ A plataforma suporta dois motores de autenticação complementares:
    * Utilizador de emergência `admin` com palavra-passe protegida por **PBKDF2 com HMAC-SHA512** (100.000 iterações e salt criptográfico individual).
    * Garante continuidade operacional no Synology NAS durante a fase de testes e serve de acesso de recuperação caso a conectividade externa à nuvem Microsoft esteja indisponível.
 
-### Pilar 5: Trilho de Auditoria Imutável (*Audit Trail*)
+### Pilar 5: Anti-Defacement, Assinatura Criptográfica HMAC-SHA256 & Kiosk Lockout
+Para garantir que os ecrãs nas bancadas de loja nunca exibem conteúdos piratas, não autorizados ou alterados por um atacante na rede Wi-Fi da loja (*Man-in-the-Middle*):
+1. **Assinatura Digital no Servidor (`live-bridge.mjs`):**
+   * O backend assina o manifesto com a chave mestra utilizando o algoritmo **HMAC-SHA256**:
+     `HMAC_SHA256(Secret, "PlaylistId:Brand:Priority:SchedulingMode:Item1|Url1|Dur1;Item2|Url2|Dur2")`
+   * A assinatura gerada (`manifestSignature`) é enviada em conjunto com o manifesto em cada *heartbeat* e evento WebSocket.
+2. **Validação Criptográfica no Ecrã (`player/src/lib/cryptoSign.ts`):**
+   * O Player verifica a assinatura utilizando a API nativa W3C Web Cryptography (`window.crypto.subtle`).
+   * **Rejeição Imediata de Adulteração:** Se um atacante na VLAN alterar um URL ou inserir um vídeo estranho, o hash não confere, o Player rejeita 100% do pacote recebido e dispara uma notificação imediata de intrusão (`POST /api/v1/live/security/tamper-alert`).
+3. **Resiliência Offline & Fail-Safe (Zero Ecrã Preto):**
+   * O Player mantém o último manifesto verificado em armazenamento local seguro (`invision_verified_manifest`).
+   * Em caso de quebra de rede, corte de Wi-Fi ou rejeição por adulteração, o Player comuta automaticamente para o cache local de ficheiros (*Blob ObjectURLs*), mantendo a emissão contínua sem nunca exibir ecrã preto ou janelas de erro.
+4. **Kiosk Lockout no Navegador (`index.html`):**
+   * **Content Security Policy (CSP):** Proíbe a execução de scripts externos e bloqueia a navegação para fora das origens seguras da plataforma.
+   * **Bloqueio de Menus e Teclas:** Desativados os menus de contexto (*click direito / long-press*) e atalhos de depuração (`F12`, `Ctrl+Shift+I`, `Ctrl+U`), impedindo clientes em loja de interagir com o ambiente subjacente.
+
+### Pilar 6: Trilho de Auditoria Imutável (*Audit Trail*)
 Todas as operações de gestão de conteúdos, alteração de configurações e controlo de hardware são registadas num trilho de auditoria em memória e no disco:
 - **Campos Registados:** Timestamp ISO 8601, Ação, Utilizador/Terminal, Perfil RBAC, Alvo, Detalhes técnicos, IP de Origem e Resultado (Sucesso / Bloqueado).
-- **Ações Monitorizadas:** `LOGIN_SUCCESS_LOCAL`, `LOGIN_FAILED`, `LOGOUT`, `UPLOAD_MEDIA`, `UPLOAD_BLOCKED_MAGIC_BYTES`, `UPDATE_PLAYLISTS`, `PAIR_DEVICE_APPROVED`, `DEVICE_INVERT_180`, `ADB_REBOOT`, `PURGE_DEMO_DATA`.
+- **Ações Monitorizadas:** `LOGIN_SUCCESS_LOCAL`, `LOGIN_FAILED`, `LOGOUT`, `UPLOAD_MEDIA`, `UPLOAD_BLOCKED_MAGIC_BYTES`, `UPDATE_PLAYLISTS`, `PAIR_DEVICE_APPROVED`, `DEVICE_INVERT_180`, `SECURITY_TAMPER_ALERT`, `SECURITY_ALERT_RESET`, `ADB_REBOOT`, `PURGE_DEMO_DATA`.
 - **Interface de Consulta:** Disponível em tempo real no módulo de **Configurações & Setup** (`/settings/`), no separador **`🛡️ 6. Segurança & SSO`**.
 
 ---
@@ -140,6 +156,14 @@ Para ativar a federação com o Office 365 corporativo da Fnac Darty em ambiente
 2. O utilizador recebe o erro HTTP 415 (`FILE_GUARDRAIL_BLOCKED`).
 3. O evento fica registado na tabela de auditoria com o IP de origem para investigação imediata.
 
+### Cenário C: Tentativa de Adulteração de Ecrã em Loja (MITM / Defacement)
+1. O Player verifica que a assinatura HMAC-SHA256 do manifesto não coincide com os dados recebidos.
+2. O manifesto adulterado é descartado de imediato, sem que nenhum frame estranho chegue ao ecrã.
+3. O Player emite um alarme para o servidor (`POST /api/v1/live/security/tamper-alert`) e continua a reproduzir o cache previamente validado ou os slides institucionais.
+4. Na consola de **Equipamentos** (`/devices/`), o terminal passa a exibir a etiqueta vermelha a pulsar `🚨 ALERTA MITM / ASSINATURA INVÁLIDA`.
+5. Após inspeção e verificação da rede de loja pela equipa de segurança, o operador pode clicar em `🛡️ Repor Alerta` para rearmar o monitor.
+
 ---
 
 *Documento mantido e auditado pelo repositório Invision Nexus.*
+
