@@ -38,8 +38,8 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
       </button>
     </div>
 
-    <!-- BOTÕES DE AÇÃO: MODAIS DE EMPARELHAMENTO & ADB -->
-    <div class="flex items-center gap-2.5 flex-wrap">
+    <!-- BOTÕES DE AÇÃO: MODAIS DE EMPARELHAMENTO & ADB (ALINHADOS À DIREITA) -->
+    <div class="flex items-center gap-2.5 flex-wrap justify-end">
       <button
         type="button"
         id="btn-open-pairing-modal"
@@ -59,16 +59,12 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
           0 Boxes
         </span>
       </button>
-
-      <span id="dev-active-badge" class="px-3 py-1 rounded-full text-xs font-mono font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-        0 Terminais na LAN
-      </span>
     </div>
   </div>
 
   <!-- INVENTÁRIO REAL-TIME A 100% DA LARGURA (FULL-WIDTH) -->
   <div class="w-full bg-slate-900 border border-slate-800 rounded-xl p-6 mb-8">
-    <div class="flex items-center justify-between mb-4">
+    <div class="flex items-center justify-between mb-4 gap-4 flex-wrap">
       <div>
         <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
           Inventário Real-Time (LAN / Heartbeat)
@@ -78,6 +74,9 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
         </h3>
       </div>
       <div class="flex items-center gap-3">
+        <span id="dev-active-badge" class="px-3 py-1 rounded-full text-xs font-mono font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+          0 Terminais na LAN
+        </span>
         <a href="/store-wall/" class="text-xs text-sky-400 hover:underline font-semibold">
           Abrir Live Wall Visual →
         </a>
