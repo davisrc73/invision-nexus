@@ -1,0 +1,215 @@
+---
+// Página de Autenticação Segura & SSO - Invision Nexus (Fnac & Darty)
+---
+
+<!doctype html>
+<html lang="pt" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Iniciar Sessão • Invision Nexus (Fnac & Darty)</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body class="bg-slate-950 text-slate-100 min-h-screen flex items-center justify-center p-4 antialiased selection:bg-amber-500 selection:text-black">
+    <div class="w-full max-w-lg space-y-6">
+      
+      <!-- Cabeçalho com Logos FNAC & DARTY -->
+      <div class="text-center space-y-3">
+        <div class="flex items-center justify-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-[#E1A924] text-black font-black flex items-center justify-center text-xl shadow-lg">
+            FN
+          </div>
+          <div class="w-12 h-12 rounded-xl bg-[#E30613] text-white font-black flex items-center justify-center text-xl shadow-lg">
+            DA
+          </div>
+        </div>
+        <div>
+          <h1 class="text-2xl font-black tracking-tight text-white">INVISION NEXUS</h1>
+          <p class="text-xs text-slate-400 mt-1">
+            Controlo Central de Operações • Digital In-Store Customer Experience
+          </p>
+        </div>
+      </div>
+
+      <!-- Card Principal de Autenticação -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-7 shadow-2xl space-y-6">
+        
+        <!-- Método 1: SSO Corporativo Microsoft Entra ID (Office 365) -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-300 uppercase tracking-wider">
+              Acesso Corporativo (Recomendado)
+            </span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              SSO • MFA Ativo
+            </span>
+          </div>
+
+          <button
+            type="button"
+            id="btn-microsoft-sso"
+            class="w-full py-3 px-4 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-700 text-white font-bold text-sm shadow-md transition flex items-center justify-center gap-3 group"
+          >
+            <!-- Logótipo Microsoft -->
+            <svg class="w-5 h-5 shrink-0" viewBox="0 0 21 21">
+              <rect x="1" y="1" width="9" height="9" fill="#f25022" />
+              <rect x="11" y="1" width="9" height="9" fill="#7fba00" />
+              <rect x="1" y="11" width="9" height="9" fill="#00a4ef" />
+              <rect x="11" y="11" width="9" height="9" fill="#ffb900" />
+            </svg>
+            <span>Iniciar Sessão com Conta Fnac Darty (Office 365)</span>
+          </button>
+
+          <p class="text-[11px] text-slate-400 text-center">
+            Acesso federado via Microsoft Entra ID para colaboradores e diretores de loja.
+          </p>
+        </div>
+
+        <div class="relative flex items-center justify-center">
+          <div class="border-t border-slate-800 w-full"></div>
+          <span class="bg-slate-900 px-3 text-[11px] font-mono uppercase text-slate-400 shrink-0">
+            ou acesso local de contingência
+          </span>
+          <div class="border-t border-slate-800 w-full"></div>
+        </div>
+
+        <!-- Método 2: Acesso Local Break-Glass (NAS Dev / Emergência) -->
+        <form id="local-login-form" class="space-y-4">
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label for="username" class="text-xs font-bold text-slate-300">
+                Utilizador / Email Local
+              </label>
+              <span class="text-[10px] font-mono text-amber-400">Modo Break-Glass</span>
+            </div>
+            <input
+              type="text"
+              id="username"
+              required
+              value="admin"
+              class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-amber-400 transition"
+              placeholder="ex: admin"
+            />
+          </div>
+
+          <div>
+            <label for="password" class="block text-xs font-bold text-slate-300 mb-1.5">
+              Palavra-passe
+            </label>
+            <input
+              type="password"
+              id="password"
+              required
+              value="invision2026!"
+              class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-amber-400 transition"
+              placeholder="••••••••••••"
+            />
+          </div>
+
+          <div id="login-alert" class="hidden p-3 rounded-lg text-xs font-mono"></div>
+
+          <button
+            type="submit"
+            id="btn-local-login"
+            class="w-full py-2.5 px-4 rounded-xl bg-[#E1A924] hover:bg-amber-400 text-black font-black text-xs shadow-lg transition"
+          >
+            Entrar como Administrador Local (NAS)
+          </button>
+        </form>
+
+      </div>
+
+      <!-- Pilares de Cibersegurança Ativos (Auditoria & Compliance) -->
+      <div class="p-4 rounded-xl bg-slate-900/50 border border-slate-800 text-[11px] text-slate-400 space-y-2">
+        <span class="block font-bold uppercase text-[10px] tracking-wider text-slate-300">
+          🛡️ Mecanismos de Cibersegurança Ativos nesta Instância:
+        </span>
+        <div class="grid grid-cols-2 gap-2 font-mono text-[10px]">
+          <div class="flex items-center gap-1.5 text-emerald-400">
+            <span>✓</span> <span>DB & Redis em 127.0.0.1</span>
+          </div>
+          <div class="flex items-center gap-1.5 text-emerald-400">
+            <span>✓</span> <span>Magic Bytes Guardrail</span>
+          </div>
+          <div class="flex items-center gap-1.5 text-emerald-400">
+            <span>✓</span> <span>Device Tokens Criptográficos</span>
+          </div>
+          <div class="flex items-center gap-1.5 text-emerald-400">
+            <span>✓</span> <span>VLAN de Loja Reservada</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <script is:inline>
+      const API_BASE = `${window.location.protocol}//${window.location.hostname}:3000`;
+
+      const loginForm = document.getElementById('local-login-form');
+      const usernameInput = document.getElementById('username');
+      const passwordInput = document.getElementById('password');
+      const loginAlert = document.getElementById('login-alert');
+      const btnMicrosoft = document.getElementById('btn-microsoft-sso');
+
+      // Botão Microsoft Entra ID SSO
+      btnMicrosoft?.addEventListener('click', async () => {
+        try {
+          const res = await fetch(`${API_BASE}/api/v1/auth/microsoft/login`);
+          if (res.redirected) {
+            window.location.href = res.url;
+            return;
+          }
+          const data = await res.json();
+          if (!data.configured) {
+            alert(
+              `[MICROSOFT ENTRA ID PENDENTE DE CREDENCIAIS]\n\n` +
+              `Para ligar com o Office 365 da Fnac Darty em produção:\n` +
+              `1. Registe a App no portal Azure/Entra ID da empresa;\n` +
+              `2. Defina AZURE_TENANT_ID e AZURE_CLIENT_ID no ficheiro .env do NAS;\n\n` +
+              `Nesta fase de desenvolvimento no NAS, utilize o login local abaixo (admin / invision2026!).`
+            );
+          }
+        } catch {
+          window.location.href = `${API_BASE}/api/v1/auth/microsoft/login`;
+        }
+      });
+
+      // Formulário Local Break-Glass
+      loginForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        loginAlert.className = 'hidden';
+
+        try {
+          const res = await fetch(`${API_BASE}/api/v1/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+              username: usernameInput.value.trim(),
+              password: passwordInput.value,
+            }),
+          });
+
+          const data = await res.json();
+
+          if (res.ok && data.ok) {
+            loginAlert.className = 'p-3 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-mono';
+            loginAlert.textContent = `✓ Sessão iniciada com sucesso como ${data.user.name}! A redirecionar...`;
+            localStorage.setItem('invision_auth_user', JSON.stringify(data.user));
+            localStorage.setItem('invision_role', data.user.role || 'GLOBAL_ADMIN');
+            localStorage.setItem('invision_brand', data.user.brand || 'FNAC');
+            setTimeout(() => {
+              window.location.href = '/';
+            }, 600);
+          } else {
+            loginAlert.className = 'p-3 rounded-lg bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-mono';
+            loginAlert.textContent = data.message || 'Erro ao iniciar sessão local!';
+          }
+        } catch (err) {
+          loginAlert.className = 'p-3 rounded-lg bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-mono';
+          loginAlert.textContent = 'Não foi possível ligar ao servidor de autenticação (Porta 3000 offline).';
+        }
+      });
+    </script>
+  </body>
+</html>

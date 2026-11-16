@@ -136,10 +136,10 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     </button>
     <button
       type="button"
-      data-settings-tab="USERS"
-      class="settings-tab-btn px-4 py-2 rounded-lg text-xs font-bold bg-slate-900 text-slate-400 border border-dashed border-slate-800 transition"
+      data-settings-tab="SECURITY"
+      class="settings-tab-btn px-4 py-2 rounded-lg text-xs font-bold bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-700 transition"
     >
-      👥 6. Utilizadores & RBAC (Próximo Passo)
+      🛡️ 6. Segurança, Controlo de Acessos & SSO Microsoft Entra ID
     </button>
   </div>
 
@@ -579,19 +579,211 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
   </section>
 
   <!-- ===================================================================== -->
-  <!-- TAB 6: UTILIZADORES & RBAC (FASE SEGUINTE)                            -->
+  <!-- TAB 6: SEGURANÇA, CONTROLO DE ACESSOS, SSO ENTRA ID & AUDIT TRAIL     -->
   <!-- ===================================================================== -->
-  <section id="tab-panel-USERS" class="hidden">
-    <div class="bg-slate-900 border border-slate-800 rounded-xl p-8 text-center">
-      <span class="text-xs font-mono uppercase px-2.5 py-1 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
-        Próximo Sub-Módulo de Setup
-      </span>
-      <h4 class="text-lg font-bold text-white mt-3">
-        Gestão e Controlo de Utilizadores & Permissões RBAC por Loja/Insígnia
-      </h4>
-      <p class="text-xs text-slate-400 max-w-xl mx-auto mt-2">
-        Assim que validarmos este setup de Lojas, Sub-redes, Formatos e Equipamentos, ativaremos aqui a criação de contas de utilizador reais (Admin Global, Equipa Multimédia, IT Ops, Diretores de Loja e Chefes de Departamento).
-      </p>
+  <section id="tab-panel-SECURITY" class="hidden space-y-6">
+    <!-- 1. Painel de Indicadores de Hardening & Conformidade Ativos -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-5">
+        <div>
+          <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+            Conformidade & Hardening em Camadas
+          </span>
+          <h4 class="text-base font-bold text-white mt-1.5">
+            Postura de Cibersegurança & Prevenção de Intrusão
+          </h4>
+        </div>
+        <a
+          href="/login/"
+          class="px-3.5 py-2 rounded-lg bg-[#E1A924] hover:bg-amber-400 text-black font-bold text-xs shadow transition text-center shrink-0"
+        >
+          🔑 Abrir Portal de Login Corporativo →
+        </a>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="p-4 rounded-xl bg-slate-950 border border-emerald-500/30">
+          <div class="flex items-center justify-between text-xs font-bold text-emerald-400 mb-1">
+            <span>ISOLAMENTO 127.0.0.1</span>
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          </div>
+          <p class="text-[11px] font-mono text-slate-300">PostgreSQL 16 & Redis 7</p>
+          <p class="text-[10px] text-slate-400 mt-1">Confinados ao loopback local do NAS. Inacessíveis a outras máquinas na rede.</p>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-950 border border-emerald-500/30">
+          <div class="flex items-center justify-between text-xs font-bold text-emerald-400 mb-1">
+            <span>MAGIC BYTES GUARDRAIL</span>
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          </div>
+          <p class="text-[11px] font-mono text-slate-300">Validador Binário Real</p>
+          <p class="text-[10px] text-slate-400 mt-1">Rejeita executáveis, PHP ou scripts maliciosos disfarçados com extensão .mp4/.jpg.</p>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-950 border border-emerald-500/30">
+          <div class="flex items-center justify-between text-xs font-bold text-emerald-400 mb-1">
+            <span>DEVICE HARDWARE TOKENS</span>
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          </div>
+          <p class="text-[11px] font-mono text-slate-300">X-Device-Token 48-Hex</p>
+          <p class="text-[10px] text-slate-400 mt-1">Chave criptográfica exclusiva por Box Android. Impede terminais impostores na LAN.</p>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-950 border border-emerald-500/30">
+          <div class="flex items-center justify-between text-xs font-bold text-emerald-400 mb-1">
+            <span>VLAN WI-FI RESERVADA</span>
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          </div>
+          <p class="text-[11px] font-mono text-slate-300">Rede Digital Signage</p>
+          <p class="text-[10px] text-slate-400 mt-1">Rede física isolada do Wi-Fi público de clientes e do sistema de caixas/POS.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Integração Microsoft Entra ID (Office 365 SSO) -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">
+              Identity Provider Corporativo
+            </span>
+            <h4 class="text-base font-bold text-white mt-1.5">
+              Federação Microsoft Entra ID (Fnac & Darty Office 365)
+            </h4>
+          </div>
+          <span id="security-sso-badge" class="px-2.5 py-1 rounded text-xs font-mono font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
+            A aguardar Registo Azure
+          </span>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3 mb-5">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-mono">
+            <div>
+              <span class="text-slate-400 block text-[10px]">REDIRECT URI (CALLBACK):</span>
+              <code id="security-redirect-uri" class="text-amber-300 text-[11px] break-all">
+                http://localhost:3000/api/v1/auth/microsoft/callback
+              </code>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[10px]">TENANT ID:</span>
+              <code id="security-tenant-id" class="text-slate-200 text-[11px]">
+                Definir no .env (AZURE_TENANT_ID)
+              </code>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[10px]">CLIENT ID:</span>
+              <code id="security-client-id" class="text-slate-200 text-[11px]">
+                Definir no .env (AZURE_CLIENT_ID)
+              </code>
+            </div>
+          </div>
+        </div>
+
+        <h5 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
+          Mapeamento de Grupos de Segurança da Empresa para Perfis RBAC:
+        </h5>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs font-mono">
+          <div class="p-2.5 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-between">
+            <span class="text-slate-300">SG_FNAC_INVISION_ADMINS</span>
+            <span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold text-[10px]">GLOBAL_ADMIN</span>
+          </div>
+          <div class="p-2.5 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-between">
+            <span class="text-slate-300">SG_FNAC_MARKETING_MULTIMEDIA</span>
+            <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold text-[10px]">MEDIA_MANAGER</span>
+          </div>
+          <div class="p-2.5 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-between">
+            <span class="text-slate-300">SG_FNAC_IT_OPS_HARDWARE</span>
+            <span class="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 font-bold text-[10px]">IT_OPS</span>
+          </div>
+          <div class="p-2.5 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-between">
+            <span class="text-slate-300">SG_FNAC_STORE_MANAGERS</span>
+            <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold text-[10px]">STORE_MANAGER</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contas Locais Break-Glass (NAS) -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col justify-between">
+        <div>
+          <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+            Contingência & Dev
+          </span>
+          <h4 class="text-base font-bold text-white mt-1.5 mb-2">
+            Conta Local Break-Glass
+          </h4>
+          <p class="text-xs text-slate-400 mb-4 leading-relaxed">
+            Conta de emergência protegida por hash PBKDF2-SHA512 para administração local sem dependência de internet ou da Azure.
+          </p>
+
+          <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2 text-xs font-mono">
+            <div class="flex justify-between">
+              <span class="text-slate-400">Utilizador:</span>
+              <strong class="text-white">admin</strong>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400">Email:</span>
+              <span class="text-slate-300">admin@invision.local</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400">Perfil:</span>
+              <span class="text-emerald-400 font-bold">GLOBAL_ADMIN</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400">Cifra:</span>
+              <span class="text-sky-300">PBKDF2 (100k iterações)</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] text-slate-400">
+          Palavra-passe configurável via variável <code>ADMIN_PASSWORD</code> no ficheiro <code>.env</code> do NAS.
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Trilho de Auditoria em Tempo Real (Audit Trail - NIS2 / RGPD) -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+        <div>
+          <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
+            Conformidade NIS2 & RGPD
+          </span>
+          <h4 class="text-base font-bold text-white mt-1.5">
+            Trilho de Auditoria de Operações Sensíveis (Audit Trail)
+          </h4>
+        </div>
+        <button
+          type="button"
+          id="btn-refresh-audit"
+          class="px-3 py-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-700 text-xs font-mono transition"
+        >
+          🔄 Atualizar Registos
+        </button>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-slate-950 text-slate-400 font-mono text-[11px] border-b border-slate-800">
+            <tr>
+              <th class="py-2.5 px-3">Data / Hora</th>
+              <th class="py-2.5 px-3">Ação</th>
+              <th class="py-2.5 px-3">Utilizador / Terminal</th>
+              <th class="py-2.5 px-3">Perfil RBAC</th>
+              <th class="py-2.5 px-3">Alvo / Detalhes</th>
+              <th class="py-2.5 px-3">IP Origem</th>
+              <th class="py-2.5 px-3 text-right">Resultado</th>
+            </tr>
+          </thead>
+          <tbody id="security-audit-tbody" class="divide-y divide-slate-800 font-mono">
+            <tr>
+              <td colspan="7" class="py-8 text-center text-slate-500">
+                A carregar registos de auditoria em tempo real...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </section>
 
@@ -602,7 +794,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
 
     // Alternância de Tabs
     const tabBtns = document.querySelectorAll('[data-settings-tab]');
-    const tabPanels = ['STORES', 'PROFILES', 'ZONES', 'CATEGORIES', 'RULES', 'USERS'];
+    const tabPanels = ['STORES', 'PROFILES', 'ZONES', 'CATEGORIES', 'RULES', 'SECURITY'];
 
     tabBtns.forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -963,7 +1155,88 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
           })
           .join('');
       }
+
+      // 6. Renderiza Segurança, SSO Entra ID & Trilho de Auditoria
+      const auth = liveState.authStatus || {};
+      const ssoBadge = document.getElementById('security-sso-badge');
+      if (ssoBadge) {
+        if (auth.ssoConfigured) {
+          ssoBadge.textContent = '🟢 ATIVO (Pronto p/ Produção)';
+          ssoBadge.className =
+            'px-2.5 py-1 rounded text-xs font-mono font-bold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+        } else {
+          ssoBadge.textContent = '🟡 A aguardar Registo Azure';
+          ssoBadge.className =
+            'px-2.5 py-1 rounded text-xs font-mono font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30';
+        }
+      }
+
+      const redirectUriEl = document.getElementById('security-redirect-uri');
+      if (redirectUriEl) {
+        redirectUriEl.textContent = `${API_BASE}/api/v1/auth/microsoft/callback`;
+      }
+      const tenantEl = document.getElementById('security-tenant-id');
+      if (tenantEl) {
+        tenantEl.textContent = auth.tenantId || 'Definir no .env (AZURE_TENANT_ID)';
+      }
+      const clientEl = document.getElementById('security-client-id');
+      if (clientEl) {
+        clientEl.textContent = auth.clientId || 'Definir no .env (AZURE_CLIENT_ID)';
+      }
+
+      // Renderiza Trilho de Auditoria
+      const auditTbody = document.getElementById('security-audit-tbody');
+      const logs = liveState.auditLogs || [];
+      if (auditTbody) {
+        if (logs.length === 0) {
+          auditTbody.innerHTML = `
+            <tr>
+              <td colspan="7" class="py-6 text-center text-slate-500">
+                Nenhuma operação sensível registada no trilho de auditoria até ao momento.
+              </td>
+            </tr>
+          `;
+        } else {
+          auditTbody.innerHTML = logs
+            .map((log) => {
+              const dateStr = new Date(log.timestamp).toLocaleString('pt-PT');
+              const isOk = log.success !== false;
+              return `
+                <tr class="hover:bg-slate-800/40 transition">
+                  <td class="py-2.5 px-3 text-slate-400 whitespace-nowrap">${dateStr}</td>
+                  <td class="py-2.5 px-3 font-bold ${
+                    isOk ? 'text-amber-400' : 'text-rose-400'
+                  }">${log.action}</td>
+                  <td class="py-2.5 px-3 text-slate-200">${log.actor}</td>
+                  <td class="py-2.5 px-3">
+                    <span class="px-1.5 py-0.5 rounded text-[10px] bg-slate-800 text-slate-300 border border-slate-700">
+                      ${log.role}
+                    </span>
+                  </td>
+                  <td class="py-2.5 px-3 text-slate-300 max-w-xs truncate" title="${log.details || log.target || ''}">
+                    ${log.target ? `[${log.target}] ` : ''}${log.details || '-'}
+                  </td>
+                  <td class="py-2.5 px-3 text-slate-400">${log.clientIp || '-'}</td>
+                  <td class="py-2.5 px-3 text-right">
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold ${
+                      isOk
+                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                        : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                    }">
+                      ${isOk ? 'SUCESSO' : 'BLOQUEADO'}
+                    </span>
+                  </td>
+                </tr>
+              `;
+            })
+            .join('');
+        }
+      }
     }
+
+    document.getElementById('btn-refresh-audit')?.addEventListener('click', async () => {
+      await fetchSettingsState();
+    });
 
     // Re-renderiza quando a insígnia for alterada no topo
     window.addEventListener('invision:brand-change', () => {

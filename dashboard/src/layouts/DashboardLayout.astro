@@ -311,6 +311,31 @@ const { title, activeNav = 'overview' } = Astro.props;
         </nav>
       </div>
 
+      <!-- Painel de Utilizador Autenticado & Logout -->
+      <div class="p-3 mx-3 my-2 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2 min-w-0">
+          <div id="user-avatar-badge" class="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center justify-center text-xs font-black shrink-0">
+            AD
+          </div>
+          <div class="min-w-0">
+            <p id="user-name-label" class="text-xs font-bold text-white truncate">
+              Admin (Break-Glass)
+            </p>
+            <p id="user-auth-label" class="text-[10px] font-mono text-emerald-400 truncate">
+              Sessão Local Ativa
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          id="btn-sidebar-logout"
+          class="px-2 py-1 rounded bg-slate-900 hover:bg-rose-500/20 text-slate-400 hover:text-rose-300 text-[10px] font-mono border border-slate-800 transition shrink-0"
+          title="Terminar Sessão"
+        >
+          Sair
+        </button>
+      </div>
+
       <!-- Footer Status Synology / Prod -->
       <div class="p-4 border-t border-slate-800 bg-slate-950/60 text-xs space-y-1.5">
         <div class="flex items-center justify-between">
@@ -534,6 +559,64 @@ const { title, activeNav = 'overview' } = Astro.props;
           applyThemeMode('AUTO');
         }
       }, 60000);
+
+      // =====================================================================
+      // GESTÃO DE SESSÃO CORPORATIVA & LOGOUT
+      // =====================================================================
+      const btnLogout = document.getElementById('btn-sidebar-logout');
+      const userNameLabel = document.getElementById('user-name-label');
+      const userAuthLabel = document.getElementById('user-auth-label');
+      const userAvatarBadge = document.getElementById('user-avatar-badge');
+
+      async function checkCurrentSession() {
+        try {
+          const res = await fetch(`${window.location.protocol}//${window.location.hostname}:3000/api/v1/auth/me`, {
+            credentials: 'include',
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.authenticated && data.user) {
+              if (userNameLabel) userNameLabel.textContent = data.user.name;
+              if (userAuthLabel) {
+                userAuthLabel.textContent =
+                  data.user.authType === 'SSO'
+                    ? 'Microsoft Entra ID (SSO)'
+                    : 'Sessão Local Ativa';
+              }
+              if (userAvatarBadge) {
+                const initials = (data.user.name || 'AD')
+                  .split(' ')
+                  .map((w) => w[0])
+                  .slice(0, 2)
+                  .join('')
+                  .toUpperCase();
+                userAvatarBadge.textContent = initials || 'AD';
+              }
+              if (data.user.role) {
+                applyRole(data.user.role);
+              }
+              if (data.user.brand) {
+                applyBrand(data.user.brand);
+              }
+            }
+          }
+        } catch {
+          // Servidor offline ou sem sessão
+        }
+      }
+
+      btnLogout?.addEventListener('click', async () => {
+        try {
+          await fetch(`${window.location.protocol}//${window.location.hostname}:3000/api/v1/auth/logout`, {
+            method: 'POST',
+            credentials: 'include',
+          });
+        } catch {}
+        localStorage.removeItem('invision_auth_user');
+        window.location.href = '/login/';
+      });
+
+      checkCurrentSession();
     </script>
   </body>
 </html>

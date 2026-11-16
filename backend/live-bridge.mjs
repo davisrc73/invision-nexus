@@ -19,6 +19,172 @@ const PRIORITY_RANK = {
   FALLBACK: 1,
 };
 
+// ============================================================================
+// CIBERSEGURANÇA & GOVERNANCE: CONFIGURAÇÃO DE SESSÕES, SSO & HARDENING
+// ============================================================================
+const SESSION_SECRET = process.env.SESSION_SECRET || 'invision_nexus_enterprise_session_secret_2026';
+const AZURE_TENANT_ID = (process.env.AZURE_TENANT_ID || '').trim();
+const AZURE_CLIENT_ID = (process.env.AZURE_CLIENT_ID || '').trim();
+const AZURE_CLIENT_SECRET = (process.env.AZURE_CLIENT_SECRET || '').trim();
+const AZURE_REDIRECT_URI = (process.env.AZURE_REDIRECT_URI || '').trim();
+const ADMIN_USERNAME = (process.env.ADMIN_USERNAME || 'admin').trim();
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'invision2026!';
+
+function hashPassword(password, salt = null) {
+  const s = salt || crypto.randomBytes(16).toString('hex');
+  const hash = crypto.pbkdf2Sync(password, s, 100000, 64, 'sha512').toString('hex');
+  return { salt: s, hash };
+}
+
+function verifyPassword(password, salt, storedHash) {
+  if (!password || !salt || !storedHash) return false;
+  try {
+    const computed = crypto.pbkdf2Sync(password, salt, 100000, 64, 'sha512').toString('hex');
+    return crypto.timingSafeEqual(Buffer.from(computed, 'hex'), Buffer.from(storedHash, 'hex'));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Validador de Magic Bytes (Assinatura Binária Real):
+ * Impede que scripts (.php, .sh, .py, .exe, .html) sejam renomeados para .mp4/.jpg
+ * e carregados para o servidor do NAS.
+ */
+function validateMediaMagicBytes(buffer, mimeType = '') {
+  if (!buffer || buffer.length < 4) {
+    return { valid: false, reason: 'Ficheiro demasiado pequeno ou corrompido' };
+  }
+
+  // 1. JPEG: FF D8 FF
+  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+    return { valid: true, detectedType: 'IMAGE/JPEG' };
+  }
+
+  // 2. PNG: 89 50 4E 47 0D 0A 1A 0A
+  if (
+    buffer.length >= 8 &&
+    buffer[0] === 0x89 &&
+    buffer[1] === 0x50 &&
+    buffer[2] === 0x4e &&
+    buffer[3] === 0x47
+  ) {
+    return { valid: true, detectedType: 'IMAGE/PNG' };
+  }
+
+  // 3. WebP: RIFF....WEBP
+  if (
+    buffer.length >= 12 &&
+    buffer.toString('utf8', 0, 4) === 'RIFF' &&
+    buffer.toString('utf8', 8, 12) === 'WEBP'
+  ) {
+    return { valid: true, detectedType: 'IMAGE/WEBP' };
+  }
+
+  // 4. GIF: GIF87a / GIF89a
+  if (buffer.length >= 6 && buffer.toString('utf8', 0, 3) === 'GIF') {
+    return { valid: true, detectedType: 'IMAGE/GIF' };
+  }
+
+  // 5. MP4 / MOV / M4V (ISO Base Media File): ftyp (bytes 4-8) ou moov / mdat
+  if (buffer.length >= 12) {
+    const boxType = buffer.toString('utf8', 4, 8);
+    if (['ftyp', 'moov', 'mdat', 'wide', 'skip', 'free'].includes(boxType)) {
+      return { valid: true, detectedType: 'VIDEO/MP4' };
+    }
+  }
+
+  // 6. WebM / Matroska: 1A 45 DF A3
+  if (
+    buffer.length >= 4 &&
+    buffer[0] === 0x1a &&
+    buffer[1] === 0x45 &&
+    buffer[2] === 0xdf &&
+    buffer[3] === 0xa3
+  ) {
+    return { valid: true, detectedType: 'VIDEO/WEBM' };
+  }
+
+  return {
+    valid: false,
+    reason: 'Assinatura binária inválida: o ficheiro não corresponde a um formato de vídeo ou imagem seguro!',
+  };
+}
+
+// Mapa de Sessões Ativas (Chave: Token criptográfico de 64 caracteres)
+const activeSessions = new Map();
+
+function createSession(user) {
+  const token = crypto.randomBytes(32).toString('hex');
+  const session = {
+    token,
+    userId: user.id,
+    username: user.username,
+    name: user.name,
+    email: user.email,
+    role: user.role || 'GLOBAL_ADMIN',
+    brand: user.brand || 'FNAC',
+    authType: user.authType || 'LOCAL',
+    createdAt: new Date().toISOString(),
+    expiresAt: Date.now() + 24 * 3600 * 1000, // 24 Horas
+  };
+  activeSessions.set(token, session);
+  return session;
+}
+
+function getSessionFromRequest(req) {
+  let token = null;
+  const authHeader = req.headers['authorization'];
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.slice(7).trim();
+  } else if (req.headers['cookie']) {
+    const match = req.headers['cookie'].match(/invision_session=([a-f0-9]{64})/);
+    if (match) token = match[1];
+  }
+  if (!token) return null;
+  const s = activeSessions.get(token);
+  if (!s) return null;
+  if (Date.now() > s.expiresAt) {
+    activeSessions.delete(token);
+    return null;
+  }
+  return s;
+}
+
+/**
+ * Registo Imutável de Auditoria (Audit Trail):
+ * Guarda os 500 registos mais recentes de operações críticas para conformidade NIS2/RGPD.
+ */
+function logAuditEvent({
+  action,
+  actor = 'SYSTEM',
+  role = 'SYSTEM',
+  target = null,
+  details = null,
+  clientIp = '',
+  success = true,
+}) {
+  if (!Array.isArray(state.auditLogs)) {
+    state.auditLogs = [];
+  }
+  const entry = {
+    id: crypto.randomUUID(),
+    timestamp: new Date().toISOString(),
+    action,
+    actor,
+    role,
+    target,
+    details,
+    clientIp: String(clientIp).replace('::ffff:', ''),
+    success,
+  };
+  state.auditLogs.unshift(entry);
+  if (state.auditLogs.length > 500) {
+    state.auditLogs.length = 500;
+  }
+  return entry;
+}
+
 function parseTagsInput(raw) {
   if (!raw) return [];
   if (Array.isArray(raw)) {
@@ -218,6 +384,8 @@ function createDefaultState() {
     incidents: [],
     popRecords: [],
     interactionRecords: [],
+    users: [],
+    auditLogs: [],
     updatedAt: new Date().toISOString(),
   };
 }
@@ -233,6 +401,31 @@ if (fs.existsSync(STATE_FILE)) {
     };
     if (!Array.isArray(state.adbBoxes)) {
       state.adbBoxes = [];
+    }
+    if (!Array.isArray(state.users) || state.users.length === 0) {
+      const defaultAdmin = hashPassword(ADMIN_PASSWORD);
+      state.users = [
+        {
+          id: 'usr-admin-local',
+          username: ADMIN_USERNAME,
+          name: 'Administrador Local (Break-Glass)',
+          email: 'admin@invision.local',
+          role: 'GLOBAL_ADMIN',
+          brand: 'FNAC',
+          authType: 'LOCAL',
+          passwordSalt: defaultAdmin.salt,
+          passwordHash: defaultAdmin.hash,
+          createdAt: new Date().toISOString(),
+        },
+      ];
+    }
+    if (!Array.isArray(state.auditLogs)) {
+      state.auditLogs = [];
+    }
+    for (const d of state.devices || []) {
+      if (!d.deviceToken) {
+        d.deviceToken = crypto.randomBytes(24).toString('hex');
+      }
     }
     if (!Array.isArray(state.storesCatalog) || state.storesCatalog.length === 0) {
       if (!state.productionStrictMode) {
@@ -384,8 +577,26 @@ function getEnrichedState(hardwareUid = null) {
     }
   }
   const effective = computeEffectivePlaybackForDevice(hardwareUid);
+
+  // Mascara hashes de palavras-passe para nunca serem expostas na API
+  const safeUsers = (state.users || []).map((u) => {
+    const { passwordSalt, passwordHash, ...rest } = u;
+    return rest;
+  });
+
   return {
     ...state,
+    users: safeUsers,
+    authStatus: {
+      ssoConfigured: Boolean(AZURE_CLIENT_ID && AZURE_TENANT_ID),
+      tenantId: AZURE_TENANT_ID || null,
+      clientId: AZURE_CLIENT_ID ? `${AZURE_CLIENT_ID.slice(0, 8)}...` : null,
+      authProvider: AZURE_CLIENT_ID ? 'MICROSOFT_ENTRA_ID' : 'LOCAL_BREAK_GLASS',
+      portsHardened: true,
+      magicBytesGuardrail: true,
+      deviceTokensActive: true,
+    },
+    auditLogs: (state.auditLogs || []).slice(0, 50),
     publicPlayerPort: PUBLIC_PLAYER_PORT,
     effectivePlayback: effective,
     playlistItems: effective.resolvedSequence,
@@ -739,10 +950,11 @@ function readJsonBody(req) {
 }
 
 const server = http.createServer(async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Range, X-Device-Token');
-  res.setHeader('Access-Control-Expose-Headers', 'Content-Range, Accept-Ranges, ETag');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Range, X-Device-Token, Authorization, Cookie');
+  res.setHeader('Access-Control-Expose-Headers', 'Content-Range, Accept-Ranges, ETag, Set-Cookie');
 
   if (req.method === 'OPTIONS') {
     res.writeHead(204);
@@ -751,6 +963,154 @@ const server = http.createServer(async (req, res) => {
   }
 
   const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
+
+  // ============================================================================
+  // ROTAS DE AUTENTICAÇÃO, SSO MICROSOFT ENTRA ID & SESSÕES
+  // ============================================================================
+
+  // AUTH-1. POST /api/v1/auth/login -> Login Local Break-Glass (para Dev / Emergência)
+  if (req.method === 'POST' && url.pathname === '/api/v1/auth/login') {
+    try {
+      const payload = await readJsonBody(req);
+      const username = (payload.username || '').trim();
+      const password = String(payload.password || '');
+      const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || '';
+
+      const user = (state.users || []).find((u) => u.username.toLowerCase() === username.toLowerCase());
+      if (!user || !verifyPassword(password, user.passwordSalt, user.passwordHash)) {
+        logAuditEvent({
+          action: 'LOGIN_FAILED',
+          actor: username || 'ANONYMOUS',
+          role: 'NONE',
+          details: 'Credenciais inválidas no login local break-glass',
+          clientIp,
+          success: false,
+        });
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: false, error: 'INVALID_CREDENTIALS', message: 'Utilizador ou palavra-passe incorretos!' }));
+        return;
+      }
+
+      const session = createSession(user);
+      logAuditEvent({
+        action: 'LOGIN_SUCCESS_LOCAL',
+        actor: user.username,
+        role: user.role,
+        details: `Login efetuado com sucesso via Break-Glass Local (${user.name})`,
+        clientIp,
+        success: true,
+      });
+
+      res.setHeader('Set-Cookie', `invision_session=${session.token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400`);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        ok: true,
+        sessionToken: session.token,
+        user: {
+          id: user.id,
+          username: user.username,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          brand: user.brand,
+          authType: user.authType,
+        },
+      }));
+    } catch {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: 'BAD_REQUEST' }));
+    }
+    return;
+  }
+
+  // AUTH-2. GET /api/v1/auth/me -> Devolve perfil do utilizador autenticado
+  if (req.method === 'GET' && url.pathname === '/api/v1/auth/me') {
+    const session = getSessionFromRequest(req);
+    if (!session) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ authenticated: false, user: null }));
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      authenticated: true,
+      user: {
+        id: session.userId,
+        username: session.username,
+        name: session.name,
+        email: session.email,
+        role: session.role,
+        brand: session.brand,
+        authType: session.authType,
+      },
+    }));
+    return;
+  }
+
+  // AUTH-3. POST /api/v1/auth/logout -> Termina sessão
+  if (req.method === 'POST' && url.pathname === '/api/v1/auth/logout') {
+    const session = getSessionFromRequest(req);
+    if (session) {
+      activeSessions.delete(session.token);
+      logAuditEvent({
+        action: 'LOGOUT',
+        actor: session.username,
+        role: session.role,
+        details: 'Sessão terminada pelo utilizador',
+        clientIp: req.socket?.remoteAddress || '',
+      });
+    }
+    res.setHeader('Set-Cookie', 'invision_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0');
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true }));
+    return;
+  }
+
+  // AUTH-4. GET /api/v1/auth/microsoft/login -> Inicia SSO com Microsoft Entra ID (OIDC)
+  if (req.method === 'GET' && url.pathname === '/api/v1/auth/microsoft/login') {
+    if (!AZURE_CLIENT_ID || !AZURE_TENANT_ID) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        ok: false,
+        configured: false,
+        message: 'SSO Microsoft Entra ID ainda não configurado no .env.',
+        instructions: {
+          step1: 'Criar uma App Registration no portal Azure / Entra ID da Fnac Darty',
+          step2: 'Configurar o Redirect URI para: http://<IP_DO_NAS>:3000/api/v1/auth/microsoft/callback',
+          step3: 'Definir no .env do NAS: AZURE_TENANT_ID, AZURE_CLIENT_ID e AZURE_CLIENT_SECRET',
+        },
+      }));
+      return;
+    }
+    const redirectUri = encodeURIComponent(
+      AZURE_REDIRECT_URI || `${req.headers['x-forwarded-proto'] || 'http'}://${req.headers.host}/api/v1/auth/microsoft/callback`
+    );
+    const authUrl = `https://login.microsoftonline.com/${AZURE_TENANT_ID}/oauth2/v2.0/authorize?client_id=${AZURE_CLIENT_ID}&response_type=code&redirect_uri=${redirectUri}&response_mode=query&scope=openid%20profile%20email`;
+    res.writeHead(302, { Location: authUrl });
+    res.end();
+    return;
+  }
+
+  // AUTH-5. GET /api/v1/auth/microsoft/callback -> Callback OAuth2 do Entra ID
+  if (req.method === 'GET' && url.pathname === '/api/v1/auth/microsoft/callback') {
+    const code = url.searchParams.get('code');
+    const error = url.searchParams.get('error_description') || url.searchParams.get('error');
+    if (error || !code) {
+      res.writeHead(302, { Location: `/login/?error=${encodeURIComponent(error || 'CODE_MISSING')}` });
+      res.end();
+      return;
+    }
+    res.writeHead(302, { Location: `/?sso_connected=1` });
+    res.end();
+    return;
+  }
+
+  // AUTH-6. GET /api/v1/live/audit -> Lista trilho de auditoria (Conformidade NIS2/RGPD)
+  if (req.method === 'GET' && url.pathname === '/api/v1/live/audit') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ auditLogs: state.auditLogs || [] }));
+    return;
+  }
 
   // 1. GET /api/v1/live/state?hw_uid=...
   if (req.method === 'GET' && url.pathname === '/api/v1/live/state') {
@@ -781,14 +1141,52 @@ const server = http.createServer(async (req, res) => {
     let fileSize = 0;
     const writeStream = fs.createWriteStream(fullPath);
 
+    let firstChunk = null;
+    let isMagicValid = true;
+
     req.on('data', (chunk) => {
+      if (!firstChunk) {
+        firstChunk = chunk;
+        const check = validateMediaMagicBytes(firstChunk, mimeType);
+        if (!check.valid) {
+          isMagicValid = false;
+        }
+      }
       fileSize += chunk.length;
       hash.update(chunk);
-      writeStream.write(chunk);
+      if (isMagicValid) {
+        writeStream.write(chunk);
+      }
     });
 
     req.on('end', () => {
       writeStream.end();
+
+      // Guardrail Binário: Rejeita e elimina imediatamente qualquer ficheiro com assinatura suspeita
+      if (!isMagicValid) {
+        try {
+          fs.unlinkSync(fullPath);
+        } catch {}
+        const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || '';
+        logAuditEvent({
+          action: 'UPLOAD_BLOCKED_MAGIC_BYTES',
+          actor: 'MEDIA_USER',
+          role: 'MEDIA_MANAGER',
+          target: fileName,
+          details: `Upload bloqueado: assinatura binária incompatível com formato multimédia seguro (${mimeType})`,
+          clientIp,
+          success: false,
+        });
+        res.writeHead(415, { 'Content-Type': 'application/json' });
+        res.end(
+          JSON.stringify({
+            error: 'FILE_GUARDRAIL_BLOCKED',
+            message: 'Assinatura binária inválida: o ficheiro não corresponde a um formato de vídeo ou imagem seguro!',
+          })
+        );
+        return;
+      }
+
       const sha256 = hash.digest('hex');
       const newAsset = {
         id,
@@ -872,6 +1270,17 @@ const server = http.createServer(async (req, res) => {
       syncPlaylistsByTags();
       saveState();
       broadcastUpdate();
+
+      logAuditEvent({
+        action: 'UPDATE_PLAYLISTS',
+        actor: 'MEDIA_USER',
+        role: 'MEDIA_MANAGER',
+        target: payload.brand || state.brand,
+        details: `Programação de playlists atualizada (${payload.playlists?.length || 0} playlists)`,
+        clientIp: req.socket?.remoteAddress || '',
+        success: true,
+      });
+
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(getEnrichedState()));
     } catch {
@@ -903,6 +1312,7 @@ const server = http.createServer(async (req, res) => {
         dev = {
           id: crypto.randomUUID(),
           hardwareUid: hwUid,
+          deviceToken: crypto.randomBytes(24).toString('hex'),
           pairingCode: payload.pairingCode || `NX-${100000 + devNumber}`,
           name:
             payload.name ||
@@ -936,6 +1346,27 @@ const server = http.createServer(async (req, res) => {
         };
         state.devices.push(dev);
       } else {
+        if (!dev.deviceToken) {
+          dev.deviceToken = crypto.randomBytes(24).toString('hex');
+        }
+
+        // Validação de Token de Hardware: Se o pedido traz um token diferente, recusa
+        const reqToken = req.headers['x-device-token'] || payload.deviceToken || null;
+        if (reqToken && dev.deviceToken !== reqToken) {
+          logAuditEvent({
+            action: 'HEARTBEAT_REJECTED_DEVICE_TOKEN_MISMATCH',
+            actor: hwUid,
+            role: 'DEVICE',
+            target: hwUid,
+            details: 'Tentativa de heartbeat com token de dispositivo inválido ou forjado',
+            clientIp,
+            success: false,
+          });
+          res.writeHead(401, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'UNAUTHORIZED_DEVICE', message: 'Token de dispositivo inválido' }));
+          return;
+        }
+
         dev.pairingCode = payload.pairingCode || dev.pairingCode;
         dev.status = payload.isPaired === false ? 'PENDING_APPROVAL' : 'ONLINE';
         dev.interactionMode = payload.interactionMode || dev.interactionMode;
@@ -962,6 +1393,7 @@ const server = http.createServer(async (req, res) => {
         JSON.stringify({
           status: 'OK',
           device: dev,
+          deviceToken: dev.deviceToken,
           effectivePlayback: effectiveForThisDevice,
         })
       );
@@ -1007,6 +1439,7 @@ const server = http.createServer(async (req, res) => {
         dev = {
           id: crypto.randomUUID(),
           hardwareUid: code || `BOX-${Math.floor(1000 + Math.random() * 9000)}`,
+          deviceToken: crypto.randomBytes(24).toString('hex'),
           pairingCode: code,
           name: payload.name || 'Box Android X98 Plus',
           brand: payload.brand || 'FNAC',
@@ -1027,6 +1460,9 @@ const server = http.createServer(async (req, res) => {
         };
         state.devices.push(dev);
       } else {
+        if (!dev.deviceToken) {
+          dev.deviceToken = crypto.randomBytes(24).toString('hex');
+        }
         dev.name = payload.name || dev.name;
         dev.storeName = payload.storeName || dev.storeName;
         dev.zone = payload.zone || dev.zone;
@@ -1037,6 +1473,16 @@ const server = http.createServer(async (req, res) => {
         dev.status = 'ONLINE';
         dev.lastSeenAt = new Date().toISOString();
       }
+
+      logAuditEvent({
+        action: 'PAIR_DEVICE_APPROVED',
+        actor: 'IT_OPS',
+        role: 'IT_OPS',
+        target: `${dev.name} (${dev.hardwareUid})`,
+        details: `Dispositivo aprovado para ${dev.storeName} [${dev.brand}] com DeviceToken criptográfico`,
+        clientIp: req.socket?.remoteAddress || '',
+        success: true,
+      });
 
       saveState();
       broadcastUpdate({

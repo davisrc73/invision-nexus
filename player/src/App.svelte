@@ -28,6 +28,7 @@
   let isPaired = localStorage.getItem('invision_is_paired') !== 'false';
   let interactionMode = localStorage.getItem('invision_mode') || 'PASSIVE';
   let invert180 = localStorage.getItem('invision_invert_180') === 'true';
+  let deviceToken = localStorage.getItem('invision_device_token') || '';
 
   const WS_URL = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.hostname}:3000/ws/sync?hw_uid=${encodeURIComponent(hardwareUid)}`;
 
@@ -336,9 +337,13 @@
     try {
       const res = await fetch(`${API_BASE}/api/v1/live/heartbeat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Device-Token': deviceToken,
+        },
         body: JSON.stringify({
           hardwareUid,
+          deviceToken,
           pairingCode,
           name: deviceName,
           isPaired,
@@ -360,6 +365,10 @@
       });
       if (res.ok) {
         const data = await res.json();
+        if (data.deviceToken && data.deviceToken !== deviceToken) {
+          deviceToken = data.deviceToken;
+          localStorage.setItem('invision_device_token', deviceToken);
+        }
         if (data.device && data.device.name) {
           deviceName = data.device.name;
           localStorage.setItem('invision_device_name', deviceName);

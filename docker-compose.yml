@@ -31,7 +31,8 @@ services:
       - "-c"
       - "synchronous_commit=off"
     ports:
-      - "${POSTGRES_PORT:-5434}:5432"
+      # Hardening: Base de dados escuta exclusivamente em 127.0.0.1 (inacessível a outras máquinas na rede LAN)
+      - "127.0.0.1:${POSTGRES_PORT:-5434}:5432"
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
       - ./backend/sql/001_init_schema.sql:/docker-entrypoint-initdb.d/001_init_schema.sql:ro
@@ -56,7 +57,8 @@ services:
       --save 60 1000
       --appendonly no
     ports:
-      - "${REDIS_PORT:-6380}:6379"
+      # Hardening: Cache Redis escuta exclusivamente em 127.0.0.1 (inacessível a outras máquinas na rede LAN)
+      - "127.0.0.1:${REDIS_PORT:-6380}:6379"
     volumes:
       - ./data/redis:/data
     deploy:

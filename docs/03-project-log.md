@@ -461,3 +461,33 @@ Arranque do desenvolvimento de uma plataforma enterprise de Digital Signage inte
 3. **Resiliência a Playlists Globais / Legadas:** Atualizado o filtro de marca em `getSelectedPlaylist()` e `renderAll()` para `!p.brand || p.brand === activeBrand || p.brand === 'ALL'`, garantindo que playlists legadas ou partilhadas não são ocultadas inadvertidamente.
 4. **Tratamento de Exceções com `try/catch`:** O carregamento do estado via `fetchLiveState()` foi encapsulado em bloco `try/catch` para evitar paragens silenciosas em caso de quebra temporária de rede.
 5. **Limpeza de Código Morto:** Removidos *event listeners* residuais de upload no módulo de playlists, uma vez que o envio de novos ficheiros é agora gerido de forma dedicada pelo módulo `Conteúdos & Media` (`/content/`).
+
+---
+
+## [2026-11-16] - Implementação de Cibersegurança, Hardening de Infraestrutura & SSO Microsoft Entra ID (Passos 1 e 2)
+
+### Contexto & Requisitos de Segurança
+- Operação em ambiente de retalho (FNAC e DARTY) com ecrãs e dispositivos em bancadas de loja, exigindo proteção contra *defacement*, sequestro de ecrãs (*ransomware*), injeção de ficheiros maliciosos e intrusão na rede de loja.
+- Infraestrutura corporativa confirmada: VLAN Wi-Fi dedicada e reservada para Sinalética Digital, hardware protegido atrás dos displays, hosting privado corporativo (sem exposição à internet pública) e federação de utilizadores via **Microsoft Entra ID (Office 365 SSO)**.
+
+### Implementações Realizadas (Passo 1: Infraestrutura & Passo 2: Autenticação)
+1. **Blindagem de Infraestrutura Docker no Synology NAS ([docker-compose.yml](file:///Users/daviscorreia/Antigravity%20/invision-nexus/docker-compose.yml) e [scripts/update-nas.sh](file:///Users/daviscorreia/Antigravity%20/invision-nexus/scripts/update-nas.sh)):**
+   - Mapeamento das portas do **PostgreSQL 16 (`5434`)** e do **Redis 7 (`6380`)** restrito exclusivamente a `127.0.0.1` (loopback local do NAS). As bases de dados deixam de estar acessíveis a quaisquer outros dispositivos da rede local/LAN.
+   - Comunicação inter-contentores mantida de forma segura e direta via rede bridge interna Docker (`nexus-network`).
+2. **Validador de Assinatura Binária Real (*Magic Bytes Guardrail*) ([backend/live-bridge.mjs](file:///Users/daviscorreia/Antigravity%20/invision-nexus/backend/live-bridge.mjs)):**
+   - Inspeciona os primeiros bytes binários de cada upload antes de gravar no disco, garantindo que o ficheiro é estritamente um formato multimédia seguro (MP4/MOV com `ftyp`/`moov`/`mdat`, WebM com `0x1A45DFA3`, JPEG `0xFFD8FF`, PNG `0x89504E47` ou WebP).
+   - Bloqueia e elimina imediatamente ficheiros disfarçados (executáveis, PHP, scripts shell) com erro HTTP 415 (`FILE_GUARDRAIL_BLOCKED`) e alerta no trilho de auditoria.
+3. **Identidade Criptográfica de Hardware (*Hardware Device Tokens*) ([backend/live-bridge.mjs](file:///Users/daviscorreia/Antigravity%20/invision-nexus/backend/live-bridge.mjs) e [player/src/App.svelte](file:///Users/daviscorreia/Antigravity%20/invision-nexus/player/src/App.svelte)):**
+   - Ao emparelhar um terminal (`NX-XXXXXX`), o backend gera uma chave secreta de hardware (`deviceToken` de 48 caracteres hexadecimais em CSPRNG).
+   - O Edge Player PWA armazena o token e envia-o no cabeçalho `X-Device-Token` em todos os *heartbeats*. O servidor valida a correspondência e rejeita dispositivos impostores ou forjados com erro HTTP 401 (`UNAUTHORIZED_DEVICE`).
+4. **Motor de Autenticação Híbrido: Microsoft Entra ID (SSO) + Break-Glass Local ([backend/live-bridge.mjs](file:///Users/daviscorreia/Antigravity%20/invision-nexus/backend/live-bridge.mjs)):**
+   - **SSO Microsoft Entra ID (OIDC / OAuth2):** Endpoints `/api/v1/auth/microsoft/login` e `/api/v1/auth/microsoft/callback` preparados para federação com o Office 365 da Fnac Darty com mapeamento de grupos de segurança (`SG_FNAC_*`) para os perfis RBAC do Invision Nexus.
+   - **Acesso Local de Contingência ("Break-Glass"):** Conta de emergência `admin` com palavras-passe protegidas por PBKDF2 com HMAC-SHA512 (100.000 iterações), permitindo operação no NAS sem dependência de internet.
+   - **Sessões no Servidor:** Emissão de cookies assinadas `invision_session` (`HttpOnly, SameSite=Lax, Max-Age=86400`) e endpoint de inspeção `/api/v1/auth/me`.
+5. **Portal de Login Corporativo Dedicado ([dashboard/src/pages/login.astro](file:///Users/daviscorreia/Antigravity%20/invision-nexus/dashboard/src/pages/login.astro)):**
+   - Novo ecrã corporativo com botão direto *"Iniciar Sessão com Conta Fnac Darty (Office 365)"*, formulário de contingência local break-glass e painel de indicadores de segurança ativos.
+6. **Sub-módulo de Cibersegurança & Trilho de Auditoria em Tempo Real ([dashboard/src/pages/settings.astro](file:///Users/daviscorreia/Antigravity%20/invision-nexus/dashboard/src/pages/settings.astro)):**
+   - Ativada a aba **`🛡️ 6. Segurança, Controlo de Acessos & SSO Microsoft Entra ID`** em `/settings/`.
+   - Inclui Painel de Hardening em Camadas, painel de configuração e credenciais para a equipa de TI da Fnac Darty, tabela de utilizadores locais e Tabela de Auditoria em tempo real (*Audit Trail* para conformidade NIS2 e RGPD).
+7. **Documento Técnico de Referência ([docs/05-cybersecurity-hardening.md](file:///Users/daviscorreia/Antigravity%20/invision-nexus/docs/05-cybersecurity-hardening.md)):**
+   - Criado manual completo de cibersegurança com modelação de ameaças, descrição dos 5 pilares de segurança, guia de registo de aplicação no Microsoft Entra e playbook de resposta a incidentes.
