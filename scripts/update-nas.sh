@@ -96,21 +96,14 @@ echo "     • Backend:   ${FREE_API_PORT} (Acessível na LAN)"
 echo "     • Dashboard: ${FREE_DASH_PORT} (Acessível na LAN)"
 echo "     • Player:    ${FREE_PLAYER_PORT} (Acessível na LAN)"
 
-# Só força --build se o código do backend/dashboard/player mudou, se as imagens ainda não existirem, ou se pedires --build
-BUILD_FLAG=""
-if [[ "${1:-}" == "--build" ]]; then
-  BUILD_FLAG="--build"
-elif ! docker image inspect invision-nexus-dashboard >/dev/null 2>&1 || \
-     ! docker image inspect invision-nexus-player >/dev/null 2>&1 || \
-     ! docker image inspect invision-nexus-backend >/dev/null 2>&1; then
-  BUILD_FLAG="--build"
-elif [[ "${BEFORE_HEAD}" != "${AFTER_HEAD}" ]]; then
-  if git diff --name-only "${BEFORE_HEAD}" "${AFTER_HEAD}" 2>/dev/null | grep -Eq '^(backend|dashboard|player)/'; then
-    BUILD_FLAG="--build"
-  fi
+# Força sempre --build por padrão para garantir que qualquer alteração no frontend/backend
+# é imediatamente compilada nos contentores do NAS (pode usar --quick para saltar o rebuild)
+BUILD_FLAG="--build"
+if [[ "${1:-}" == "--quick" || "${1:-}" == "--no-build" ]]; then
+  BUILD_FLAG=""
 fi
 
-echo "==> [4/5] A iniciar contentores Docker no Synology NAS (${BUILD_FLAG:-arranque rápido sem rebuild})..."
+echo "==> [4/5] A iniciar contentores Docker no Synology NAS (${BUILD_FLAG:---build - a compilar nova versão})..."
 if docker compose version >/dev/null 2>&1; then
   docker compose up -d ${BUILD_FLAG} --remove-orphans
 elif command -v docker-compose >/dev/null 2>&1; then
