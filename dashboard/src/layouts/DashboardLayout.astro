@@ -115,6 +115,31 @@ const { title, activeNav = 'overview' } = Astro.props;
       html[data-theme='light'] .bg-\[\#E30613\].text-white {
         color: #ffffff !important;
       }
+
+      /* ===================================================================== */
+      /* REGRAS GLOBAIS DE IMPRESSÃO (BLINDAGEM CONTRA LEAK DE LAYOUT)         */
+      /* ===================================================================== */
+      @media print {
+        aside,
+        header,
+        nav,
+        #sidebar-container,
+        .no-print {
+          display: none !important;
+        }
+
+        body {
+          background: #ffffff !important;
+          color: #000000 !important;
+          min-height: auto !important;
+        }
+
+        main {
+          padding: 0 !important;
+          margin: 0 !important;
+          overflow: visible !important;
+        }
+      }
     </style>
   </head>
   <body

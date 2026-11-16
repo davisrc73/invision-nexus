@@ -3,6 +3,8 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
 ---
 
 <DashboardLayout title="Telemetria Comercial & Proof of Play (Auditoria de SoV)" activeNav="telemetry">
+  <!-- CONTEÚDO OPERACIONAL / INTERATIVO DA PÁGINA (OCULTO EM MODO DE IMPRESSÃO) -->
+  <div id="telemetry-interactive-view" class="print:hidden">
   <!-- TOP ACTIONS & INTRODUÇÃO EXECUTIVA -->
   <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 mb-6">
     <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -245,13 +247,14 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     </div>
     <div id="interactions-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs"></div>
   </div>
+  </div><!-- FIM #telemetry-interactive-view -->
 
   <!-- ===================================================================== -->
   <!-- MODAL DE PRÉ-VISUALIZAÇÃO DO CERTIFICADO OFICIAL DE AUDITORIA POP     -->
   <!-- ===================================================================== -->
   <div
     id="certificate-modal"
-    class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden no-print"
+    class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden no-print print:hidden"
   >
     <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
       <!-- Top Modal Header -->
@@ -283,7 +286,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
 
       <!-- Scrollable Certificate Paper Preview (Light A4 sheet inside dark UI) -->
       <div class="p-6 overflow-y-auto bg-slate-950/80 flex justify-center">
-        <div class="bg-white text-black p-8 rounded-lg shadow-2xl max-w-3xl w-full text-xs font-sans border border-slate-200">
+        <div id="modal-cert-paper" class="bg-white text-black p-8 rounded-lg shadow-2xl max-w-3xl w-full text-xs font-sans border border-slate-200">
           <div class="border-b-2 border-black pb-4 mb-5 flex justify-between items-end">
             <div>
               <h1 class="text-xl font-black uppercase tracking-wider text-black" id="modal-cert-company-title">FNAC DARTY GROUP</h1>
@@ -393,17 +396,61 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     </div>
   </div>
 
-  <style>
+  <style is:global>
     @media print {
+      /* 1. Oculta absolutamente toda a interface aplicacional e controlos interativos */
+      aside,
+      nav,
+      header,
+      #sidebar-container,
+      .no-print,
+      #telemetry-interactive-view,
+      #certificate-modal,
+      button,
+      select {
+        display: none !important;
+      }
+
+      /* 2. Redefine o viewport para uma página A4 limpa sem scrolls ou fundos escuros */
+      html,
       body {
         background: #ffffff !important;
         color: #000000 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: auto !important;
+        overflow: visible !important;
       }
-      nav, aside, header, #sidebar-container, .no-print, button, select {
-        display: none !important;
+
+      main {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        display: block !important;
+        overflow: visible !important;
       }
+
+      /* 3. Renderiza com rigor milimétrico o certificado oficial A4 */
       #print-certificate-container {
         display: block !important;
+        position: relative !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 10mm 15mm !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+        box-shadow: none !important;
+      }
+
+      #print-certificate-container * {
+        visibility: visible !important;
+      }
+
+      @page {
+        size: A4 portrait;
+        margin: 12mm 15mm;
       }
     }
   </style>
@@ -745,6 +792,19 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
       if (modalAirtimeEl) modalAirtimeEl.textContent = airtimeText;
       if (modalCompanyEl) modalCompanyEl.textContent = companyText;
 
+      // Atualiza data de emissão e ID de documento dinâmico
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('pt-PT');
+      const docIdSuffix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+      const modalDocIdEl = document.getElementById('modal-cert-doc-id');
+      const certDocIdEl = document.getElementById('cert-doc-id');
+      const modalDateEl = document.getElementById('modal-cert-issue-date');
+      const certDateEl = document.getElementById('cert-issue-date');
+      if (modalDocIdEl) modalDocIdEl.textContent = docIdSuffix;
+      if (certDocIdEl) certDocIdEl.textContent = docIdSuffix;
+      if (modalDateEl) modalDateEl.textContent = dateStr;
+      if (certDateEl) certDateEl.textContent = dateStr;
+
       let certTableHtml = `
         <table class="w-full text-left border-collapse text-xs mt-2 border border-gray-300">
           <thead>
@@ -844,6 +904,120 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
       downloadCsv(`invision_nexus_${activeBrand.toLowerCase()}_share_of_voice_summary.csv`, rows);
     });
 
+    // Emissão e Impressão Isolada do Certificado Oficial A4 (Zero Leaks de Layout)
+    function printOfficialCertificate() {
+      const paperEl = document.getElementById('modal-cert-paper');
+      if (!paperEl) {
+        window.print();
+        return;
+      }
+
+      let printFrame = document.getElementById('cert-print-iframe');
+      if (printFrame) {
+        printFrame.remove();
+      }
+
+      printFrame = document.createElement('iframe');
+      printFrame.id = 'cert-print-iframe';
+      printFrame.name = 'cert-print-iframe';
+      printFrame.style.position = 'fixed';
+      printFrame.style.right = '0';
+      printFrame.style.bottom = '0';
+      printFrame.style.width = '0';
+      printFrame.style.height = '0';
+      printFrame.style.border = '0';
+      printFrame.style.margin = '0';
+      printFrame.style.padding = '0';
+      document.body.appendChild(printFrame);
+
+      const activeBrand = localStorage.getItem('invision_brand') || 'FNAC';
+      const docTitle = `Certificado_Oficial_Proof_of_Play_${activeBrand}`;
+
+      const headStyles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+        .map((el) => el.outerHTML)
+        .join('\n');
+
+      const frameDoc = printFrame.contentWindow.document;
+      frameDoc.open();
+      frameDoc.write(`
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <title>${docTitle}</title>
+  ${headStyles}
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 12mm 15mm;
+    }
+    * {
+      box-sizing: border-box !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    html, body {
+      background: #ffffff !important;
+      color: #000000 !important;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+      font-size: 11px !important;
+      line-height: 1.4 !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      width: 100% !important;
+      height: auto !important;
+      overflow: visible !important;
+    }
+    #modal-cert-paper {
+      box-shadow: none !important;
+      border: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      max-width: 100% !important;
+      width: 100% !important;
+      background: #ffffff !important;
+      color: #000000 !important;
+    }
+    table {
+      width: 100% !important;
+      border-collapse: collapse !important;
+      font-size: 10px !important;
+      margin-top: 6px !important;
+      margin-bottom: 12px !important;
+    }
+    th, td {
+      border: 1px solid #cbd5e1 !important;
+      padding: 6px 8px !important;
+    }
+    th {
+      background-color: #f1f5f9 !important;
+      font-weight: 700 !important;
+      color: #334155 !important;
+      text-transform: uppercase !important;
+      font-size: 9px !important;
+    }
+  </style>
+</head>
+<body>
+  <div style="width: 100%;">
+    ${paperEl.outerHTML}
+  </div>
+</body>
+</html>
+      `);
+      frameDoc.close();
+
+      setTimeout(() => {
+        try {
+          printFrame.contentWindow.focus();
+          printFrame.contentWindow.print();
+        } catch (e) {
+          console.warn('Iframe print bloqueado pelo navegador, a usar fallback nativo:', e);
+          window.print();
+        }
+      }, 250);
+    }
+
     // Abertura e Controlo do Modal de Certificado de Auditoria
     const certModal = document.getElementById('certificate-modal');
     document.getElementById('btn-print-certificate')?.addEventListener('click', () => {
@@ -858,7 +1032,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
       }
     });
     document.getElementById('btn-modal-trigger-print')?.addEventListener('click', () => {
-      window.print();
+      printOfficialCertificate();
     });
 
     // Filtros de seleção
