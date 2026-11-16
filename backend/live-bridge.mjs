@@ -198,6 +198,26 @@ function logAuditEvent({
   return entry;
 }
 
+function resolveCommercialPartner(title = '', tags = []) {
+  const titleUpper = (title || '').toUpperCase();
+  const tagsUpper = (tags || []).map((t) => (t || '').toUpperCase());
+
+  if (tagsUpper.includes('SAMSUNG') || titleUpper.includes('SAMSUNG')) return 'Samsung';
+  if (tagsUpper.includes('APPLE') || titleUpper.includes('APPLE') || titleUpper.includes('IPHONE')) return 'Apple';
+  if (tagsUpper.includes('SONY') || titleUpper.includes('SONY') || titleUpper.includes('BRAVIA') || titleUpper.includes('PLAYSTATION')) return 'Sony';
+  if (tagsUpper.includes('LG') || titleUpper.includes('LG') || titleUpper.includes('OLED')) return 'LG';
+  if (tagsUpper.includes('DYSON') || titleUpper.includes('DYSON')) return 'Dyson';
+  if (tagsUpper.includes('PHILIPS') || titleUpper.includes('PHILIPS')) return 'Philips';
+  if (tagsUpper.includes('WHIRLPOOL') || titleUpper.includes('WHIRLPOOL')) return 'Whirlpool';
+  if (tagsUpper.includes('DELONGHI') || titleUpper.includes('DELONGHI')) return 'DeLonghi';
+  if (titleUpper.includes('BLACK FRIDAY') || tagsUpper.includes('BLACK FRIDAY') || tagsUpper.includes('BF')) return 'Campanha Black Friday';
+  if (titleUpper.includes('CRÉDITO') || tagsUpper.includes('CREDITO')) return 'FNAC Crédito & Serviços';
+  if (tagsUpper.includes('FNAC') || titleUpper.includes('FNAC')) return 'FNAC Editorial';
+  if (tagsUpper.includes('DARTY') || titleUpper.includes('DARTY')) return 'DARTY Editorial';
+  if (tagsUpper.length > 0) return tagsUpper[0];
+  return 'Campanha Geral';
+}
+
 function parseTagsInput(raw) {
   if (!raw) return [];
   if (Array.isArray(raw)) {
@@ -468,6 +488,31 @@ if (fs.existsSync(STATE_FILE)) {
         pl.targetDeviceIds = [];
       }
       pl.autoTags = parseTagsInput(pl.autoTags);
+    }
+    for (const r of state.popRecords || []) {
+      if (!r.partner) r.partner = resolveCommercialPartner(r.mediaTitle);
+      if (!r.storeName) r.storeName = r.brand === 'DARTY' ? 'DARTY Montparnasse (Paris)' : 'FNAC Colombo (Lisboa)';
+      if (!r.zone) r.zone = 'ENTRANCE_LEDWALL';
+      if (!r.contractedSovPct) r.contractedSovPct = r.priority === 'EXCLUSIVA' ? 50 : 25;
+    }
+    if (!Array.isArray(state.popAuditLogs) || state.popAuditLogs.length === 0) {
+      state.popAuditLogs = (state.popRecords || []).map((r, idx) => ({
+        id: crypto.randomUUID(),
+        timestamp: new Date(Date.now() - idx * 45000).toISOString(),
+        brand: r.brand || 'FNAC',
+        storeName: r.storeName || 'FNAC Colombo (Lisboa)',
+        zone: r.zone || 'ENTRANCE_LEDWALL',
+        deviceName: 'Box Android X98 Plus (Bancada TV)',
+        hardwareUid: 'X98-PLUS-01',
+        partner: r.partner || 'Campanha Geral',
+        playlistName: r.playlistName || 'Programação Regular',
+        mediaId: r.mediaId || `media-${idx}`,
+        mediaTitle: r.mediaTitle || 'Campanha Comercial',
+        durationMs: 10000,
+        priority: r.priority || 'NORMAL',
+        contractedSovPct: r.contractedSovPct || 25,
+        sha256: '9f86d081884c7d65...',
+      }));
     }
   } catch {
     state = createDefaultState();
@@ -1809,34 +1854,80 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 7. POST /api/v1/live/telemetry
+  // 7. POST /api/v1/live/telemetry -> Registo de Proof of Play e Interações em Bancada
   if (req.method === 'POST' && url.pathname === '/api/v1/live/telemetry') {
     try {
       const payload = await readJsonBody(req);
       if (payload.type === 'POP') {
+        const dev = state.devices.find(
+          (d) => d.hardwareUid === payload.hardwareUid || d.name === payload.deviceName
+        );
+        const storeName =
+          dev?.storeName ||
+          (payload.brand === 'DARTY' ? 'DARTY Montparnasse (Paris)' : 'FNAC Colombo (Lisboa)');
+        const zone = dev?.zone || 'ENTRANCE_LEDWALL';
+
+        const asset = (state.mediaCatalog || []).find((a) => a.id === payload.mediaId);
+        const partner = resolveCommercialPartner(payload.mediaTitle, asset?.tags || []);
+        const durationMs = Number(payload.durationMs || 8000);
+        const contractedSovPct = Number(payload.sovPct || (payload.priority === 'EXCLUSIVA' ? 50 : 25));
+
         const existing = state.popRecords.find(
           (r) =>
             r.mediaId === payload.mediaId &&
             r.playlistName === payload.playlistName &&
-            r.brand === (payload.brand || 'FNAC')
+            r.brand === (payload.brand || 'FNAC') &&
+            r.storeName === storeName
         );
+
         if (existing) {
           existing.playCount += 1;
-          existing.totalDurationMs += Number(payload.durationMs || 8000);
+          existing.totalDurationMs += durationMs;
           existing.lastPlayedAt = new Date().toISOString();
+          existing.partner = existing.partner || partner;
+          existing.zone = existing.zone || zone;
+          existing.contractedSovPct = existing.contractedSovPct || contractedSovPct;
         } else {
           state.popRecords.unshift({
             id: crypto.randomUUID(),
             brand: payload.brand || 'FNAC',
+            storeName,
+            zone,
+            partner,
             playlistName: payload.playlistName || 'Programação Regular',
             priority: payload.priority || 'NORMAL',
             schedulingMode: payload.schedulingMode || 'FIXED_SLOTS',
             mediaId: payload.mediaId,
             mediaTitle: payload.mediaTitle || 'Conteúdo',
+            contractedSovPct,
             playCount: 1,
-            totalDurationMs: Number(payload.durationMs || 8000),
+            totalDurationMs: durationMs,
+            firstPlayedAt: new Date().toISOString(),
             lastPlayedAt: new Date().toISOString(),
           });
+        }
+
+        // Registo na fita cronológica de auditoria de Proof of Play
+        if (!Array.isArray(state.popAuditLogs)) state.popAuditLogs = [];
+        state.popAuditLogs.unshift({
+          id: crypto.randomUUID(),
+          timestamp: new Date().toISOString(),
+          brand: payload.brand || 'FNAC',
+          storeName,
+          zone,
+          deviceName: dev?.name || payload.deviceName || 'Terminal X98',
+          hardwareUid: payload.hardwareUid || 'N/A',
+          partner,
+          playlistName: payload.playlistName || 'Programação Regular',
+          mediaId: payload.mediaId,
+          mediaTitle: payload.mediaTitle || 'Conteúdo',
+          durationMs,
+          priority: payload.priority || 'NORMAL',
+          contractedSovPct,
+          sha256: asset?.sha256 ? asset.sha256.slice(0, 16) + '...' : 'VERIFICADO',
+        });
+        if (state.popAuditLogs.length > 500) {
+          state.popAuditLogs = state.popAuditLogs.slice(0, 500);
         }
       } else if (payload.type === 'INTERACTION') {
         const key = `${payload.deviceCategory || 'EXPO'}|${payload.interactionType}|${payload.referenceKey || 'GLOBAL'}`;

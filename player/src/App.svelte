@@ -362,6 +362,10 @@
           mediaId: finishedSlot.id,
           mediaTitle: finishedSlot.title,
           durationMs: finishedSlot.durationMs,
+          hardwareUid,
+          deviceName,
+          sovPct: finishedSlot.sovPct || 50,
+          timestamp: new Date().toISOString(),
         }),
       }).catch(() => {});
 

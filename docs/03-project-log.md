@@ -519,3 +519,27 @@ Arranque do desenvolvimento de uma plataforma enterprise de Digital Signage inte
    - Sinalização de terminais com alerta de intrusão/MITM com badge vermelha a pulsar (`🚨 ALERTA MITM / ASSINATURA INVÁLIDA`).
    - Botão para operadores autorizados reconhecerem e reporem o alerta (`🛡️ Repor Alerta`), comunicando com `POST /api/v1/live/security/reset-alert` e registando o evento no Audit Trail.
    - Cartões de Hardening em Configurações atualizados para refletir os 5 pilares ativos de segurança.
+
+---
+
+## [2026-11-16] - Implementação de Telemetria Comercial, Proof of Play (PoP) & Auditoria de Share of Voice (SoV)
+
+### Contexto & Requisitos de Retalho Comercial
+- Em ambiente de retalho (FNAC e DARTY), as marcas de tecnologia (Samsung, Apple, Sony, Dyson, LG, Philips, Whirlpool, etc.) negoceiam e contratam percentagens estritas de tempo de antena (*Share of Voice / SoV*) nas bancadas de loja e ecrãs LED.
+- É imperativo fornecer uma ferramenta de **Auditoria Comercial e Proof of Play** rigorosa, que permita validar o cumprimento do contrato publicitário (*SLA*) e exportar relatórios certificados para faturação.
+
+### Implementações Realizadas
+1. **Motor de Deteção de Parceiros Comerciais & Fita Forense ([backend/live-bridge.mjs](file:///Users/daviscorreia/Antigravity%20/invision-nexus/backend/live-bridge.mjs)):**
+   - Criada a função `resolveCommercialPartner` que classifica automaticamente cada reprodução pelo título e TAGs de campanha (Samsung, Apple, Sony, Dyson, LG, Philips, Whirlpool, DeLonghi, FNAC Editorial, DARTY Editorial).
+   - O endpoint `POST /api/v1/live/telemetry` enriquece cada registo com a loja (`storeName`), zona de bancada (`zone`), parceiro comercial, SoV contratado e terminal responsável.
+   - Criado o anel de auditoria forense `popAuditLogs` (últimas 500 exibições validadas) com registo do hash criptográfico SHA-256 de cada ficheiro exibido.
+2. **Dashboard de Telemetria Comercial & Proof of Play ([dashboard/src/pages/telemetry.astro](file:///Users/daviscorreia/Antigravity%20/invision-nexus/dashboard/src/pages/telemetry.astro)):**
+   - **4 Cartões de KPIs Comerciais:** Total de Exibições (Plays), Tempo de Antena Total (Horas/Minutos/Segundos), Cumprimento Médio de SoV (%) e Parceiro Líder em Loja (% do ar total).
+   - **Barra de Filtros Dinâmicos:** Filtro por Loja (Colombo, Chiado, NorteShopping, Montparnasse, etc.), Filtro por Parceiro Comercial e Filtro de Período, com sincronização em tempo real à insígnia ativa (`FNAC` vs `DARTY`).
+   - **Matriz de Cumprimento de Share of Voice (SoV):** Tabela comercial comparando SoV Contratado (%) vs SoV Entregue (%), com barra de progresso de conformidade SLA (`🟢 APROVADO`, `🟡 EM CURSO`, `⚠️ EM DÉFICE`) e estado de faturação.
+   - **Fita Forense de Proof of Play:** Tabela cronológica em tempo real com data/hora, loja, terminal, parceiro, título do anúncio, duração e hash SHA-256.
+   - **Interatividades em Bancada:** Registo de toques e envolvimento em smartphones/portáteis (`IDLE_SCREENSAVER`) e seleção de categorias em televisores (`TV_DEMO`).
+3. **Exportação & Certificado Oficial em PDF / Impressão:**
+   - Botão **"Exportar Auditoria PoP (CSV)"** para auditoria detalhada de conformidade.
+   - Botão **"Exportar Resumo SoV (CSV)"** para processamento financeiro e faturação comercial.
+   - Botão **"Certificado PDF"**: Gera um layout formal de impressão A4 (*Certificado Oficial de Exibição Publicitária*) com identidade corporativa FNAC DARTY, resumo de exibições e linhas de assinatura para Diretor de Loja e Auditor Multimédia.

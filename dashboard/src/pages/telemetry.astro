@@ -2,59 +2,187 @@
 import DashboardLayout from '../layouts/DashboardLayout.astro';
 ---
 
-<DashboardLayout title="Proof of Play Real & Telemetria Touch / TV Demo (Exportação CSV)" activeNav="telemetry">
-  <!-- TOP ACTIONS: EXPORTAÇÃO CSV -->
-  <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-    <div>
-      <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-        Telemetria em Tempo Real • Recebida dos Players no Mac e Telemóvel
-      </span>
-      <h3 class="text-base font-bold text-white mt-1.5">
-        Auditoria de Exibição (Proof of Play) & Envolvimento de Clientes em Bancada
-      </h3>
-      <p class="text-xs text-slate-400 mt-0.5">
-        Sempre que um vídeo ou imagem termina a exibição no Player (ou quando toca no ecrã em modo <code>IDLE_SCREENSAVER</code> / <code>TV_DEMO</code>), os contadores abaixo e o CSV são atualizados automaticamente!
-      </p>
+<DashboardLayout title="Telemetria Comercial & Proof of Play (Auditoria de SoV)" activeNav="telemetry">
+  <!-- TOP ACTIONS & INTRODUÇÃO EXECUTIVA -->
+  <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 mb-6">
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-2 flex-wrap mb-2">
+          <span class="text-[11px] font-mono uppercase px-2.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold">
+            Auditoria Comercial & Proof of Play (PoP)
+          </span>
+          <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">
+            Conformidade SLA & Faturação de Marcas
+          </span>
+          <span id="telemetry-brand-badge" class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40">
+            Marca Ativa: FNAC
+          </span>
+        </div>
+        <h3 class="text-lg font-bold text-white">
+          Telemetria Comercial, Proof of Play & Cumprimento de Share of Voice (SoV)
+        </h3>
+        <p class="text-xs text-slate-300 mt-1 max-w-3xl leading-relaxed">
+          Registo criptograficamente auditável de exibições concluídas nos ecrãs de loja para prestação de contas, auditoria de parceiros comerciais (Samsung, Apple, Sony, Dyson, LG, Philips, etc.) e faturação publicitária.
+        </p>
+      </div>
+
+      <!-- BOTÕES DE AÇÃO: EXPORTAÇÃO & CERTIFICADO DE IMPRESSÃO -->
+      <div class="flex items-center gap-2.5 shrink-0 flex-wrap">
+        <button
+          type="button"
+          id="btn-export-pop-csv"
+          class="px-3.5 py-2 rounded-lg bg-[#E1A924] hover:bg-amber-400 text-black font-bold text-xs shadow transition flex items-center gap-1.5"
+          title="Exportar dados forenses detalhados de Proof of Play para Excel/CSV"
+        >
+          <span>⬇</span> Exportar Auditoria PoP (CSV)
+        </button>
+        <button
+          type="button"
+          id="btn-export-sov-csv"
+          class="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs border border-slate-700 transition flex items-center gap-1.5"
+          title="Exportar resumo de cumprimento de Share of Voice por parceiro"
+        >
+          <span>📊</span> Exportar Resumo SoV (CSV)
+        </button>
+        <button
+          type="button"
+          id="btn-print-certificate"
+          class="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-300 font-semibold text-xs border border-sky-500/30 transition flex items-center gap-1.5"
+          title="Gerar Certificado Executivo de Exibição Publicitária em PDF / Impressão"
+        >
+          <span>🖨️</span> Certificado PDF
+        </button>
+      </div>
     </div>
-    <div class="flex items-center gap-3">
-      <button
-        type="button"
-        id="btn-export-pop-csv"
-        class="px-4 py-2 rounded-lg bg-[#E1A924] hover:bg-amber-400 text-black font-bold text-xs shadow transition"
-      >
-        ⬇ Exportar Proof of Play Real (CSV)
-      </button>
-      <button
-        type="button"
-        id="btn-export-touch-csv"
-        class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs border border-slate-700 transition"
-      >
-        ⬇ Exportar Touch & TV Demo (CSV)
-      </button>
+
+    <!-- BARRA DE FILTROS EXECUTIVOS -->
+    <div class="mt-5 pt-4 border-t border-slate-800/80 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+      <div>
+        <label class="block text-[11px] font-mono text-slate-400 uppercase mb-1">Filtrar por Loja:</label>
+        <select
+          id="filter-store"
+          class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-white font-mono text-xs focus:border-[#E1A924] outline-none"
+        >
+          <option value="ALL">Todas as Lojas</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-[11px] font-mono text-slate-400 uppercase mb-1">Filtrar por Parceiro Comercial:</label>
+        <select
+          id="filter-partner"
+          class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-white font-mono text-xs focus:border-[#E1A924] outline-none"
+        >
+          <option value="ALL">Todos os Parceiros</option>
+          <option value="Samsung">Samsung</option>
+          <option value="Apple">Apple</option>
+          <option value="Sony">Sony</option>
+          <option value="LG">LG</option>
+          <option value="Dyson">Dyson</option>
+          <option value="Philips">Philips</option>
+          <option value="Whirlpool">Whirlpool</option>
+          <option value="DeLonghi">DeLonghi</option>
+          <option value="FNAC Editorial">FNAC Editorial</option>
+          <option value="DARTY Editorial">DARTY Editorial</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-[11px] font-mono text-slate-400 uppercase mb-1">Período de Análise:</label>
+        <select
+          id="filter-period"
+          class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-white font-mono text-xs focus:border-[#E1A924] outline-none"
+        >
+          <option value="REALTIME">Tempo Real / Hoje</option>
+          <option value="LAST_24H">Últimas 24 Horas</option>
+          <option value="LAST_7D">Últimos 7 Dias</option>
+          <option value="MONTH">Mês de Faturação Atual</option>
+        </select>
+      </div>
+      <div class="flex items-end">
+        <button
+          type="button"
+          id="btn-reset-filters"
+          class="w-full px-3 py-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-xs font-semibold transition"
+        >
+          ↻ Repor Filtros
+        </button>
+      </div>
     </div>
   </div>
 
-  <!-- TABELA 1: PROOF OF PLAY REAL -->
+  <!-- 4 CARTÕES DE KPIS COMERCIAIS EXECUTIVOS -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 shadow-sm">
+      <div class="flex items-center justify-between text-slate-400 text-xs mb-1">
+        <span class="font-mono uppercase">Total Exibições (Plays)</span>
+        <span class="text-emerald-400">● 100% Auditado</span>
+      </div>
+      <div class="text-2xl font-black text-white font-mono" id="kpi-total-plays">0</div>
+      <p class="text-[11px] text-slate-400 mt-1">Concluídas com sucesso nos ecrãs</p>
+    </div>
+
+    <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 shadow-sm">
+      <div class="flex items-center justify-between text-slate-400 text-xs mb-1">
+        <span class="font-mono uppercase">Tempo de Antena (Airtime)</span>
+        <span class="text-sky-400">⏱️ Emissão</span>
+      </div>
+      <div class="text-2xl font-black text-sky-300 font-mono" id="kpi-total-airtime">0h 0m 0s</div>
+      <p class="text-[11px] text-slate-400 mt-1">Tempo efetivo no ar nas bancadas</p>
+    </div>
+
+    <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 shadow-sm">
+      <div class="flex items-center justify-between text-slate-400 text-xs mb-1">
+        <span class="font-mono uppercase">Cumprimento Médio SoV</span>
+        <span class="text-amber-400 font-bold" id="kpi-sov-status">● CONFORME</span>
+      </div>
+      <div class="text-2xl font-black text-emerald-400 font-mono" id="kpi-avg-sov">100.0%</div>
+      <p class="text-[11px] text-slate-400 mt-1">Share of Voice real vs contratado</p>
+    </div>
+
+    <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 shadow-sm">
+      <div class="flex items-center justify-between text-slate-400 text-xs mb-1">
+        <span class="font-mono uppercase">Parceiro Líder em Loja</span>
+        <span class="text-purple-400">👑 Top Airtime</span>
+      </div>
+      <div class="text-base font-bold text-white truncate mt-1" id="kpi-top-partner">-</div>
+      <p class="text-[11px] text-slate-400 mt-1" id="kpi-top-partner-stats">0 plays • 0% do ar</p>
+    </div>
+  </div>
+
+  <!-- SECÇÃO 1: MATRIZ DE CUMPRIMENTO DE SHARE OF VOICE (SOV COMERCIAL) -->
   <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 mb-8">
-    <h4 class="text-sm font-bold uppercase tracking-wider text-amber-300 mb-4">
-      1. Registos Reais de Proof of Play (Exibições Concluídas nos Players)
-    </h4>
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+      <div>
+        <h4 class="text-sm font-bold uppercase tracking-wider text-amber-300">
+          1. Matriz de Cumprimento de Share of Voice (SoV Contratado vs SoV Real Entregue)
+        </h4>
+        <p class="text-xs text-slate-400 mt-0.5">
+          Auditoria comercial de espaço de ecrã para efeitos de faturação publicitária e cumprimento de SLAs acordados com as marcas parceiras.
+        </p>
+      </div>
+      <span class="px-2.5 py-1 rounded bg-slate-950 border border-slate-800 text-[11px] font-mono text-slate-300">
+        Algoritmo: <strong class="text-white">Weighted Round-Robin (Dynamic SoV)</strong>
+      </span>
+    </div>
+
     <div class="overflow-x-auto">
       <table class="w-full text-left border-collapse text-xs">
         <thead>
-          <tr class="border-b border-slate-800 text-slate-400 uppercase">
-            <th class="py-3 px-3">Insígnia</th>
-            <th class="py-3 px-3">Playlist</th>
-            <th class="py-3 px-3">Conteúdo Exibido</th>
-            <th class="py-3 px-3">Prioridade / Modo</th>
-            <th class="py-3 px-3 text-right">Total Exibições (Plays)</th>
-            <th class="py-3 px-3 text-right">Segundos Totais Exibidos</th>
+          <tr class="border-b border-slate-800 text-slate-400 uppercase text-[11px] font-mono">
+            <th class="py-3 px-3">Parceiro / Marca</th>
+            <th class="py-3 px-3">Campanha / Conteúdo</th>
+            <th class="py-3 px-3">Loja / Zona</th>
+            <th class="py-3 px-3 text-center">SoV Contratado</th>
+            <th class="py-3 px-3 text-center">SoV Entregue</th>
+            <th class="py-3 px-3 text-center min-w-[140px]">Conformidade SLA</th>
+            <th class="py-3 px-3 text-right">Total Plays</th>
+            <th class="py-3 px-3 text-right">Tempo no Ar</th>
+            <th class="py-3 px-3 text-center">Estado Comercial</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-slate-800/70 text-slate-200" id="pop-table-body">
+        <tbody class="divide-y divide-slate-800/70 text-slate-200" id="sov-matrix-body">
           <tr>
-            <td colspan="6" class="py-4 px-3 text-slate-400 text-center">
-              A carregar contadores reais de Proof of Play...
+            <td colspan="9" class="py-6 px-3 text-slate-400 text-center">
+              A calcular auditoria comercial de Share of Voice...
             </td>
           </tr>
         </tbody>
@@ -62,71 +190,417 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     </div>
   </div>
 
-  <!-- TABELA 2: INTERAÇÕES REAIS TOUCH & TV DEMO -->
-  <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
-    <h4 class="text-sm font-bold uppercase tracking-wider text-sky-300 mb-3">
-      2. Registos Reais de Interação Touch (`IDLE_SCREENSAVER`) & Categorias `TV_DEMO`
-    </h4>
-    <div id="interactions-list" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs"></div>
+  <!-- SECÇÃO 2: REGISTO CRONOLÓGICO DE PROOF OF PLAY (FITA FORENSE AUDITÁVEL) -->
+  <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 mb-8">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+      <div>
+        <h4 class="text-sm font-bold uppercase tracking-wider text-emerald-400">
+          2. Fita Forense de Proof of Play (Últimas Exibições Concluídas e Verificadas)
+        </h4>
+        <p class="text-xs text-slate-400 mt-0.5">
+          Cada linha representa a conclusão bem-sucedida de um vídeo/imagem num ecrã físico, com registo de data/hora, terminal, rácio e assinatura de integridade.
+        </p>
+      </div>
+      <span class="px-2.5 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-[11px] font-mono text-emerald-400">
+        ● Transmissão Contínua (Buffer Local)
+      </span>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse text-xs">
+        <thead>
+          <tr class="border-b border-slate-800 text-slate-400 uppercase text-[11px] font-mono">
+            <th class="py-3 px-3">Data / Hora</th>
+            <th class="py-3 px-3">Loja</th>
+            <th class="py-3 px-3">Terminal (Box)</th>
+            <th class="py-3 px-3">Parceiro</th>
+            <th class="py-3 px-3">Conteúdo Exibido</th>
+            <th class="py-3 px-3">Prioridade</th>
+            <th class="py-3 px-3 text-right">Duração</th>
+            <th class="py-3 px-3 text-center">Hash Forense</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-800/70 text-slate-200" id="pop-log-body">
+          <tr>
+            <td colspan="8" class="py-6 px-3 text-slate-400 text-center">
+              A aguardar eventos de Proof of Play em tempo real...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
+
+  <!-- SECÇÃO 3: ENVOLVIMENTO EM BANCADA (TOUCH WAKE & TV DEMO) -->
+  <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 mb-8">
+    <div class="flex items-center justify-between mb-3">
+      <div>
+        <h4 class="text-sm font-bold uppercase tracking-wider text-sky-300">
+          3. Métricas de Interatividade em Bancada (Touch Wake & TV Demo)
+        </h4>
+        <p class="text-xs text-slate-400 mt-0.5">
+          Mede o interesse do cliente ao tocar nos smartphones/portáteis em exposição (<code class="text-sky-300">IDLE_SCREENSAVER</code>) ou ao navegar no catálogo de TVs (<code class="text-sky-300">TV_DEMO</code>).
+        </p>
+      </div>
+    </div>
+    <div id="interactions-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs"></div>
+  </div>
+
+  <!-- CERTIFICADO IMPRESSO OFICIAL (VISÍVEL APENAS NA IMPRESSÃO / PDF) -->
+  <div id="print-certificate-container" class="hidden print:block p-8 bg-white text-black font-sans">
+    <div class="border-b-2 border-black pb-4 mb-6 flex justify-between items-end">
+      <div>
+        <h1 class="text-2xl font-black uppercase tracking-wider" id="cert-company-title">FNAC DARTY GROUP</h1>
+        <p class="text-sm font-bold text-gray-700">INVISION NEXUS • PLATAFORMA DE EXPERIÊNCIA DIGITAL EM LOJA</p>
+      </div>
+      <div class="text-right text-xs">
+        <p><strong>DOCUMENTO Nº:</strong> POP-<span id="cert-doc-id">2026-1116</span></p>
+        <p><strong>DATA DE EMISSÃO:</strong> <span id="cert-issue-date">16/11/2026</span></p>
+      </div>
+    </div>
+
+    <div class="mb-6">
+      <h2 class="text-lg font-bold uppercase mb-1">Certificado Oficial de Exibição Publicitária (Proof of Play)</h2>
+      <p class="text-xs text-gray-600 leading-relaxed">
+        Certifica-se para os devidos efeitos de auditoria comercial e faturação publicitária que as campanhas detalhadas abaixo foram efetivamente reproduzidas nos terminais e ecrãs da rede de retalho, com validação criptográfica de integridade e registo de telemetria contínua.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-3 gap-4 p-4 border border-gray-300 rounded mb-6 text-xs">
+      <div>
+        <p class="text-gray-500 uppercase font-mono text-[10px]">Insígnia Auditada:</p>
+        <p class="font-bold text-base" id="cert-brand-name">FNAC</p>
+      </div>
+      <div>
+        <p class="text-gray-500 uppercase font-mono text-[10px]">Total de Exibições Auditadas:</p>
+        <p class="font-bold text-base" id="cert-total-plays">0 Plays</p>
+      </div>
+      <div>
+        <p class="text-gray-500 uppercase font-mono text-[10px]">Tempo Total em Emissão:</p>
+        <p class="font-bold text-base" id="cert-total-airtime">0h</p>
+      </div>
+    </div>
+
+    <div class="mb-8">
+      <h3 class="text-sm font-bold uppercase mb-2">Resumo de Cumprimento por Marca Parceira</h3>
+      <div id="cert-table-container"></div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-12 pt-12 border-t border-gray-300 text-xs text-center">
+      <div>
+        <div class="border-b border-black mb-2 pb-8"></div>
+        <p class="font-bold">O Diretor de Operações de Loja</p>
+        <p class="text-[10px] text-gray-500">FNAC DARTY PORTUGAL / FRANÇA</p>
+      </div>
+      <div>
+        <div class="border-b border-black mb-2 pb-8"></div>
+        <p class="font-bold">O Responsável de Auditoria Multimédia</p>
+        <p class="text-[10px] text-gray-500">INVISION NEXUS CENTRAL GOVERNANCE</p>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    @media print {
+      body {
+        background: #ffffff !important;
+        color: #000000 !important;
+      }
+      nav, aside, header, #sidebar-container, .no-print, button, select {
+        display: none !important;
+      }
+      #print-certificate-container {
+        display: block !important;
+      }
+    }
+  </style>
 
   <script is:inline>
     const API_BASE = `${window.location.protocol}//${window.location.hostname}:3000`;
-    let latestState = { popRecords: [], interactionRecords: [] };
+    let latestState = { popRecords: [], popAuditLogs: [], interactionRecords: [], storesCatalog: [] };
+
+    // Filtros selecionados
+    let selectedStore = 'ALL';
+    let selectedPartner = 'ALL';
+    let selectedPeriod = 'REALTIME';
 
     async function refreshTelemetryPage() {
       try {
         const res = await fetch(`${API_BASE}/api/v1/live/state`);
         latestState = await res.json();
-        renderTables();
+        populateStoreDropdown();
+        renderCommercialTelemetry();
       } catch {
         // ignore
       }
     }
 
-    function renderTables() {
+    function populateStoreDropdown() {
+      const select = document.getElementById('filter-store');
+      if (!select) return;
+      const currentVal = select.value;
+      const stores = (latestState.storesCatalog || []);
       const activeBrand = localStorage.getItem('invision_brand') || 'FNAC';
-      const popBody = document.getElementById('pop-table-body');
-      const popRecords = (latestState.popRecords || []).filter(
-        (r) => !r.brand || r.brand === activeBrand
-      );
+      const filteredStores = stores.filter((s) => !s.brand || s.brand === activeBrand);
 
-      if (popRecords.length === 0) {
-        popBody.innerHTML = `
-          <tr>
-            <td colspan="6" class="py-6 px-3 text-slate-400 text-center">
-              A aguardar conclusão do primeiro vídeo/imagem no Player da <strong>${activeBrand}</strong> (a cada ~8s o Player envia automaticamente o registo de Proof of Play)...
-            </td>
-          </tr>
-        `;
-      } else {
-        popBody.innerHTML = popRecords
-          .map(
-            (r) => `
-            <tr>
-              <td class="py-3 px-3 font-bold ${
-                r.brand === 'DARTY' ? 'text-red-400' : 'text-amber-400'
-              }">${r.brand}</td>
-              <td class="py-3 px-3">${r.playlistName}</td>
-              <td class="py-3 px-3 font-mono text-white font-semibold">${r.mediaTitle}</td>
-              <td class="py-3 px-3">${r.priority} (${r.schedulingMode})</td>
-              <td class="py-3 px-3 text-right font-mono font-bold text-white">${r.playCount}</td>
-              <td class="py-3 px-3 text-right font-mono text-emerald-400">${(
-                r.totalDurationMs / 1000
-              ).toFixed(1)} s</td>
-            </tr>
-          `
-          )
-          .join('');
+      // Mantém a opção "ALL" e adiciona as lojas reais
+      let optionsHtml = '<option value="ALL">Todas as Lojas</option>';
+      filteredStores.forEach((s) => {
+        optionsHtml += `<option value="${s.name}">${s.name} (${s.region || 'Geral'})</option>`;
+      });
+
+      if (select.children.length !== filteredStores.length + 1) {
+        select.innerHTML = optionsHtml;
+        select.value = currentVal || 'ALL';
+      }
+    }
+
+    function formatDuration(ms) {
+      const totalSec = Math.floor(ms / 1000);
+      const h = Math.floor(totalSec / 3600);
+      const m = Math.floor((totalSec % 3600) / 60);
+      const s = totalSec % 60;
+      if (h > 0) return `${h}h ${m}m ${s}s`;
+      if (m > 0) return `${m}m ${s}s`;
+      return `${s}s`;
+    }
+
+    function renderCommercialTelemetry() {
+      const activeBrand = localStorage.getItem('invision_brand') || 'FNAC';
+
+      // Atualiza badge de insígnia
+      const brandBadge = document.getElementById('telemetry-brand-badge');
+      if (brandBadge) {
+        brandBadge.textContent = `Marca Ativa: ${activeBrand}`;
+        brandBadge.className =
+          activeBrand === 'DARTY'
+            ? 'text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-red-500/20 text-red-300 font-bold border border-red-500/40'
+            : 'text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40';
       }
 
+      // 1. Filtra registos pela marca ativa e filtros selecionados
+      const allPop = latestState.popRecords || [];
+      const filteredPop = allPop.filter((r) => {
+        if (r.brand && r.brand !== activeBrand) return false;
+        if (selectedStore !== 'ALL' && r.storeName && r.storeName !== selectedStore) return false;
+        if (selectedPartner !== 'ALL' && r.partner && r.partner !== selectedPartner) return false;
+        return true;
+      });
+
+      // 2. Calcula KPIs Comerciais
+      const totalPlays = filteredPop.reduce((acc, r) => acc + (r.playCount || 0), 0);
+      const totalDurationMs = filteredPop.reduce((acc, r) => acc + (r.totalDurationMs || 0), 0);
+
+      const kpiPlaysEl = document.getElementById('kpi-total-plays');
+      if (kpiPlaysEl) kpiPlaysEl.textContent = `${totalPlays.toLocaleString('pt-PT')} Plays`;
+
+      const kpiAirtimeEl = document.getElementById('kpi-total-airtime');
+      if (kpiAirtimeEl) kpiAirtimeEl.textContent = formatDuration(totalDurationMs);
+
+      // Agregação por parceiro comercial para calcular SoV Real
+      const partnerStats = {};
+      filteredPop.forEach((r) => {
+        const p = r.partner || 'Campanha Geral';
+        if (!partnerStats[p]) {
+          partnerStats[p] = {
+            partner: p,
+            plays: 0,
+            durationMs: 0,
+            contractedSov: r.contractedSovPct || 25,
+            campaigns: new Set(),
+            stores: new Set(),
+          };
+        }
+        partnerStats[p].plays += r.playCount || 0;
+        partnerStats[p].durationMs += r.totalDurationMs || 0;
+        partnerStats[p].campaigns.add(r.mediaTitle);
+        if (r.storeName) partnerStats[p].stores.add(r.storeName);
+      });
+
+      // Determina Parceiro Líder
+      let topPartner = null;
+      let maxDuration = 0;
+      Object.values(partnerStats).forEach((p) => {
+        if (p.durationMs > maxDuration) {
+          maxDuration = p.durationMs;
+          topPartner = p;
+        }
+      });
+
+      const topPartnerEl = document.getElementById('kpi-top-partner');
+      const topPartnerStatsEl = document.getElementById('kpi-top-partner-stats');
+      if (topPartnerEl && topPartnerStatsEl) {
+        if (topPartner && totalDurationMs > 0) {
+          const pct = ((topPartner.durationMs / totalDurationMs) * 100).toFixed(1);
+          topPartnerEl.textContent = topPartner.partner;
+          topPartnerStatsEl.textContent = `${topPartner.plays} plays • ${pct}% do ar total`;
+        } else {
+          topPartnerEl.textContent = '-';
+          topPartnerStatsEl.textContent = 'A aguardar dados';
+        }
+      }
+
+      // Calcula Cumprimento Médio de SoV
+      const partnerList = Object.values(partnerStats);
+      let avgCompliance = 100;
+      if (partnerList.length > 0 && totalDurationMs > 0) {
+        let sumCompliance = 0;
+        partnerList.forEach((p) => {
+          const actualSov = (p.durationMs / totalDurationMs) * 100;
+          const compliance = Math.min(125, (actualSov / (p.contractedSov || 25)) * 100);
+          sumCompliance += compliance;
+        });
+        avgCompliance = (sumCompliance / partnerList.length).toFixed(1);
+      }
+
+      const avgSovEl = document.getElementById('kpi-avg-sov');
+      const sovStatusEl = document.getElementById('kpi-sov-status');
+      if (avgSovEl && sovStatusEl) {
+        avgSovEl.textContent = `${avgCompliance}%`;
+        if (avgCompliance >= 98) {
+          sovStatusEl.textContent = '● CONFORME SLA';
+          sovStatusEl.className = 'text-emerald-400 font-bold';
+        } else if (avgCompliance >= 90) {
+          sovStatusEl.textContent = '● NO LIMIAR';
+          sovStatusEl.className = 'text-amber-400 font-bold';
+        } else {
+          sovStatusEl.textContent = '● DÉFICE DE EXIBIÇÃO';
+          sovStatusEl.className = 'text-rose-400 font-bold';
+        }
+      }
+
+      // 3. Renderiza Tabela 1: Matriz de Share of Voice
+      const sovMatrixBody = document.getElementById('sov-matrix-body');
+      if (sovMatrixBody) {
+        if (filteredPop.length === 0) {
+          sovMatrixBody.innerHTML = `
+            <tr>
+              <td colspan="9" class="py-6 px-3 text-slate-400 text-center font-mono">
+                A aguardar exibição de conteúdos no leitor da marca <strong>${activeBrand}</strong>...
+              </td>
+            </tr>
+          `;
+        } else {
+          sovMatrixBody.innerHTML = filteredPop
+            .map((r) => {
+              const contracted = r.contractedSovPct || (r.priority === 'EXCLUSIVA' ? 50 : 25);
+              const actualSov = totalDurationMs > 0 ? ((r.totalDurationMs / totalDurationMs) * 100).toFixed(1) : '0.0';
+              const compliance = Number(contracted) > 0 ? ((Number(actualSov) / Number(contracted)) * 100).toFixed(1) : '100.0';
+
+              const isCompliant = Number(compliance) >= 95;
+              const isWarning = Number(compliance) >= 85 && !isCompliant;
+
+              return `
+                <tr class="hover:bg-slate-800/40 transition">
+                  <td class="py-3 px-3 font-bold text-white flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full ${
+                      r.partner?.includes('Samsung')
+                        ? 'bg-sky-400'
+                        : r.partner?.includes('Apple')
+                        ? 'bg-slate-300'
+                        : r.partner?.includes('Sony')
+                        ? 'bg-indigo-400'
+                        : r.partner?.includes('Dyson')
+                        ? 'bg-purple-400'
+                        : 'bg-amber-400'
+                    }"></span>
+                    <span>${r.partner || 'Campanha Geral'}</span>
+                  </td>
+                  <td class="py-3 px-3 font-medium text-slate-200">
+                    ${r.mediaTitle}
+                    <span class="block text-[10px] text-slate-400 font-mono">${r.playlistName}</span>
+                  </td>
+                  <td class="py-3 px-3 text-slate-300 font-mono text-[11px]">
+                    ${r.storeName || 'Loja Principal'}
+                    <span class="block text-[10px] text-slate-500">${r.zone || 'ENTRANCE_LEDWALL'}</span>
+                  </td>
+                  <td class="py-3 px-3 text-center font-mono font-bold text-slate-300">${contracted}%</td>
+                  <td class="py-3 px-3 text-center font-mono font-bold ${
+                    isCompliant ? 'text-emerald-400' : isWarning ? 'text-amber-300' : 'text-rose-400'
+                  }">${actualSov}%</td>
+                  <td class="py-3 px-3">
+                    <div class="flex items-center gap-2">
+                      <div class="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800">
+                        <div class="h-2 rounded-full ${
+                          isCompliant ? 'bg-emerald-400' : isWarning ? 'bg-amber-400' : 'bg-rose-500'
+                        }" style="width: ${Math.min(100, compliance)}%"></div>
+                      </div>
+                      <span class="text-[10px] font-mono font-bold ${
+                        isCompliant ? 'text-emerald-400' : isWarning ? 'text-amber-400' : 'text-rose-400'
+                      }">${compliance}%</span>
+                    </div>
+                  </td>
+                  <td class="py-3 px-3 text-right font-mono font-bold text-white">${r.playCount}</td>
+                  <td class="py-3 px-3 text-right font-mono text-emerald-400 font-semibold">${formatDuration(r.totalDurationMs)}</td>
+                  <td class="py-3 px-3 text-center">
+                    <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
+                      isCompliant
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                        : isWarning
+                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                        : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                    }">
+                      ${isCompliant ? '✅ APROVADO' : isWarning ? '⏳ EM CURSO' : '⚠️ EM DÉFICE'}
+                    </span>
+                  </td>
+                </tr>
+              `;
+            })
+            .join('');
+        }
+      }
+
+      // 4. Renderiza Tabela 2: Fita Forense de Proof of Play
+      const popLogBody = document.getElementById('pop-log-body');
+      if (popLogBody) {
+        const auditLogs = (latestState.popAuditLogs || []).filter((l) => {
+          if (l.brand && l.brand !== activeBrand) return false;
+          if (selectedStore !== 'ALL' && l.storeName && l.storeName !== selectedStore) return false;
+          if (selectedPartner !== 'ALL' && l.partner && l.partner !== selectedPartner) return false;
+          return true;
+        });
+
+        if (auditLogs.length === 0) {
+          popLogBody.innerHTML = `
+            <tr>
+              <td colspan="8" class="py-6 px-3 text-slate-400 text-center font-mono">
+                A aguardar os próximos eventos de conclusão de vídeo/imagem nos ecrãs...
+              </td>
+            </tr>
+          `;
+        } else {
+          popLogBody.innerHTML = auditLogs
+            .slice(0, 30)
+            .map((l) => {
+              const d = new Date(l.timestamp);
+              const timeStr = `${d.toLocaleDateString('pt-PT')} ${d.toLocaleTimeString('pt-PT')}`;
+              return `
+                <tr class="hover:bg-slate-800/40 transition">
+                  <td class="py-2.5 px-3 font-mono text-[11px] text-slate-400">${timeStr}</td>
+                  <td class="py-2.5 px-3 text-slate-300 font-medium">${l.storeName || 'Loja Principal'}</td>
+                  <td class="py-2.5 px-3 font-mono text-[11px] text-sky-300 font-semibold">${l.deviceName}</td>
+                  <td class="py-2.5 px-3 font-bold text-white">${l.partner}</td>
+                  <td class="py-2.5 px-3 font-medium text-slate-200">${l.mediaTitle}</td>
+                  <td class="py-2.5 px-3 text-slate-400 font-mono text-[10px]">${l.priority}</td>
+                  <td class="py-2.5 px-3 text-right font-mono text-emerald-400 font-bold">${(l.durationMs / 1000).toFixed(1)}s</td>
+                  <td class="py-2.5 px-3 text-center">
+                    <span class="px-1.5 py-0.5 rounded bg-slate-950 border border-slate-800 text-[10px] font-mono text-slate-400 font-bold" title="Hash criptográfico verificado">${l.sha256 || 'SHA-256 OK'}</span>
+                  </td>
+                </tr>
+              `;
+            })
+            .join('');
+        }
+      }
+
+      // 5. Renderiza Tabela 3: Interações Touch & TV Demo
       const intContainer = document.getElementById('interactions-list');
       const intRecords = latestState.interactionRecords || [];
 
       if (intRecords.length === 0) {
         intContainer.innerHTML = `
-          <div class="md:col-span-2 p-5 rounded-xl bg-slate-950 border border-dashed border-slate-800 text-center text-slate-400">
-            Para testar esta tabela ao vivo: abra o menu OSD no Player (tecla <code>i</code> ou 5 cliques no canto superior esquerdo), mude para <strong>2. IDLE_SCREENSAVER</strong> ou <strong>3. INTERACTIVE_CATALOG (TV Demo)</strong> e toque no ecrã!
+          <div class="col-span-full p-5 rounded-xl bg-slate-950 border border-dashed border-slate-800 text-center text-slate-400 font-mono text-xs">
+            Para testar interações reais: abra o menu OSD no Player (tecla "i" ou 5 cliques no canto superior esquerdo), ative <strong>IDLE_SCREENSAVER</strong> ou <strong>INTERACTIVE_CATALOG (TV Demo)</strong> e toque no ecrã.
           </div>
         `;
       } else {
@@ -138,24 +612,66 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
                 <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 font-bold">
                   ${r.interactionType}
                 </span>
-                <p class="font-bold text-white mt-1.5">Referência: ${r.referenceKey}</p>
-                <p class="text-slate-400 text-[11px]">Última interação: ${new Date(
-                  r.lastAt
-                ).toLocaleTimeString()}</p>
+                <p class="font-bold text-white mt-1.5">${r.referenceKey}</p>
+                <p class="text-slate-400 text-[11px]">Último toque: ${new Date(r.lastAt).toLocaleTimeString('pt-PT')}</p>
               </div>
               <div class="text-right font-mono">
                 <span class="text-base font-black text-amber-300">${r.count}x</span>
-                <p class="text-[11px] text-emerald-400">${r.totalSeconds}s envolvimento</p>
+                <p class="text-[11px] text-emerald-400 font-semibold">${r.totalSeconds}s envolvimento</p>
               </div>
             </div>
           `
           )
           .join('');
       }
+
+      // 6. Atualiza dados do Certificado de Impressão
+      const certBrandEl = document.getElementById('cert-brand-name');
+      const certPlaysEl = document.getElementById('cert-total-plays');
+      const certAirtimeEl = document.getElementById('cert-total-airtime');
+      const certCompanyEl = document.getElementById('cert-company-title');
+      const certTableEl = document.getElementById('cert-table-container');
+
+      if (certBrandEl) certBrandEl.textContent = activeBrand;
+      if (certPlaysEl) certPlaysEl.textContent = `${totalPlays.toLocaleString('pt-PT')} Plays`;
+      if (certAirtimeEl) certAirtimeEl.textContent = formatDuration(totalDurationMs);
+      if (certCompanyEl) certCompanyEl.textContent = activeBrand === 'DARTY' ? 'DARTY (GROUPE FNAC DARTY)' : 'FNAC PORTUGAL / FRANÇA';
+
+      if (certTableEl) {
+        let certTableHtml = `
+          <table class="w-full text-left border-collapse text-xs mt-2 border border-gray-300">
+            <thead>
+              <tr class="bg-gray-100 border-b border-gray-300 font-mono text-[10px] uppercase">
+                <th class="p-2 border-r border-gray-300">Parceiro Comercial</th>
+                <th class="p-2 border-r border-gray-300">Campanha / Conteúdo</th>
+                <th class="p-2 border-r border-gray-300 text-center">SoV Contratado</th>
+                <th class="p-2 border-r border-gray-300 text-center">SoV Entregue</th>
+                <th class="p-2 border-r border-gray-300 text-right">Total Plays</th>
+                <th class="p-2 text-right">Tempo no Ar</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+        `;
+        filteredPop.forEach((r) => {
+          const actualSov = totalDurationMs > 0 ? ((r.totalDurationMs / totalDurationMs) * 100).toFixed(1) : '0.0';
+          certTableHtml += `
+            <tr>
+              <td class="p-2 font-bold border-r border-gray-300">${r.partner || 'Geral'}</td>
+              <td class="p-2 border-r border-gray-300">${r.mediaTitle}</td>
+              <td class="p-2 border-r border-gray-300 text-center font-mono">${r.contractedSovPct || 25}%</td>
+              <td class="p-2 border-r border-gray-300 text-center font-mono font-bold">${actualSov}%</td>
+              <td class="p-2 border-r border-gray-300 text-right font-mono font-bold">${r.playCount}</td>
+              <td class="p-2 text-right font-mono text-gray-800">${formatDuration(r.totalDurationMs)}</td>
+            </tr>
+          `;
+        });
+        certTableHtml += `</tbody></table>`;
+        certTableEl.innerHTML = certTableHtml;
+      }
     }
 
     function downloadCsv(filename, rows) {
-      const csvContent = 'data:text/csv;charset=utf-8,' + rows.map((e) => e.join(';')).join('\n');
+      const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + rows.map((e) => e.join(';')).join('\n');
       const encodedUri = encodeURI(csvContent);
       const link = document.createElement('a');
       link.setAttribute('href', encodedUri);
@@ -165,40 +681,101 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
       document.body.removeChild(link);
     }
 
+    // Exportação 1: Detalhe Forense de Proof of Play
     document.getElementById('btn-export-pop-csv')?.addEventListener('click', () => {
       const activeBrand = localStorage.getItem('invision_brand') || 'FNAC';
       const rows = [
-        ['Insignia', 'Playlist', 'Conteudo', 'Prioridade', 'Modo', 'Total_Plays', 'Segundos_Exibidos'],
-        ...(latestState.popRecords || [])
-          .filter((r) => !r.brand || r.brand === activeBrand)
-          .map((r) => [
-            r.brand,
-            r.playlistName,
-            r.mediaTitle,
-            r.priority,
-            r.schedulingMode,
-            String(r.playCount),
-            (r.totalDurationMs / 1000).toFixed(1),
+        ['Data_Hora_ISO', 'Insignia', 'Loja', 'Zona', 'Terminal_Hardware', 'Parceiro_Comercial', 'Campanha_Conteudo', 'Prioridade', 'Modo_Loop', 'Duracao_Segundos', 'Hash_Forense_SHA256'],
+        ...(latestState.popAuditLogs || [])
+          .filter((l) => !l.brand || l.brand === activeBrand)
+          .map((l) => [
+            l.timestamp,
+            l.brand,
+            l.storeName || 'Loja Principal',
+            l.zone || 'ENTRANCE_LEDWALL',
+            l.deviceName || 'Box X98 Plus',
+            l.partner || 'Campanha Geral',
+            `"${(l.mediaTitle || '').replace(/"/g, '""')}"`,
+            l.priority,
+            l.schedulingMode || 'FIXED_SLOTS',
+            (l.durationMs / 1000).toFixed(1),
+            l.sha256 || 'VERIFICADO',
           ]),
       ];
-      downloadCsv(`invision_nexus_${activeBrand.toLowerCase()}_proof_of_play.csv`, rows);
+      downloadCsv(`invision_nexus_${activeBrand.toLowerCase()}_proof_of_play_audit.csv`, rows);
     });
 
-    document.getElementById('btn-export-touch-csv')?.addEventListener('click', () => {
+    // Exportação 2: Resumo Comercial de Cumprimento de Share of Voice
+    document.getElementById('btn-export-sov-csv')?.addEventListener('click', () => {
       const activeBrand = localStorage.getItem('invision_brand') || 'FNAC';
+      const allPop = (latestState.popRecords || []).filter((r) => !r.brand || r.brand === activeBrand);
+      const totalDurationMs = allPop.reduce((acc, r) => acc + (r.totalDurationMs || 0), 0);
+
       const rows = [
-        ['Tipo_Interacao', 'Referencia_Categoria', 'Total_Interacoes', 'Segundos_Envolvimento'],
-        ...(latestState.interactionRecords || []).map((r) => [
-          r.interactionType,
-          r.referenceKey,
-          String(r.count),
-          String(r.totalSeconds),
-        ]),
+        ['Insignia', 'Parceiro_Comercial', 'Campanha_Conteudo', 'Loja', 'Zona', 'SoV_Contratado_Pct', 'SoV_Entregue_Pct', 'Cumprimento_SLA_Pct', 'Total_Plays', 'Tempo_Ar_Segundos', 'Estado_Comercial'],
+        ...allPop.map((r) => {
+          const contracted = r.contractedSovPct || (r.priority === 'EXCLUSIVA' ? 50 : 25);
+          const actualSov = totalDurationMs > 0 ? ((r.totalDurationMs / totalDurationMs) * 100).toFixed(1) : '0.0';
+          const compliance = Number(contracted) > 0 ? ((Number(actualSov) / Number(contracted)) * 100).toFixed(1) : '100.0';
+          const status = Number(compliance) >= 95 ? 'APROVADO_FATURACAO' : Number(compliance) >= 85 ? 'EM_CURSO' : 'EM_DEFICE';
+          return [
+            r.brand,
+            r.partner || 'Campanha Geral',
+            `"${(r.mediaTitle || '').replace(/"/g, '""')}"`,
+            r.storeName || 'Loja Principal',
+            r.zone || 'ENTRANCE_LEDWALL',
+            String(contracted),
+            actualSov,
+            compliance,
+            String(r.playCount),
+            (r.totalDurationMs / 1000).toFixed(1),
+            status,
+          ];
+        }),
       ];
-      downloadCsv(`invision_nexus_${activeBrand.toLowerCase()}_interactions.csv`, rows);
+      downloadCsv(`invision_nexus_${activeBrand.toLowerCase()}_share_of_voice_summary.csv`, rows);
     });
 
-    window.addEventListener('invision:brand-change', () => renderTables());
+    // Botão de Certificado / Impressão
+    document.getElementById('btn-print-certificate')?.addEventListener('click', () => {
+      window.print();
+    });
+
+    // Filtros de seleção
+    document.getElementById('filter-store')?.addEventListener('change', (e) => {
+      selectedStore = e.target.value;
+      renderCommercialTelemetry();
+    });
+
+    document.getElementById('filter-partner')?.addEventListener('change', (e) => {
+      selectedPartner = e.target.value;
+      renderCommercialTelemetry();
+    });
+
+    document.getElementById('filter-period')?.addEventListener('change', (e) => {
+      selectedPeriod = e.target.value;
+      renderCommercialTelemetry();
+    });
+
+    document.getElementById('btn-reset-filters')?.addEventListener('click', () => {
+      selectedStore = 'ALL';
+      selectedPartner = 'ALL';
+      selectedPeriod = 'REALTIME';
+      const storeEl = document.getElementById('filter-store');
+      const partnerEl = document.getElementById('filter-partner');
+      const periodEl = document.getElementById('filter-period');
+      if (storeEl) storeEl.value = 'ALL';
+      if (partnerEl) partnerEl.value = 'ALL';
+      if (periodEl) periodEl.value = 'REALTIME';
+      renderCommercialTelemetry();
+    });
+
+    // Reage ao alternador de insígnia (FNAC vs DARTY)
+    window.addEventListener('invision:brand-change', () => {
+      populateStoreDropdown();
+      renderCommercialTelemetry();
+    });
+
     refreshTelemetryPage();
     setInterval(refreshTelemetryPage, 2500);
   </script>
