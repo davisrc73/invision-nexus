@@ -235,11 +235,6 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
   <script is:inline>
     const API_BASE = `${window.location.protocol}//${window.location.hostname}:3000`;
 
-    const uploadForm = document.getElementById('upload-form');
-    const fileInput = document.getElementById('media-file-input');
-    const titleInput = document.getElementById('media-title-input');
-    const durationInput = document.getElementById('media-duration-input');
-    const uploadStatus = document.getElementById('upload-status');
     const catalogGrid = document.getElementById('catalog-grid');
     const playlistTabs = document.getElementById('playlist-tabs');
     const playlistGrid = document.getElementById('playlist-slots-grid');
@@ -267,90 +262,40 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
 
     let selectedPlaylistId = null;
 
-    function gcd(a, b) {
-      return b === 0 ? a : gcd(b, a % b);
-    }
-
-    function calcAspectRatio(w, h) {
-      if (!w || !h) return '16:9';
-      const r = w / h;
-      if (Math.abs(r - 16 / 9) < 0.08) return '16:9';
-      if (Math.abs(r - 9 / 16) < 0.08) return '9:16';
-      if (Math.abs(r - 32 / 9) < 0.15) return '32:9';
-      const d = gcd(w, h);
-      return `${Math.round(w / d)}:${Math.round(h / d)}`;
-    }
-
-    function inspectLocalFile(file) {
-      return new Promise((resolve) => {
-        const objectUrl = URL.createObjectURL(file);
-        if (file.type.startsWith('image/')) {
-          const img = new Image();
-          img.onload = () => {
-            const w = img.naturalWidth || 1920;
-            const h = img.naturalHeight || 1080;
-            URL.revokeObjectURL(objectUrl);
-            resolve({
-              width: w,
-              height: h,
-              ratio: calcAspectRatio(w, h),
-              durationMs: (parseInt(durationInput.value, 10) || 8) * 1000,
-            });
-          };
-          img.onerror = () => {
-            URL.revokeObjectURL(objectUrl);
-            resolve({ width: 1920, height: 1080, ratio: '16:9', durationMs: 8000 });
-          };
-          img.src = objectUrl;
-        } else {
-          const video = document.createElement('video');
-          video.preload = 'metadata';
-          video.onloadedmetadata = () => {
-            const w = video.videoWidth || 1920;
-            const h = video.videoHeight || 1080;
-            const durMs = Math.max(2000, Math.round((video.duration || 10) * 1000));
-            URL.revokeObjectURL(objectUrl);
-            resolve({
-              width: w,
-              height: h,
-              ratio: calcAspectRatio(w, h),
-              durationMs: durMs,
-            });
-          };
-          video.onerror = () => {
-            URL.revokeObjectURL(objectUrl);
-            resolve({ width: 1920, height: 1080, ratio: '16:9', durationMs: 10000 });
-          };
-          video.src = objectUrl;
-        }
-      });
-    }
-
     async function fetchLiveState() {
-      const res = await fetch(`${API_BASE}/api/v1/live/state`);
-      liveState = await res.json();
-      if (!selectedPlaylistId && liveState.playlists.length > 0) {
-        selectedPlaylistId = liveState.playlists[0].id;
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/live/state`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        liveState = await res.json();
+        if (!Array.isArray(liveState.playlists)) liveState.playlists = [];
+        if (!Array.isArray(liveState.mediaCatalog)) liveState.mediaCatalog = [];
+        const currentPl = getSelectedPlaylist();
+        if (!selectedPlaylistId && currentPl) {
+          selectedPlaylistId = currentPl.id;
+        }
+        renderAll();
+      } catch (err) {
+        console.error('Falha ao carregar estado do Live Bridge:', err);
       }
-      renderAll();
     }
 
     function getSelectedPlaylist() {
       const activeBrand = localStorage.getItem('invision_brand') || 'FNAC';
       const brandPlaylists = (liveState.playlists || []).filter(
-        (p) => !p.brand || p.brand === activeBrand
+        (p) => !p.brand || p.brand === activeBrand || p.brand === 'ALL'
       );
-      return (
-        brandPlaylists.find((p) => p.id === selectedPlaylistId) ||
-        brandPlaylists[0] ||
-        null
-      );
+      let pl = brandPlaylists.find((p) => p.id === selectedPlaylistId);
+      if (!pl && brandPlaylists.length > 0) {
+        pl = brandPlaylists[0];
+        selectedPlaylistId = pl.id;
+      }
+      return pl || null;
     }
 
     function renderAll() {
       const activeBrand = localStorage.getItem('invision_brand') || 'FNAC';
       const brandPlaylists = (liveState.playlists || []).filter(
-        (p) => !p.brand || p.brand === activeBrand
+        (p) => !p.brand || p.brand === activeBrand || p.brand === 'ALL'
       );
 
       if (
@@ -618,6 +563,23 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
             });
           });
         }
+      } else {
+        if (plNameInput) plNameInput.value = '';
+        if (plPrioritySelect) plPrioritySelect.value = 'NORMAL';
+        if (plModeSelect) plModeSelect.value = 'FIXED_SLOTS';
+        if (plStartInput) plStartInput.value = '00:00';
+        if (plEndInput) plEndInput.value = '23:59';
+        if (plAutoTagsInput) plAutoTagsInput.value = '';
+        if (targetDevicesBox) {
+          targetDevicesBox.innerHTML = `<span class="text-xs text-slate-500">Nenhuma playlist selecionada.</span>`;
+        }
+        if (playlistGrid) {
+          playlistGrid.innerHTML = `
+            <div class="md:col-span-4 p-5 rounded-xl bg-slate-900/60 border border-dashed border-slate-800 text-center text-xs text-slate-400">
+              Nenhuma playlist disponível para <strong>${activeBrand}</strong>. Clique em <strong>+ Criar Nova Playlist</strong> acima!
+            </div>
+          `;
+        }
       }
 
       // Barra de Sequência Efetiva
@@ -633,15 +595,14 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
       }
 
       // Renderiza Catálogo
-      const activeBrand = localStorage.getItem('invision_brand') || 'FNAC';
-      const filteredCatalog = liveState.mediaCatalog.filter(
-        (m) => activeBrand === 'ALL' || m.brand === activeBrand
+      const filteredCatalog = (liveState.mediaCatalog || []).filter(
+        (m) => activeBrand === 'ALL' || !m.brand || m.brand === activeBrand || m.brand === 'ALL'
       );
 
       if (filteredCatalog.length === 0) {
         catalogGrid.innerHTML = `
           <div class="md:col-span-3 p-6 rounded-xl bg-slate-950 border border-dashed border-slate-700 text-center text-xs text-slate-400">
-            Nenhum ficheiro carregado para <strong>${activeBrand}</strong>. Use o formulário no topo para carregar vídeos ou imagens!
+            Nenhum ficheiro carregado para <strong>${activeBrand}</strong>. Use o formulário no módulo <a href="/content/" class="text-emerald-300 underline font-bold">Conteúdos & Media</a> para carregar vídeos ou imagens!
           </div>
         `;
       } else {
@@ -673,7 +634,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
                     data-add-media="${asset.id}"
                     class="flex-1 py-2 rounded-lg bg-[#E1A924] hover:bg-amber-400 text-black font-bold text-xs transition"
                   >
-                    + Inserir em "${currentPl?.name.slice(0, 18) || 'Playlist'}..."
+                    + Inserir em "${currentPl?.name ? currentPl.name.slice(0, 18) : 'Playlist'}..."
                   </button>
                   <button
                     type="button"
@@ -704,7 +665,11 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     async function addMediaToSelectedPlaylist(mediaId) {
       const asset = liveState.mediaCatalog.find((a) => a.id === mediaId);
       const currentPl = getSelectedPlaylist();
-      if (!asset || !currentPl) return;
+      if (!asset) return;
+      if (!currentPl) {
+        alert('Por favor, selecione ou crie uma Playlist primeiro!');
+        return;
+      }
 
       const targetRatio = profileSelect.value;
       guardrailAlert.classList.remove('hidden');
@@ -830,47 +795,6 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
       });
       selectedPlaylistId = id;
       await savePlaylistsToServer();
-    });
-
-    uploadForm?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const file = fileInput.files?.[0];
-      if (!file) return;
-
-      const activeBrand = localStorage.getItem('invision_brand') || 'FNAC';
-      const brandToSave = activeBrand === 'ALL' ? 'FNAC' : activeBrand;
-      const customTitle = titleInput.value.trim() || file.name;
-
-      uploadStatus.classList.remove('hidden');
-      uploadStatus.textContent = `A inspecionar "${file.name}"...`;
-
-      const meta = await inspectLocalFile(file);
-      uploadStatus.textContent = `A enviar "${customTitle}" (${meta.width}x${meta.height} • ${meta.ratio})...`;
-
-      const query = new URLSearchParams({
-        filename: file.name,
-        title: customTitle,
-        brand: brandToSave,
-        mime: file.type || 'video/mp4',
-        width: String(meta.width),
-        height: String(meta.height),
-        ratio: meta.ratio,
-        duration_ms: String(meta.durationMs),
-      });
-
-      const res = await fetch(`${API_BASE}/api/v1/live/upload?${query.toString()}`, {
-        method: 'POST',
-        body: file,
-      });
-
-      if (res.ok) {
-        const created = await res.json();
-        uploadStatus.textContent = `✓ Upload concluído! Inserido automaticamente na Playlist selecionada.`;
-        uploadForm.reset();
-        durationInput.value = '8';
-        await fetchLiveState();
-        await addMediaToSelectedPlaylist(created.id);
-      }
     });
 
     window.addEventListener('invision:brand-change', () => {

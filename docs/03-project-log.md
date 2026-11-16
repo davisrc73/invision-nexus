@@ -446,3 +446,18 @@ Arranque do desenvolvimento de uma plataforma enterprise de Digital Signage inte
    - **Alinhamento à Direita:** Os controlos de pesquisa de título/TAG e o seletor de TAGs foram alinhados à direita no cabeçalho do catálogo.
    - **Novo Modo de Visualização em Lista Enterprise:** Criado o alternador `[ 📋 Lista ]` e `[ 🎴 Cartões ]` (com persistência no `localStorage`). O modo lista apresenta uma tabela compacta de alta densidade (Prévia, Título, Formato/Resolução, Duração, TAGs, Playlists e Ações).
    - **Janela Pop-up de Detalhes (`#media-detail-modal`):** Clicar em qualquer linha da lista ou no botão `"✎ Detalhes"` abre um modal completo com leitor de pré-visualização grande, metadados técnicos (resolução, rácio, duração), editor de Smart TAGs com feedback visual e seletor de inserção direta em Playlists.
+
+---
+
+## [2026-11-16] - Correção Crítica no Módulo de Playlists (`/playlists/`): Resolução de SyntaxError e Blindagem de Renderização
+
+### Causa Raiz do Bug Identificada
+- **`SyntaxError: Identifier 'activeBrand' has already been declared`:** No ficheiro [dashboard/src/pages/playlists.astro](file:///Users/daviscorreia/Antigravity%20/invision-nexus/dashboard/src/pages/playlists.astro), a variável `activeBrand` estava a ser declarada com `const` duas vezes no mesmo âmbito da função `renderAll()` (na linha 351 para filtragem de playlists e na linha 636 para filtragem do catálogo). Em JavaScript moderno, uma redeclaração com `const` no mesmo bloco impede o motor V8 do browser de compilar o script, abortando a execução antes de qualquer linha de JavaScript ser executada.
+- Consequentemente, o banner ficava permanentemente preso no estado HTML estático inicial (*"A calcular Playlist Dominante..."*), as abas de playlists não eram geradas e a grelha de slots e catálogo de media ficavam vazios.
+
+### Correções Implementadas
+1. **Eliminação do Conflito de Variáveis:** Removida a redeclaração redundante de `activeBrand` na secção de catálogo de `renderAll()`.
+2. **Blindagem Contra Estado Nulo (`currentPl = null`):** Adicionado bloco `else` defensivo na verificação de `if (currentPl)`, limpando os formulários e apresentando uma mensagem amigável caso não existam playlists configuradas para a marca ativa em vez de gerar erros de propriedades nulas.
+3. **Resiliência a Playlists Globais / Legadas:** Atualizado o filtro de marca em `getSelectedPlaylist()` e `renderAll()` para `!p.brand || p.brand === activeBrand || p.brand === 'ALL'`, garantindo que playlists legadas ou partilhadas não são ocultadas inadvertidamente.
+4. **Tratamento de Exceções com `try/catch`:** O carregamento do estado via `fetchLiveState()` foi encapsulado em bloco `try/catch` para evitar paragens silenciosas em caso de quebra temporária de rede.
+5. **Limpeza de Código Morto:** Removidos *event listeners* residuais de upload no módulo de playlists, uma vez que o envio de novos ficheiros é agora gerido de forma dedicada pelo módulo `Conteúdos & Media` (`/content/`).
