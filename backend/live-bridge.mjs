@@ -1960,6 +1960,63 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // 7.1 POST /api/v1/live/telemetry/purge -> Purga e Limpeza de Dados de Telemetria e PoP
+  if (req.method === 'POST' && url.pathname === '/api/v1/live/telemetry/purge') {
+    try {
+      const payload = await readJsonBody(req);
+      const scope = payload.scope || 'ACTIVE_BRAND'; // 'ACTIVE_BRAND' | 'ALL'
+      const brand = payload.brand || 'FNAC';
+
+      let purgedCount = 0;
+      if (scope === 'ALL') {
+        purgedCount =
+          (state.popRecords?.length || 0) +
+          (state.popAuditLogs?.length || 0) +
+          (state.interactionRecords?.length || 0);
+        state.popRecords = [];
+        state.popAuditLogs = [];
+        state.interactionRecords = [];
+      } else {
+        const initialPop = (state.popRecords?.length || 0) + (state.popAuditLogs?.length || 0);
+        state.popRecords = (state.popRecords || []).filter((r) => r.brand && r.brand !== brand);
+        state.popAuditLogs = (state.popAuditLogs || []).filter((l) => l.brand && l.brand !== brand);
+        state.interactionRecords = (state.interactionRecords || []).filter((i) => i.brand && i.brand !== brand);
+        purgedCount = initialPop - ((state.popRecords?.length || 0) + (state.popAuditLogs?.length || 0));
+      }
+
+      // Registo de auditoria imutável (NIS2 / RGPD Compliance)
+      logAuditEvent({
+        action: 'TELEMETRY_DATA_PURGED',
+        actor: payload.actor || 'Admin (Break-Glass)',
+        role: payload.role || 'GLOBAL_ADMIN',
+        target: scope === 'ALL' ? 'GLOBAL (TODAS AS INSÍGNIAS)' : `INSÍGNIA: ${brand}`,
+        details: `Purga manual de telemetria PoP e interações em bancada executada com sucesso (${purgedCount} registos eliminados).`,
+        clientIp: req.socket?.remoteAddress || '',
+        success: true,
+      });
+
+      saveState();
+      broadcastUpdate();
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(
+        JSON.stringify({
+          success: true,
+          message:
+            scope === 'ALL'
+              ? 'Todos os registos de telemetria foram eliminados com sucesso.'
+              : `Os registos de telemetria da marca ${brand} foram eliminados com sucesso.`,
+          purgedCount,
+          state: getEnrichedState(),
+        })
+      );
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'TELEMETRY_PURGE_ERROR', details: String(err) }));
+    }
+    return;
+  }
+
   // 8. POST /api/v1/live/incidents
   if (req.method === 'POST' && url.pathname === '/api/v1/live/incidents') {
     try {

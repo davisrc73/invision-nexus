@@ -190,5 +190,40 @@ export async function telemetryRoutes(app: FastifyInstance) {
       };
     }
   );
+
+  /**
+   * 4. PURGA / RESET DE DADOS DE TELEMETRIA (GOVERNANCE & AUDITORIA NIS2)
+   */
+  app.post(
+    '/api/v1/telemetry/purge',
+    {
+      preHandler: [
+        requireRoles(['GLOBAL_ADMIN', 'IT_OPS']),
+      ],
+    },
+    async (request, reply) => {
+      const body = request.body as { scope?: 'ACTIVE_BRAND' | 'ALL'; brand_id?: string };
+      const scope = body?.scope || 'ALL';
+      const brandId = body?.brand_id;
+
+      const client = await db.connect();
+      try {
+        await client.query('BEGIN');
+        if (scope === 'ALL' || !brandId) {
+          await client.query('TRUNCATE TABLE pop_logs_hourly, interaction_logs_hourly');
+        } else {
+          await client.query('DELETE FROM pop_logs_hourly WHERE brand_id = $1', [brandId]);
+          await client.query('DELETE FROM interaction_logs_hourly WHERE brand_id = $1', [brandId]);
+        }
+        await client.query('COMMIT');
+        return { success: true, message: 'Dados de telemetria purgados com sucesso.' };
+      } catch (err: any) {
+        await client.query('ROLLBACK');
+        return reply.status(500).send({ error: 'PURGE_FAILED', message: err.message });
+      } finally {
+        client.release();
+      }
+    }
+  );
 }
 
