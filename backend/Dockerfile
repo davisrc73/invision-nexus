@@ -2,7 +2,10 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 COPY package*.json ./
-RUN npm install
+RUN npm config set fetch-retries 5 \
+    && npm config set fetch-retry-mintimeout 20000 \
+    && npm config set fetch-timeout 300000 \
+    && npm install --no-audit
 COPY tsconfig.json ./
 COPY src ./src
 RUN npm run build || mkdir -p dist
@@ -17,7 +20,10 @@ ENV NODE_ENV=production
 ENV HOME=/app/data/storage
 
 COPY --from=builder /app/package*.json ./
-RUN npm install --omit=dev
+RUN npm config set fetch-retries 5 \
+    && npm config set fetch-retry-mintimeout 20000 \
+    && npm config set fetch-timeout 300000 \
+    && npm install --omit=dev --no-audit
 COPY --from=builder /app/dist ./dist
 COPY live-bridge.mjs ./live-bridge.mjs
 
