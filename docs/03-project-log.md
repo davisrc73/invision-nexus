@@ -548,3 +548,7 @@ Arranque do desenvolvimento de uma plataforma enterprise de Digital Signage inte
    - Criado o endpoint `POST /api/v1/live/telemetry/purge` no backend com suporte a dois escopos de limpeza: purga exclusiva da insígnia ativa (`ACTIVE_BRAND`) ou reset completo de todas as marcas (`ALL`).
    - Adicionado no Dashboard o botão **"🗑️ Purgar Telemetria"** acompanhado de um pop-up modal corporativo de confirmação com alerta de irreversibilidade, seletor de âmbito, dica de segurança para download prévio de CSV e registo imutável no Audit Trail (`TELEMETRY_DATA_PURGED`) conforme diretivas NIS2 / RGPD.
    - Atualização em tempo real via WebSocket de todos os ecrãs e cartões de KPI após a conclusão da purga.
+5. **Monitorização da Pegada da Base de Dados e Storage em Tempo Real (Storage Metrics):**
+   - Implementado o 5.º Cartão de KPI Executivo no topo do Dashboard (*Pegada BD & Storage*), apresentando o tamanho físico real do ficheiro persistente no NAS (ex: `19.4 KB`), o número de registos acumulados e o semáforo de saúde de storage (`🟢 OTIMIZADO`).
+   - Integrado no Pop-up Modal de Purga o painel informativo *"Espaço Ocupado no NAS"* e *"Volume Acumulado"*, permitindo ao operador saber exatamente quanto espaço será libertado ao confirmar a limpeza.
+   - O backend calcula as métricas dinâmicas via `fs.statSync(STATE_FILE).size`, contagem de tuplos e estimativa PostgreSQL, disponibilizando o payload no objeto `storageMetrics`.

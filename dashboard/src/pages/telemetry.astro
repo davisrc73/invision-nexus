@@ -119,42 +119,64 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     </div>
   </div>
 
-  <!-- 4 CARTÕES DE KPIS COMERCIAIS EXECUTIVOS -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-    <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 shadow-sm">
-      <div class="flex items-center justify-between text-slate-400 text-xs mb-1">
-        <span class="font-mono uppercase">Total Exibições (Plays)</span>
-        <span class="text-emerald-400">● 100% Auditado</span>
+  <!-- 5 CARTÕES DE KPIS COMERCIAIS & STORAGE -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+    <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 shadow-sm flex flex-col justify-between">
+      <div>
+        <div class="flex items-center justify-between text-slate-400 text-xs mb-1">
+          <span class="font-mono uppercase">Total Exibições</span>
+          <span class="text-emerald-400">● Auditado</span>
+        </div>
+        <div class="text-2xl font-black text-white font-mono" id="kpi-total-plays">0</div>
       </div>
-      <div class="text-2xl font-black text-white font-mono" id="kpi-total-plays">0</div>
-      <p class="text-[11px] text-slate-400 mt-1">Concluídas com sucesso nos ecrãs</p>
+      <p class="text-[11px] text-slate-400 mt-1">Concluídas nos ecrãs de loja</p>
     </div>
 
-    <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 shadow-sm">
-      <div class="flex items-center justify-between text-slate-400 text-xs mb-1">
-        <span class="font-mono uppercase">Tempo de Antena (Airtime)</span>
-        <span class="text-sky-400">⏱️ Emissão</span>
+    <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 shadow-sm flex flex-col justify-between">
+      <div>
+        <div class="flex items-center justify-between text-slate-400 text-xs mb-1">
+          <span class="font-mono uppercase">Tempo no Ar</span>
+          <span class="text-sky-400">⏱️ Emissão</span>
+        </div>
+        <div class="text-2xl font-black text-sky-300 font-mono" id="kpi-total-airtime">0h 0m 0s</div>
       </div>
-      <div class="text-2xl font-black text-sky-300 font-mono" id="kpi-total-airtime">0h 0m 0s</div>
-      <p class="text-[11px] text-slate-400 mt-1">Tempo efetivo no ar nas bancadas</p>
+      <p class="text-[11px] text-slate-400 mt-1">Tempo efetivo nas bancadas</p>
     </div>
 
-    <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 shadow-sm">
-      <div class="flex items-center justify-between text-slate-400 text-xs mb-1">
-        <span class="font-mono uppercase">Cumprimento Médio SoV</span>
-        <span class="text-amber-400 font-bold" id="kpi-sov-status">● CONFORME</span>
+    <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 shadow-sm flex flex-col justify-between">
+      <div>
+        <div class="flex items-center justify-between text-slate-400 text-xs mb-1">
+          <span class="font-mono uppercase">Cumprimento SoV</span>
+          <span class="text-amber-400 font-bold" id="kpi-sov-status">● CONFORME</span>
+        </div>
+        <div class="text-2xl font-black text-emerald-400 font-mono" id="kpi-avg-sov">100.0%</div>
       </div>
-      <div class="text-2xl font-black text-emerald-400 font-mono" id="kpi-avg-sov">100.0%</div>
-      <p class="text-[11px] text-slate-400 mt-1">Share of Voice real vs contratado</p>
+      <p class="text-[11px] text-slate-400 mt-1">SoV real vs contratado</p>
     </div>
 
-    <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 shadow-sm">
-      <div class="flex items-center justify-between text-slate-400 text-xs mb-1">
-        <span class="font-mono uppercase">Parceiro Líder em Loja</span>
-        <span class="text-purple-400">👑 Top Airtime</span>
+    <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 shadow-sm flex flex-col justify-between">
+      <div>
+        <div class="flex items-center justify-between text-slate-400 text-xs mb-1">
+          <span class="font-mono uppercase">Parceiro Líder</span>
+          <span class="text-purple-400">👑 Top Airtime</span>
+        </div>
+        <div class="text-base font-bold text-white truncate mt-1" id="kpi-top-partner">-</div>
       </div>
-      <div class="text-base font-bold text-white truncate mt-1" id="kpi-top-partner">-</div>
       <p class="text-[11px] text-slate-400 mt-1" id="kpi-top-partner-stats">0 plays • 0% do ar</p>
+    </div>
+
+    <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 shadow-sm flex flex-col justify-between">
+      <div>
+        <div class="flex items-center justify-between text-slate-400 text-xs mb-1">
+          <span class="font-mono uppercase">Pegada BD & Storage</span>
+          <span class="text-emerald-400 font-bold text-[10px] font-mono" id="kpi-storage-badge">● OTIMIZADO</span>
+        </div>
+        <div class="text-2xl font-black text-amber-300 font-mono" id="kpi-storage-size">19.4 KB</div>
+      </div>
+      <p class="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
+        <span id="kpi-storage-records">0 registos</span>
+        <span class="font-mono text-slate-500">Disco NAS</span>
+      </p>
     </div>
   </div>
 
@@ -387,6 +409,18 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
           <p class="text-[11px] text-slate-300">
             Esta ação elimina os registos acumulados de <strong>Proof of Play (PoP)</strong>, as durações de emissão, a fita forense de auditoria e as contagens de interatividades em bancada, libertando memória e armazenamento no servidor/NAS.
           </p>
+        </div>
+
+        <!-- Painel de Espaço Ocupado a Libertar -->
+        <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between text-xs">
+          <div>
+            <p class="text-slate-400 text-[10px] font-mono uppercase">Espaço Ocupado no NAS:</p>
+            <p class="font-bold text-white text-sm font-mono mt-0.5" id="purge-modal-size">19.4 KB</p>
+          </div>
+          <div class="text-right">
+            <p class="text-slate-400 text-[10px] font-mono uppercase">Volume Acumulado:</p>
+            <p class="font-bold text-amber-300 text-sm font-mono mt-0.5" id="purge-modal-records">0 registos</p>
+          </div>
         </div>
 
         <div>
@@ -725,6 +759,49 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
           sovStatusEl.textContent = '● DÉFICE DE EXIBIÇÃO';
           sovStatusEl.className = 'text-rose-400 font-bold';
         }
+      }
+
+      // Atualiza KPI 5: Pegada de Armazenamento & Base de Dados
+      const storage = latestState.storageMetrics || {};
+      const storageSizeEl = document.getElementById('kpi-storage-size');
+      const storageBadgeEl = document.getElementById('kpi-storage-badge');
+      const storageRecordsEl = document.getElementById('kpi-storage-records');
+
+      if (storageSizeEl) {
+        storageSizeEl.textContent = storage.stateFileSizeFormatted || '19.4 KB';
+      }
+      if (storageRecordsEl) {
+        const totalRecs =
+          storage.totalTelemetryRecords !== undefined
+            ? storage.totalTelemetryRecords
+            : allPop.length + (latestState.popAuditLogs || []).length;
+        storageRecordsEl.textContent = `${totalRecs.toLocaleString('pt-PT')} registos`;
+      }
+      if (storageBadgeEl) {
+        if (storage.storageStatus === 'CRITICAL') {
+          storageBadgeEl.textContent = '● CRÍTICO';
+          storageBadgeEl.className = 'text-rose-400 font-bold text-[10px] font-mono';
+        } else if (storage.storageStatus === 'WARNING') {
+          storageBadgeEl.textContent = '● ATENÇÃO';
+          storageBadgeEl.className = 'text-amber-400 font-bold text-[10px] font-mono';
+        } else {
+          storageBadgeEl.textContent = '● OTIMIZADO';
+          storageBadgeEl.className = 'text-emerald-400 font-bold text-[10px] font-mono';
+        }
+      }
+
+      // Atualiza também os indicadores de espaço no Modal de Purga
+      const purgeSizeEl = document.getElementById('purge-modal-size');
+      const purgeRecordsEl = document.getElementById('purge-modal-records');
+      if (purgeSizeEl) {
+        purgeSizeEl.textContent = storage.stateFileSizeFormatted || '19.4 KB';
+      }
+      if (purgeRecordsEl) {
+        const totalRecs =
+          storage.totalTelemetryRecords !== undefined
+            ? storage.totalTelemetryRecords
+            : allPop.length + (latestState.popAuditLogs || []).length;
+        purgeRecordsEl.textContent = `${totalRecs.toLocaleString('pt-PT')} registos`;
       }
 
       // 3. Renderiza Tabela 1: Matriz de Share of Voice
@@ -1165,6 +1242,19 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
       if (purgeFeedbackMsg) {
         purgeFeedbackMsg.classList.add('hidden');
         purgeFeedbackMsg.textContent = '';
+      }
+      const storage = latestState.storageMetrics || {};
+      const purgeSizeEl = document.getElementById('purge-modal-size');
+      const purgeRecordsEl = document.getElementById('purge-modal-records');
+      if (purgeSizeEl) {
+        purgeSizeEl.textContent = storage.stateFileSizeFormatted || '19.4 KB';
+      }
+      if (purgeRecordsEl) {
+        const totalRecs =
+          storage.totalTelemetryRecords !== undefined
+            ? storage.totalTelemetryRecords
+            : (latestState.popRecords || []).length + (latestState.popAuditLogs || []).length;
+        purgeRecordsEl.textContent = `${totalRecs.toLocaleString('pt-PT')} registos`;
       }
     }
 

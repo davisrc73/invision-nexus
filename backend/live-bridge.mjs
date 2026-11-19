@@ -634,6 +634,14 @@ function computeEffectivePlaybackForDevice(hardwareUid = null) {
   };
 }
 
+function formatBytes(bytes) {
+  if (!bytes || bytes <= 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+}
+
 function getEnrichedState(hardwareUid = null) {
   const now = Date.now();
   for (const d of state.devices) {
@@ -650,6 +658,46 @@ function getEnrichedState(hardwareUid = null) {
     return rest;
   });
 
+  // Medição da pegada física em disco do ficheiro de estado e telemetria no NAS
+  let stateFileSize = 0;
+  try {
+    if (fs.existsSync(STATE_FILE)) {
+      stateFileSize = fs.statSync(STATE_FILE).size;
+    }
+  } catch {}
+
+  const popAuditCount = (state.popAuditLogs || []).length;
+  const popRecordsCount = (state.popRecords || []).length;
+  const interactionCount = (state.interactionRecords || []).length;
+  const totalTelemetryRecords = popAuditCount + popRecordsCount + interactionCount;
+
+  // Estimativa aproximada de volume indexado em PostgreSQL (~350 bytes por tuplo)
+  const estimatedPostgresBytes = totalTelemetryRecords * 350;
+
+  const storageMetrics = {
+    stateFileSizeBytes: stateFileSize,
+    stateFileSizeFormatted: formatBytes(stateFileSize),
+    estimatedPostgresBytes,
+    estimatedPostgresFormatted: formatBytes(estimatedPostgresBytes),
+    totalTelemetryRecords,
+    popAuditCount,
+    popRecordsCount,
+    interactionCount,
+    storageStatus:
+      stateFileSize < 50 * 1024 * 1024
+        ? 'OPTIMAL'
+        : stateFileSize < 200 * 1024 * 1024
+        ? 'WARNING'
+        : 'CRITICAL',
+    statusLabel:
+      stateFileSize < 50 * 1024 * 1024
+        ? '● OTIMIZADO'
+        : stateFileSize < 200 * 1024 * 1024
+        ? '● ATENÇÃO'
+        : '● PURGA RECOMENDADA',
+    dailyGrowthEstimate: '~150 KB/dia por ecrã',
+  };
+
   return {
     ...state,
     users: safeUsers,
@@ -664,6 +712,7 @@ function getEnrichedState(hardwareUid = null) {
       antiDefacementHmac: true,
       failSafeKioskActive: true,
     },
+    storageMetrics,
     auditLogs: (state.auditLogs || []).slice(0, 50),
     publicPlayerPort: PUBLIC_PLAYER_PORT,
     effectivePlayback: effective,
