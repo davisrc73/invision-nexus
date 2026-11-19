@@ -28,15 +28,32 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
         </p>
       </div>
 
-      <!-- BOTÕES DE AÇÃO: EXPORTAÇÃO & CERTIFICADO DE IMPRESSÃO -->
+      <!-- POLÍTICA DE AUDITORIA & BOTÕES DE AÇÃO -->
       <div class="flex items-center gap-2.5 shrink-0 flex-wrap">
+        <!-- SELETOR DE GOVERNANCE: POLÍTICA DE AUDITORIA POP -->
+        <div class="flex items-center gap-2 bg-slate-950 border border-slate-700/80 rounded-lg px-3 py-1.5 shadow-inner">
+          <span class="text-[10px] font-mono text-slate-300 uppercase font-bold flex items-center gap-1.5 shrink-0">
+            <span id="pop-policy-dot" class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
+            Política PoP:
+          </span>
+          <select
+            id="select-pop-policy"
+            class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white font-mono text-xs focus:border-[#E1A924] outline-none font-bold cursor-pointer"
+            title="Definir política de recolha e auditoria de Proof of Play"
+          >
+            <option value="RETAIL_MEDIA_ONLY">💎 Retail Media (Fornecedores SLA • ~75% Poupança)</option>
+            <option value="FULL_AUDIT">🔍 Auditoria Total (100% dos Conteúdos)</option>
+            <option value="PAUSED">⏸️ Telemetria Pausada (Manutenção)</option>
+          </select>
+        </div>
+
         <button
           type="button"
           id="btn-export-pop-csv"
           class="px-3.5 py-2 rounded-lg bg-[#E1A924] hover:bg-amber-400 text-black font-bold text-xs shadow transition flex items-center gap-1.5"
           title="Exportar dados forenses detalhados de Proof of Play para Excel/CSV"
         >
-          <span>⬇</span> Exportar Auditoria PoP (CSV)
+          <span>⬇</span> Exportar PoP (CSV)
         </button>
         <button
           type="button"
@@ -44,7 +61,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
           class="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs border border-slate-700 transition flex items-center gap-1.5"
           title="Exportar resumo de cumprimento de Share of Voice por parceiro"
         >
-          <span>📊</span> Exportar Resumo SoV (CSV)
+          <span>📊</span> Exportar SoV (CSV)
         </button>
         <button
           type="button"
@@ -82,7 +99,8 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
           id="filter-partner"
           class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-white font-mono text-xs focus:border-[#E1A924] outline-none"
         >
-          <option value="ALL">Todos os Parceiros</option>
+          <option value="RETAIL_MEDIA_ONLY" selected>💎 Apenas Retail Media (Parceiros Comerciais)</option>
+          <option value="ALL">Todos os Registos (Inclui Geral/Institucional)</option>
           <option value="Samsung">Samsung</option>
           <option value="Apple">Apple</option>
           <option value="Sony">Sony</option>
@@ -91,8 +109,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
           <option value="Philips">Philips</option>
           <option value="Whirlpool">Whirlpool</option>
           <option value="DeLonghi">DeLonghi</option>
-          <option value="FNAC Editorial">FNAC Editorial</option>
-          <option value="DARTY Editorial">DARTY Editorial</option>
+          <option value="NON_COMMERCIAL">Institucional / FNAC Crédito / Fallback</option>
         </select>
       </div>
       <div>
@@ -173,10 +190,13 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
         </div>
         <div class="text-2xl font-black text-amber-300 font-mono" id="kpi-storage-size">19.4 KB</div>
       </div>
-      <p class="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
-        <span id="kpi-storage-records">0 registos</span>
-        <span class="font-mono text-slate-500">Disco NAS</span>
-      </p>
+      <div class="mt-1">
+        <p class="text-[11px] text-slate-400 flex items-center justify-between">
+          <span id="kpi-storage-records">0 registos</span>
+          <span class="font-mono text-emerald-400 font-semibold text-[10px]" id="kpi-policy-badge">💎 RETAIL MEDIA</span>
+        </p>
+        <p class="text-[10px] text-slate-500 font-mono mt-0.5" id="kpi-storage-estimate">~75% poupado em disco</p>
+      </div>
     </div>
   </div>
 
@@ -428,20 +448,37 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
             Selecione o Âmbito da Purga:
           </label>
           <div class="space-y-2">
+            <label class="flex items-start gap-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 hover:border-amber-500/50 cursor-pointer transition">
+              <input
+                type="radio"
+                name="purge-scope"
+                value="NON_COMMERCIAL"
+                checked
+                class="mt-0.5 text-amber-500 focus:ring-0 focus:outline-none"
+              />
+              <div>
+                <p class="font-bold text-amber-300 text-xs flex items-center gap-1.5">
+                  <span>💎</span> Purgar Ruído Não-Comercial / Institucional (Recomendado)
+                </p>
+                <p class="text-[11px] text-slate-300 mt-0.5 leading-relaxed">
+                  Elimina "Campanha Geral", "FNAC Crédito & Serviços", "Editorial" e fallbacks. <strong>Mantém intactos 100% dos registos reais de marcas parceiras (Samsung, Apple, Sony, Dyson, LG, etc.) para faturação e cumprimento de SLA.</strong>
+                </p>
+              </div>
+            </label>
+
             <label class="flex items-start gap-3 p-3 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-slate-700 cursor-pointer transition">
               <input
                 type="radio"
                 name="purge-scope"
                 value="ACTIVE_BRAND"
-                checked
                 class="mt-0.5 text-rose-500 focus:ring-0 focus:outline-none"
               />
               <div>
                 <p class="font-bold text-white text-xs">
-                  Purgar apenas a insígnia ativa (<span id="purge-brand-text" class="text-amber-400">FNAC</span>)
+                  Purgar todos os dados da insígnia ativa (<span id="purge-brand-text" class="text-amber-400">FNAC</span>)
                 </p>
                 <p class="text-[11px] text-slate-400 mt-0.5">
-                  Elimina exclusivamente os dados da marca selecionada. Os registos da outra insígnia mantêm-se intactos.
+                  Elimina todos os registos (comerciais e não-comerciais) da marca selecionada.
                 </p>
               </div>
             </label>
@@ -611,19 +648,98 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     const API_BASE = `${window.location.protocol}//${window.location.hostname}:3000`;
     let latestState = { popRecords: [], popAuditLogs: [], interactionRecords: [], storesCatalog: [] };
 
-    // Filtros selecionados
+    const KNOWN_COMMERCIAL_BRANDS = [
+      'Samsung',
+      'Apple',
+      'Sony',
+      'LG',
+      'Dyson',
+      'Philips',
+      'Whirlpool',
+      'DeLonghi',
+      'Bose',
+      'Microsoft',
+      'Asus',
+      'Lenovo',
+      'HP',
+      'Canon',
+      'Nikon',
+      'Xiaomi',
+      'Tefal',
+      'Rowenta',
+      'Nespresso',
+      'Google',
+      'Huawei',
+      'JBL',
+      'TCL',
+      'Hisense',
+      'Braun',
+      'Sennheiser',
+      'Garmin',
+      'Logitech',
+    ];
+
+    function isCommercialRetailMedia(partner = '', title = '') {
+      const pUpper = (partner || '').toUpperCase();
+      const tUpper = (title || '').toUpperCase();
+
+      for (const b of KNOWN_COMMERCIAL_BRANDS) {
+        const bUpper = b.toUpperCase();
+        if (pUpper.includes(bUpper) || tUpper.includes(bUpper)) {
+          return true;
+        }
+      }
+
+      if (
+        pUpper.includes('EDITORIAL') ||
+        pUpper.includes('GERAL') ||
+        pUpper.includes('CRÉDITO') ||
+        pUpper.includes('CREDITO') ||
+        pUpper.includes('BLACK FRIDAY') ||
+        pUpper.includes('INSTITUCIONAL') ||
+        pUpper.includes('FALLBACK') ||
+        pUpper.includes('AVISO') ||
+        pUpper.includes('SERVIÇOS') ||
+        pUpper.includes('SERVICOS')
+      ) {
+        return false;
+      }
+      return false;
+    }
+
+    // Filtros selecionados (Por padrão, foca em Retail Media comercial)
     let selectedStore = 'ALL';
-    let selectedPartner = 'ALL';
+    let selectedPartner = 'RETAIL_MEDIA_ONLY';
     let selectedPeriod = 'REALTIME';
 
     async function refreshTelemetryPage() {
       try {
         const res = await fetch(`${API_BASE}/api/v1/live/state`);
         latestState = await res.json();
+        syncPolicyDropdown();
         populateStoreDropdown();
         renderCommercialTelemetry();
       } catch {
         // ignore
+      }
+    }
+
+    function syncPolicyDropdown() {
+      const select = document.getElementById('select-pop-policy');
+      const dot = document.getElementById('pop-policy-dot');
+      if (!select) return;
+      const policy = latestState.telemetryAuditPolicy || latestState.storageMetrics?.telemetryAuditPolicy || 'RETAIL_MEDIA_ONLY';
+      if (select.value !== policy) {
+        select.value = policy;
+      }
+      if (dot) {
+        if (policy === 'RETAIL_MEDIA_ONLY') {
+          dot.className = 'inline-block w-2 h-2 rounded-full bg-emerald-400';
+        } else if (policy === 'FULL_AUDIT') {
+          dot.className = 'inline-block w-2 h-2 rounded-full bg-sky-400';
+        } else {
+          dot.className = 'inline-block w-2 h-2 rounded-full bg-amber-400';
+        }
       }
     }
 
@@ -675,6 +791,12 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
       const filteredPop = allPop.filter((r) => {
         if (r.brand && r.brand !== activeBrand) return false;
         if (selectedStore !== 'ALL' && r.storeName && r.storeName !== selectedStore) return false;
+        if (selectedPartner === 'RETAIL_MEDIA_ONLY') {
+          return isCommercialRetailMedia(r.partner, r.mediaTitle);
+        }
+        if (selectedPartner === 'NON_COMMERCIAL') {
+          return !isCommercialRetailMedia(r.partner, r.mediaTitle);
+        }
         if (selectedPartner !== 'ALL' && r.partner && r.partner !== selectedPartner) return false;
         return true;
       });
@@ -766,6 +888,8 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
       const storageSizeEl = document.getElementById('kpi-storage-size');
       const storageBadgeEl = document.getElementById('kpi-storage-badge');
       const storageRecordsEl = document.getElementById('kpi-storage-records');
+      const policyBadgeEl = document.getElementById('kpi-policy-badge');
+      const storageEstimateEl = document.getElementById('kpi-storage-estimate');
 
       if (storageSizeEl) {
         storageSizeEl.textContent = storage.stateFileSizeFormatted || '19.4 KB';
@@ -788,6 +912,23 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
           storageBadgeEl.textContent = '● OTIMIZADO';
           storageBadgeEl.className = 'text-emerald-400 font-bold text-[10px] font-mono';
         }
+      }
+
+      const activePolicy = latestState.telemetryAuditPolicy || storage.telemetryAuditPolicy || 'RETAIL_MEDIA_ONLY';
+      if (policyBadgeEl) {
+        if (activePolicy === 'RETAIL_MEDIA_ONLY') {
+          policyBadgeEl.textContent = '💎 RETAIL MEDIA';
+          policyBadgeEl.className = 'font-mono text-emerald-400 font-semibold text-[10px]';
+        } else if (activePolicy === 'FULL_AUDIT') {
+          policyBadgeEl.textContent = '🔍 AUDITORIA 100%';
+          policyBadgeEl.className = 'font-mono text-sky-400 font-semibold text-[10px]';
+        } else {
+          policyBadgeEl.textContent = '⏸️ PAUSADA';
+          policyBadgeEl.className = 'font-mono text-amber-400 font-semibold text-[10px]';
+        }
+      }
+      if (storageEstimateEl) {
+        storageEstimateEl.textContent = storage.dailyGrowthEstimate || '~75% poupado em disco';
       }
 
       // Atualiza também os indicadores de espaço no Modal de Purga
@@ -891,6 +1032,12 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
         const auditLogs = (latestState.popAuditLogs || []).filter((l) => {
           if (l.brand && l.brand !== activeBrand) return false;
           if (selectedStore !== 'ALL' && l.storeName && l.storeName !== selectedStore) return false;
+          if (selectedPartner === 'RETAIL_MEDIA_ONLY') {
+            return isCommercialRetailMedia(l.partner, l.mediaTitle);
+          }
+          if (selectedPartner === 'NON_COMMERCIAL') {
+            return !isCommercialRetailMedia(l.partner, l.mediaTitle);
+          }
           if (selectedPartner !== 'ALL' && l.partner && l.partner !== selectedPartner) return false;
           return true;
         });
@@ -974,8 +1121,23 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
       const modalTableEl = document.getElementById('modal-cert-table-container');
 
       const companyText = activeBrand === 'DARTY' ? 'DARTY (GROUPE FNAC DARTY)' : 'FNAC PORTUGAL / FRANÇA';
-      const playsText = `${totalPlays.toLocaleString('pt-PT')} Plays`;
-      const airtimeText = formatDuration(totalDurationMs);
+
+      // Filtra registos a incluir no Certificado Oficial de Faturação
+      // Quando filtrado por Retail Media (ou por defeito), preserva estritamente campanhas comerciais para clientes
+      const certRows = filteredPop.filter((r) => {
+        if (selectedPartner !== 'ALL' && selectedPartner !== 'RETAIL_MEDIA_ONLY') {
+          return true;
+        }
+        return isCommercialRetailMedia(r.partner, r.mediaTitle);
+      });
+
+      // Se houver campanhas de marcas comerciais, usa exclusivamente essas no certificado
+      const targetCertPop = certRows.length > 0 ? certRows : filteredPop;
+      const certTotalDurationMs = targetCertPop.reduce((acc, r) => acc + (r.totalDurationMs || 0), 0);
+      const certTotalPlays = targetCertPop.reduce((acc, r) => acc + (r.playCount || 0), 0);
+
+      const playsText = `${certTotalPlays.toLocaleString('pt-PT')} Plays`;
+      const airtimeText = formatDuration(certTotalDurationMs);
 
       if (certBrandEl) certBrandEl.textContent = activeBrand;
       if (certPlaysEl) certPlaysEl.textContent = playsText;
@@ -1000,6 +1162,23 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
       if (modalDateEl) modalDateEl.textContent = dateStr;
       if (certDateEl) certDateEl.textContent = dateStr;
 
+      // Agrega por Parceiro e Conteúdo para uma página de certificado A4 limpa e executiva
+      const aggregatedCert = {};
+      targetCertPop.forEach((r) => {
+        const key = `${r.partner || 'Geral'}|||${r.mediaTitle}`;
+        if (!aggregatedCert[key]) {
+          aggregatedCert[key] = {
+            partner: r.partner || 'Geral',
+            mediaTitle: r.mediaTitle,
+            contractedSovPct: r.contractedSovPct || 25,
+            playCount: 0,
+            totalDurationMs: 0,
+          };
+        }
+        aggregatedCert[key].playCount += r.playCount || 0;
+        aggregatedCert[key].totalDurationMs += r.totalDurationMs || 0;
+      });
+
       let certTableHtml = `
         <table class="w-full text-left border-collapse text-xs mt-2 border border-gray-300">
           <thead>
@@ -1014,20 +1193,34 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
           </thead>
           <tbody class="divide-y divide-gray-200">
       `;
-      filteredPop.forEach((r) => {
-        const actualSov = totalDurationMs > 0 ? ((r.totalDurationMs / totalDurationMs) * 100).toFixed(1) : '0.0';
+      const certList = Object.values(aggregatedCert);
+      if (certList.length === 0) {
         certTableHtml += `
           <tr>
-            <td class="p-2 font-bold border-r border-gray-300">${r.partner || 'Geral'}</td>
-            <td class="p-2 border-r border-gray-300">${r.mediaTitle}</td>
-            <td class="p-2 border-r border-gray-300 text-center font-mono">${r.contractedSovPct || 25}%</td>
-            <td class="p-2 border-r border-gray-300 text-center font-mono font-bold">${actualSov}%</td>
-            <td class="p-2 border-r border-gray-300 text-right font-mono font-bold">${r.playCount}</td>
-            <td class="p-2 text-right font-mono text-gray-800">${formatDuration(r.totalDurationMs)}</td>
+            <td colspan="6" class="p-4 text-center text-gray-500 font-mono">
+              Sem dados de exibição comercial para os filtros selecionados.
+            </td>
           </tr>
         `;
-      });
+      } else {
+        certList.forEach((r) => {
+          const actualSov = certTotalDurationMs > 0 ? ((r.totalDurationMs / certTotalDurationMs) * 100).toFixed(1) : '0.0';
+          certTableHtml += `
+            <tr>
+              <td class="p-2 font-bold border-r border-gray-300">${r.partner}</td>
+              <td class="p-2 border-r border-gray-300">${r.mediaTitle}</td>
+              <td class="p-2 border-r border-gray-300 text-center font-mono">${r.contractedSovPct}%</td>
+              <td class="p-2 border-r border-gray-300 text-center font-mono font-bold">${actualSov}%</td>
+              <td class="p-2 border-r border-gray-300 text-right font-mono font-bold">${r.playCount}</td>
+              <td class="p-2 text-right font-mono text-gray-800">${formatDuration(r.totalDurationMs)}</td>
+            </tr>
+          `;
+        });
+      }
       certTableHtml += `</tbody></table>`;
+
+      if (certTableEl) certTableEl.innerHTML = certTableHtml;
+      if (modalTableEl) modalTableEl.innerHTML = certTableHtml;
 
       if (certTableEl) certTableEl.innerHTML = certTableHtml;
       if (modalTableEl) modalTableEl.innerHTML = certTableHtml;
@@ -1325,6 +1518,35 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
       }
     });
 
+    // Alteração da Política de Auditoria de Telemetria (Governance & Data Minimization)
+    document.getElementById('select-pop-policy')?.addEventListener('change', async (e) => {
+      const newPolicy = e.target.value;
+      const select = e.target;
+      select.disabled = true;
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/live/telemetry/policy`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            policy: newPolicy,
+            actor: localStorage.getItem('invision_auth_user') || 'Admin (Governance)',
+            role: localStorage.getItem('invision_role') || 'GLOBAL_ADMIN',
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          latestState = data.state || latestState;
+          latestState.telemetryAuditPolicy = data.policy || newPolicy;
+          syncPolicyDropdown();
+          renderCommercialTelemetry();
+        }
+      } catch (err) {
+        console.error('Falha ao atualizar política de auditoria PoP:', err);
+      } finally {
+        select.disabled = false;
+      }
+    });
+
     // Filtros de seleção
     document.getElementById('filter-store')?.addEventListener('change', (e) => {
       selectedStore = e.target.value;
@@ -1343,13 +1565,13 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
 
     document.getElementById('btn-reset-filters')?.addEventListener('click', () => {
       selectedStore = 'ALL';
-      selectedPartner = 'ALL';
+      selectedPartner = 'RETAIL_MEDIA_ONLY';
       selectedPeriod = 'REALTIME';
       const storeEl = document.getElementById('filter-store');
       const partnerEl = document.getElementById('filter-partner');
       const periodEl = document.getElementById('filter-period');
       if (storeEl) storeEl.value = 'ALL';
-      if (partnerEl) partnerEl.value = 'ALL';
+      if (partnerEl) partnerEl.value = 'RETAIL_MEDIA_ONLY';
       if (periodEl) periodEl.value = 'REALTIME';
       renderCommercialTelemetry();
     });

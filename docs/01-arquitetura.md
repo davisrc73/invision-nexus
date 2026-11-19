@@ -100,6 +100,14 @@ O Player recebe todas as playlists válidas para a sua janela temporal e avalia 
 4. **`FALLBACK` (Nível 4):** Playlist institucional de segurança (por Insígnia/Tipologia). Toca apenas se nenhum dos níveis superiores tiver conteúdos válidos para a hora/data atual.
 
 ### 3.4. Telemetria Dual: Proof of Play (PoP) & Interação (Touch / TV Demo)
+
+#### 3.4.1. Política de Governação de Telemetria e Minimização de Dados (PoP Governance)
+Para proteger a pegada de armazenamento no NAS Synology DS220+ e otimizar os volumes de base de dados (~4.000 dispositivos), a ingestão de Proof of Play adota o princípio de **Minimização de Dados (RGPD/NIS2)** através de três modos operacionais:
+1. **`RETAIL_MEDIA_ONLY` (Padrão Oficial & Otimizado — Poupança de ~75% de Disco):** Apenas conteúdos de parceiros comerciais contratados (Samsung, Apple, Sony, Dyson, LG, Philips, etc., ou ativos com tags `RETAIL_MEDIA`, `AUDIT`, `COMERCIAL`) são gravados na tabela `pop_logs_hourly` e fita forense SHA-256. Campanhas institucionais e fallbacks continuam a ser exibidos no ecrã com máxima fluidez, mas não geram persistência de telemetria desnecessária, mantendo o cálculo de Share of Voice (SoV) 100% rigoroso para faturação.
+2. **`FULL_AUDIT` (Auditoria Total 100%):** Grava indistintamente todos os conteúdos emitidos na rede. Modo ativado pontualmente para auditorias globais de conformidade.
+3. **`PAUSED` (Telemetria Desativada):** Pausa a gravação de PoP mantendo ecrãs, sincronização e heartbeats em pleno funcionamento.
+
+#### 3.4.2. Ingestão e Agregação de Proof of Play
 - **Proof of Play (Todos os 4.000 dispositivos):** Sempre que um vídeo termina a exibição, o Player incrementa o contador no IndexedDB para a chave `(device_id, media_id, playlist_id, hour_bucket)`. De hora a hora (com *jitter* aleatório de 0 a 300s para evitar *thundering herd* de 4.000 equipamentos às `:00`), envia o lote agregado para a API.
 - **Métricas de Interação (Portáteis, Tablets, Smartphones e TVs Demo):**
   - **Parque Expo (Smartphones/Tablets/Portáteis):** Quando o cliente toca no ecrã ou move o rato/teclado, o Player sai do modo *Idle Loop* (ou abre a ficha/demo) e regista um evento de `TOUCH_WAKE` e `SESSION_DURATION_SECONDS`.

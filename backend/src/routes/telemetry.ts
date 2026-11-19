@@ -202,15 +202,27 @@ export async function telemetryRoutes(app: FastifyInstance) {
       ],
     },
     async (request, reply) => {
-      const body = request.body as { scope?: 'ACTIVE_BRAND' | 'ALL'; brand_id?: string };
+      const body = request.body as { scope?: 'ACTIVE_BRAND' | 'ALL' | 'NON_COMMERCIAL'; brand_id?: string };
       const scope = body?.scope || 'ALL';
       const brandId = body?.brand_id;
 
       const client = await db.connect();
       try {
         await client.query('BEGIN');
-        if (scope === 'ALL' || !brandId) {
+        if (scope === 'ALL' || (!brandId && scope !== 'NON_COMMERCIAL')) {
           await client.query('TRUNCATE TABLE pop_logs_hourly, interaction_logs_hourly');
+        } else if (scope === 'NON_COMMERCIAL') {
+          await client.query(`
+            DELETE FROM pop_logs_hourly
+            WHERE campaign_id IN (
+              SELECT id FROM campaigns
+              WHERE supplier_reference IS NULL
+                 OR name ILIKE '%editorial%'
+                 OR name ILIKE '%fallback%'
+                 OR name ILIKE '%geral%'
+                 OR name ILIKE '%institucional%'
+            )
+          `);
         } else {
           await client.query('DELETE FROM pop_logs_hourly WHERE brand_id = $1', [brandId]);
           await client.query('DELETE FROM interaction_logs_hourly WHERE brand_id = $1', [brandId]);

@@ -198,23 +198,108 @@ function logAuditEvent({
   return entry;
 }
 
+const KNOWN_COMMERCIAL_BRANDS = [
+  'Samsung',
+  'Apple',
+  'Sony',
+  'LG',
+  'Dyson',
+  'Philips',
+  'Whirlpool',
+  'DeLonghi',
+  'Bose',
+  'Microsoft',
+  'Asus',
+  'Lenovo',
+  'HP',
+  'Canon',
+  'Nikon',
+  'Xiaomi',
+  'Tefal',
+  'Rowenta',
+  'Nespresso',
+  'Google',
+  'Huawei',
+  'JBL',
+  'TCL',
+  'Hisense',
+  'Braun',
+  'Sennheiser',
+  'Garmin',
+  'Logitech',
+];
+
+const COMMERCIAL_TAGS = [
+  'RETAIL_MEDIA',
+  'AUDIT',
+  'COMERCIAL',
+  'PATROCINADO',
+  'SPONSOR',
+  'PARTNER',
+  'FORNECEDOR',
+  'SLA',
+  'BRAND',
+  'PUBLICIDADE',
+  'ADVERTISER',
+];
+
+function isCommercialRetailMedia(partner = '', title = '', tags = []) {
+  const pUpper = (partner || '').toUpperCase();
+  const tUpper = (title || '').toUpperCase();
+  const tagsUpper = (tags || []).map((t) => (t || '').toUpperCase());
+
+  // 1. Tags explícitas de auditoria comercial / Retail Media
+  if (tagsUpper.some((t) => COMMERCIAL_TAGS.includes(t))) return true;
+
+  // 2. Marcas comerciais parceiras conhecidas
+  for (const b of KNOWN_COMMERCIAL_BRANDS) {
+    const bUpper = b.toUpperCase();
+    if (pUpper.includes(bUpper) || tUpper.includes(bUpper) || tagsUpper.includes(bUpper)) {
+      return true;
+    }
+  }
+
+  // 3. Padrões puramente editoriais/institucionais/internos -> Falso
+  if (
+    pUpper.includes('EDITORIAL') ||
+    pUpper.includes('GERAL') ||
+    pUpper.includes('CRÉDITO') ||
+    pUpper.includes('CREDITO') ||
+    pUpper.includes('BLACK FRIDAY') ||
+    pUpper.includes('INSTITUCIONAL') ||
+    pUpper.includes('FALLBACK') ||
+    pUpper.includes('AVISO') ||
+    pUpper.includes('SERVIÇOS') ||
+    pUpper.includes('SERVICOS')
+  ) {
+    return false;
+  }
+
+  return false;
+}
+
 function resolveCommercialPartner(title = '', tags = []) {
   const titleUpper = (title || '').toUpperCase();
   const tagsUpper = (tags || []).map((t) => (t || '').toUpperCase());
 
-  if (tagsUpper.includes('SAMSUNG') || titleUpper.includes('SAMSUNG')) return 'Samsung';
-  if (tagsUpper.includes('APPLE') || titleUpper.includes('APPLE') || titleUpper.includes('IPHONE')) return 'Apple';
-  if (tagsUpper.includes('SONY') || titleUpper.includes('SONY') || titleUpper.includes('BRAVIA') || titleUpper.includes('PLAYSTATION')) return 'Sony';
-  if (tagsUpper.includes('LG') || titleUpper.includes('LG') || titleUpper.includes('OLED')) return 'LG';
-  if (tagsUpper.includes('DYSON') || titleUpper.includes('DYSON')) return 'Dyson';
-  if (tagsUpper.includes('PHILIPS') || titleUpper.includes('PHILIPS')) return 'Philips';
-  if (tagsUpper.includes('WHIRLPOOL') || titleUpper.includes('WHIRLPOOL')) return 'Whirlpool';
-  if (tagsUpper.includes('DELONGHI') || titleUpper.includes('DELONGHI')) return 'DeLonghi';
+  for (const brand of KNOWN_COMMERCIAL_BRANDS) {
+    const bUpper = brand.toUpperCase();
+    if (tagsUpper.includes(bUpper) || titleUpper.includes(bUpper)) {
+      return brand;
+    }
+  }
+
+  if (titleUpper.includes('IPHONE') || tagsUpper.includes('IPHONE')) return 'Apple';
+  if (titleUpper.includes('BRAVIA') || tagsUpper.includes('BRAVIA') || titleUpper.includes('PLAYSTATION')) return 'Sony';
+  if (titleUpper.includes('OLED') && (tagsUpper.includes('LG') || titleUpper.includes('LG'))) return 'LG';
+
   if (titleUpper.includes('BLACK FRIDAY') || tagsUpper.includes('BLACK FRIDAY') || tagsUpper.includes('BF')) return 'Campanha Black Friday';
   if (titleUpper.includes('CRÉDITO') || tagsUpper.includes('CREDITO')) return 'FNAC Crédito & Serviços';
   if (tagsUpper.includes('FNAC') || titleUpper.includes('FNAC')) return 'FNAC Editorial';
   if (tagsUpper.includes('DARTY') || titleUpper.includes('DARTY')) return 'DARTY Editorial';
-  if (tagsUpper.length > 0) return tagsUpper[0];
+  if (tagsUpper.length > 0 && !tagsUpper.includes('NORMAL') && !tagsUpper.includes('GERAL') && !tagsUpper.includes('16:9')) {
+    return tagsUpper[0];
+  }
   return 'Campanha Geral';
 }
 
@@ -417,6 +502,7 @@ function createDefaultState() {
     incidents: [],
     popRecords: [],
     interactionRecords: [],
+    telemetryAuditPolicy: 'RETAIL_MEDIA_ONLY', // 'RETAIL_MEDIA_ONLY' | 'FULL_AUDIT' | 'PAUSED'
     users: [],
     auditLogs: [],
     updatedAt: new Date().toISOString(),
@@ -432,6 +518,9 @@ if (fs.existsSync(STATE_FILE)) {
       ...createDefaultState(),
       ...loaded,
     };
+    if (!state.telemetryAuditPolicy) {
+      state.telemetryAuditPolicy = 'RETAIL_MEDIA_ONLY';
+    }
     if (!Array.isArray(state.adbBoxes)) {
       state.adbBoxes = [];
     }
@@ -671,9 +760,15 @@ function getEnrichedState(hardwareUid = null) {
   const interactionCount = (state.interactionRecords || []).length;
   const totalTelemetryRecords = popAuditCount + popRecordsCount + interactionCount;
 
+  const commercialPopCount = (state.popRecords || []).filter((r) =>
+    isCommercialRetailMedia(r.partner, r.mediaTitle)
+  ).length;
+  const nonCommercialPopCount = popRecordsCount - commercialPopCount;
+
   // Estimativa aproximada de volume indexado em PostgreSQL (~350 bytes por tuplo)
   const estimatedPostgresBytes = totalTelemetryRecords * 350;
 
+  const currentPolicy = state.telemetryAuditPolicy || 'RETAIL_MEDIA_ONLY';
   const storageMetrics = {
     stateFileSizeBytes: stateFileSize,
     stateFileSizeFormatted: formatBytes(stateFileSize),
@@ -682,7 +777,9 @@ function getEnrichedState(hardwareUid = null) {
     totalTelemetryRecords,
     popAuditCount,
     popRecordsCount,
-    interactionCount,
+    commercialPopCount,
+    nonCommercialPopCount,
+    telemetryAuditPolicy: currentPolicy,
     storageStatus:
       stateFileSize < 50 * 1024 * 1024
         ? 'OPTIMAL'
@@ -695,7 +792,12 @@ function getEnrichedState(hardwareUid = null) {
         : stateFileSize < 200 * 1024 * 1024
         ? '● ATENÇÃO'
         : '● PURGA RECOMENDADA',
-    dailyGrowthEstimate: '~150 KB/dia por ecrã',
+    dailyGrowthEstimate:
+      currentPolicy === 'PAUSED'
+        ? '0 KB/dia (Telemetria Pausada)'
+        : currentPolicy === 'RETAIL_MEDIA_ONLY'
+        ? '~35 KB/dia (~75% de poupança)'
+        : '~150 KB/dia (Auditoria Total 100%)',
   };
 
   return {
@@ -1903,11 +2005,51 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // 7.0 POST /api/v1/live/telemetry/policy -> Alterar Política de Auditoria de Telemetria (Governance & Data Minimization)
+  if (req.method === 'POST' && url.pathname === '/api/v1/live/telemetry/policy') {
+    try {
+      const payload = await readJsonBody(req);
+      const policy = payload.policy; // 'RETAIL_MEDIA_ONLY' | 'FULL_AUDIT' | 'PAUSED'
+      if (!['RETAIL_MEDIA_ONLY', 'FULL_AUDIT', 'PAUSED'].includes(policy)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'INVALID_POLICY', allowed: ['RETAIL_MEDIA_ONLY', 'FULL_AUDIT', 'PAUSED'] }));
+        return;
+      }
+      state.telemetryAuditPolicy = policy;
+      saveState();
+      broadcastUpdate();
+
+      logAuditEvent({
+        action: 'TELEMETRY_POLICY_CHANGED',
+        actor: payload.actor || 'Admin (Governance)',
+        role: payload.role || 'GLOBAL_ADMIN',
+        target: 'TelemetryGovernance',
+        details: `Política de Auditoria de Proof of Play alterada para: ${policy}`,
+        clientIp: req.socket?.remoteAddress || '127.0.0.1',
+        success: true,
+      });
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, policy: state.telemetryAuditPolicy, state: getEnrichedState() }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'POLICY_UPDATE_FAILED', details: String(err) }));
+    }
+    return;
+  }
+
   // 7. POST /api/v1/live/telemetry -> Registo de Proof of Play e Interações em Bancada
   if (req.method === 'POST' && url.pathname === '/api/v1/live/telemetry') {
     try {
       const payload = await readJsonBody(req);
       if (payload.type === 'POP') {
+        const policy = state.telemetryAuditPolicy || 'RETAIL_MEDIA_ONLY';
+        if (policy === 'PAUSED') {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ status: 'SKIPPED_PAUSED', message: 'Telemetria PoP pausada por política de governance.' }));
+          return;
+        }
+
         const dev = state.devices.find(
           (d) => d.hardwareUid === payload.hardwareUid || d.name === payload.deviceName
         );
@@ -1920,6 +2062,15 @@ const server = http.createServer(async (req, res) => {
         const partner = resolveCommercialPartner(payload.mediaTitle, asset?.tags || []);
         const durationMs = Number(payload.durationMs || 8000);
         const contractedSovPct = Number(payload.sovPct || (payload.priority === 'EXCLUSIVA' ? 50 : 25));
+
+        const isCommercial = isCommercialRetailMedia(partner, payload.mediaTitle, asset?.tags || []);
+
+        if (policy === 'RETAIL_MEDIA_ONLY' && !isCommercial) {
+          // Salva espaço em disco e minimiza dados: Conteúdo institucional / fallback sem contrato comercial direto não polui a base de dados
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ status: 'SKIPPED_NON_COMMERCIAL', message: 'Conteúdo institucional não auditado sob política RETAIL_MEDIA_ONLY.' }));
+          return;
+        }
 
         const existing = state.popRecords.find(
           (r) =>
@@ -2013,7 +2164,7 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'POST' && url.pathname === '/api/v1/live/telemetry/purge') {
     try {
       const payload = await readJsonBody(req);
-      const scope = payload.scope || 'ACTIVE_BRAND'; // 'ACTIVE_BRAND' | 'ALL'
+      const scope = payload.scope || 'ACTIVE_BRAND'; // 'ACTIVE_BRAND' | 'ALL' | 'NON_COMMERCIAL'
       const brand = payload.brand || 'FNAC';
 
       let purgedCount = 0;
@@ -2025,6 +2176,15 @@ const server = http.createServer(async (req, res) => {
         state.popRecords = [];
         state.popAuditLogs = [];
         state.interactionRecords = [];
+      } else if (scope === 'NON_COMMERCIAL') {
+        const initialPop = (state.popRecords?.length || 0) + (state.popAuditLogs?.length || 0);
+        state.popRecords = (state.popRecords || []).filter((r) =>
+          isCommercialRetailMedia(r.partner, r.mediaTitle)
+        );
+        state.popAuditLogs = (state.popAuditLogs || []).filter((l) =>
+          isCommercialRetailMedia(l.partner, l.mediaTitle)
+        );
+        purgedCount = initialPop - ((state.popRecords?.length || 0) + (state.popAuditLogs?.length || 0));
       } else {
         const initialPop = (state.popRecords?.length || 0) + (state.popAuditLogs?.length || 0);
         state.popRecords = (state.popRecords || []).filter((r) => r.brand && r.brand !== brand);
@@ -2038,8 +2198,13 @@ const server = http.createServer(async (req, res) => {
         action: 'TELEMETRY_DATA_PURGED',
         actor: payload.actor || 'Admin (Break-Glass)',
         role: payload.role || 'GLOBAL_ADMIN',
-        target: scope === 'ALL' ? 'GLOBAL (TODAS AS INSÍGNIAS)' : `INSÍGNIA: ${brand}`,
-        details: `Purga manual de telemetria PoP e interações em bancada executada com sucesso (${purgedCount} registos eliminados).`,
+        target:
+          scope === 'ALL'
+            ? 'GLOBAL (TODAS AS INSÍGNIAS)'
+            : scope === 'NON_COMMERCIAL'
+            ? 'RUÍDO NÃO-COMERCIAL (MANTEVE RETAIL MEDIA)'
+            : `INSÍGNIA: ${brand}`,
+        details: `Purga de telemetria PoP executada com sucesso (${purgedCount} registos eliminados). Âmbito: ${scope}.`,
         clientIp: req.socket?.remoteAddress || '',
         success: true,
       });
@@ -2054,7 +2219,9 @@ const server = http.createServer(async (req, res) => {
           message:
             scope === 'ALL'
               ? 'Todos os registos de telemetria foram eliminados com sucesso.'
-              : `Os registos de telemetria da marca ${brand} foram eliminados com sucesso.`,
+              : scope === 'NON_COMMERCIAL'
+              ? `Foram eliminados ${purgedCount} registos de ruído institucional/editorial. Os dados de parceiros comerciais (Retail Media) foram preservados com sucesso.`
+              : `Os registos de telemetria da marca ${brand} foram eliminados com sucesso (${purgedCount} registos).`,
           purgedCount,
           state: getEnrichedState(),
         })

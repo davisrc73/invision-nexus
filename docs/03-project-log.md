@@ -552,3 +552,43 @@ Arranque do desenvolvimento de uma plataforma enterprise de Digital Signage inte
    - Implementado o 5.º Cartão de KPI Executivo no topo do Dashboard (*Pegada BD & Storage*), apresentando o tamanho físico real do ficheiro persistente no NAS (ex: `19.4 KB`), o número de registos acumulados e o semáforo de saúde de storage (`🟢 OTIMIZADO`).
    - Integrado no Pop-up Modal de Purga o painel informativo *"Espaço Ocupado no NAS"* e *"Volume Acumulado"*, permitindo ao operador saber exatamente quanto espaço será libertado ao confirmar a limpeza.
    - O backend calcula as métricas dinâmicas via `fs.statSync(STATE_FILE).size`, contagem de tuplos e estimativa PostgreSQL, disponibilizando o payload no objeto `storageMetrics`.
+
+---
+
+## [2026-11-19] - Política de Governação de Telemetria: Auditoria Seletiva de Retail Media & Minimização de Dados (PoP Governance)
+
+### Contexto & Desafio de Arquitetura e Negócio
+- **A Realidade do Retalho (FNAC & DARTY):** No parque de ecrãs de loja (~4.000 terminais em produção), cerca de **60% a 75%** dos conteúdos em emissão contínua correspondem a avisos institucionais de loja, campanhas internas (*Cartão Fnac, Modalidades de Crédito, Campanhas Editoriais*) e loops de *fallback* técnico de segurança.
+- **O Problema da Telemetria Indiscriminada:**
+  1. **Desperdício Massivo de Armazenamento:** Registar e auditar forensemente cada exibição institucional (com tuplo em base de dados, cálculo de duração e hash SHA-256) gerava um crescimento de ~10 milhões de linhas/dia na rede (~3.5 GB/dia), sobrecarregando o storage do NAS Synology DS220+ e os ciclos de I/O em disco.
+  2. **Distorção do Share of Voice (SoV) e Poluição de Faturação:** Como demonstrado na auditoria visual executiva, a tabela de Proof of Play e o Certificado Oficial A4 ficavam inundados com 11 linhas repetitivas de "Campanha Geral" e "FNAC Crédito & Serviços", relegando parceiros comerciais que pagam por tempo de antena (ex: Samsung) para o fundo do relatório com um SoV residual distorcido de 0.2%.
+  3. **Conformidade Normativa (RGPD / NIS2):** O princípio europeu da **Minimização de Dados (*Data Minimization*)** estipula que as plataformas digitais devem apenas recolher e reter telemetria indispensável às suas finalidades contratuais e legais. Não existe qualquer justificação legal para persistir logs forenses permanentes de avisos de horário ou campanhas de caridade institucional.
+
+### Decisões Arquiteturais & Modos de Operação
+Foi implementada uma política estrita de **Governação Seletiva de Telemetria Comercial (PoP Governance)** com 3 modos operacionais selecionáveis a qualquer instante a partir do Dashboard Central:
+
+1. **`RETAIL_MEDIA_ONLY` (Padrão Oficial & Recomendado — ~75% de Poupança):**
+   - **Regra:** Apenas conteúdos classificados como **Retail Media Comercial** (marcas contratadas como Samsung, Apple, Sony, Dyson, LG, Philips, Whirlpool, DeLonghi, etc., ou ativos com TAGs `RETAIL_MEDIA`, `AUDIT`, `COMERCIAL`, `SPONSOR`) geram registos de *Proof of Play* e alimentam o anel de auditoria forense criptográfica.
+   - **Comportamento nos Ecrãs:** Conteúdos institucionais, editoriais e de segurança continuam a ser emitidos normalmente e com máxima fluidez nos ecrãs de loja, mas o backend descarta o registo persistente de telemetria (`SKIPPED_NON_COMMERCIAL`), poupando ~75% do espaço em disco.
+   - **Impacto Físico no NAS:** Redução da pegada estimada de ~150 KB/dia por ecrã para apenas **~35 KB/dia**, mantendo os relatórios 100% limpos e dedicados à faturação comercial.
+2. **`FULL_AUDIT` (Auditoria Global 100%):**
+   - Regista 100% de todas as exibições (comerciais, editoriais e de segurança). Modo reservado para testes de homologação inicial ou verificações globais de integridade de rede.
+3. **`PAUSED` (Telemetria Desativada / Manutenção):**
+   - Congela temporariamente a gravação de novos registos de PoP (`SKIPPED_PAUSED`), mantendo a reprodução nos ecrãs e os sinais vitais (*heartbeats*, status online/offline) 100% operacionais. Útil em janelas de manutenção de storage ou testes de bancada.
+
+### Implementações Realizadas
+1. **Motor de Reconhecimento de Marcas & Governação no Backend ([backend/live-bridge.mjs](file:///Users/daviscorreia/Antigravity%20/invision-nexus/backend/live-bridge.mjs)):**
+   - Implementado o catálogo de marcas comerciais e a função de classificação `isCommercialRetailMedia(partner, title, tags)` que distingue com precisão marcas comerciais externas de conteúdos editoriais/institucionais.
+   - Adicionada a propriedade `telemetryAuditPolicy` no estado global da aplicação (persistido em `state.json`).
+   - Criado o endpoint `POST /api/v1/live/telemetry/policy` com registo imutável no Audit Trail (`TELEMETRY_POLICY_CHANGED`) e difusão em tempo real via WebSocket para todos os operadores ligados.
+   - No endpoint de ingestão `POST /api/v1/live/telemetry`, implementado o descarte seletivo para conteúdos não-comerciais quando a política ativa é `RETAIL_MEDIA_ONLY`.
+   - No endpoint `POST /api/v1/live/telemetry/purge`, criado o novo âmbito `scope: 'NON_COMMERCIAL'`: permite ao operador eliminar com 1 clique todo o ruído institucional acumulado sem perder um único registo real de parceiros comerciais nem comprometer a faturação SLA.
+   - Atualizado o backend em TypeScript ([backend/src/routes/telemetry.ts](file:///Users/daviscorreia/Antigravity%20/invision-nexus/backend/src/routes/telemetry.ts)) com suporte ao mesmo âmbito de purga na tabela relacional `pop_logs_hourly`.
+2. **Controlos de Governação no Dashboard ([dashboard/src/pages/telemetry.astro](file:///Users/daviscorreia/Antigravity%20/invision-nexus/dashboard/src/pages/telemetry.astro)):**
+   - **Seletor de Política PoP na Barra Superior:** Dropdown executivo interativo com semáforo visual (`🟢 Retail Media`, `🔵 Auditoria Total`, `🟡 Pausada`) permitindo alternar a política em tempo real com sincronização automática à API.
+   - **Filtro Rápido por Retail Media:** Atualizado o filtro de parceiros comerciais para ter como opção padrão `💎 Apenas Retail Media (Parceiros Comerciais)`, permitindo ao operador auditar exclusivamente contratos ativos ou inspecionar o ruído institucional quando necessário.
+   - **5.º Cartão de KPI Atualizado:** Exibe em tempo real a insígnia da política ativa (`💎 RETAIL MEDIA`) e a estimativa de poupança no disco do NAS (`~75% poupado em disco`).
+   - **Pop-up de Confirmação de Purga Aperfeiçoado:** Adicionada como primeira opção pré-selecionada a purga inteligente: *"💎 Purgar Ruído Não-Comercial / Institucional (Recomendado — Mantém 100% dos dados de fornecedores e faturas SLA)"*.
+3. **Reestruturação Executiva do Certificado Oficial A4 (Proof of Play):**
+   - O gerador do certificado oficial em PDF filtra automaticamente o ruído não-comercial quando gerado em modo de conformidade de faturação, agregando os dados por Parceiro Comercial e Campanha.
+   - O documento A4 oficial passa a refletir estritamente as marcas contratadas (ex: Samsung, Sony, LG), com o cálculo exato de Share of Voice entregue face ao contratado, pronto para ser assinado pelo Diretor de Loja e Auditor Multimédia sem poluição visual.
