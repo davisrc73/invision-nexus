@@ -592,3 +592,33 @@ Foi implementada uma política estrita de **Governação Seletiva de Telemetria 
 3. **Reestruturação Executiva do Certificado Oficial A4 (Proof of Play):**
    - O gerador do certificado oficial em PDF filtra automaticamente o ruído não-comercial quando gerado em modo de conformidade de faturação, agregando os dados por Parceiro Comercial e Campanha.
    - O documento A4 oficial passa a refletir estritamente as marcas contratadas (ex: Samsung, Sony, LG), com o cálculo exato de Share of Voice entregue face ao contratado, pronto para ser assinado pelo Diretor de Loja e Auditor Multimédia sem poluição visual.
+
+---
+
+## [2026-11-22] - Especificação Formal de Mecânica PoP, Persistência Atómica & Estabilização de Layout Responsivo
+
+### Contexto & Clarificações de Engenharia
+No seguimento da entrada em produção da política seletiva de Retail Media, foi realizada a formalização e documentação profunda de quatro pontos basilares de arquitetura e operação:
+
+1. **Persistência Atómica & Efeito Imediato (Zero Downtime):**
+   - A alteração da política via Dashboard comunica diretamente com o endpoint `POST /api/v1/live/telemetry/policy`.
+   - O backend invoca `saveState()` de forma síncrona/atómica no disco do NAS (`state.json`), garantindo que qualquer reinício do contentor ou quebra de energia preserva a política selecionada.
+   - Não é necessário recarregar o Player nem reiniciar serviços: a avaliação entra em vigor no milissegundo imediatamente subsequente.
+   - Cada transição gera um registo imutável no Audit Trail corporativo (`TELEMETRY_POLICY_CHANGED`) com operador, IP e timestamp auditável para conformidade NIS2/RGPD.
+
+2. **Invariabilidade Retroativa & Natureza Cumulativa dos Dados:**
+   - A política de PoP funciona estritamente como um **filtro de entrada (*inflow filter*)**: atua sobre as novas exibições a partir do momento da sua seleção, **nunca apagando nem reescrevendo registos do passado**.
+   - Os dados são acumulativos: alternar entre `FULL_AUDIT` e `RETAIL_MEDIA_ONLY` preserva o histórico de ambos os períodos no ficheiro/base de dados.
+   - A remoção física de dados herdados requer uma purga deliberada através do modal corporativo (com suporte a `scope: 'NON_COMMERCIAL'`).
+
+3. **Ciclo de Vida Algorítmico de Ingestão:**
+   - Formalizada a matriz de decisão do backend para os 3 estados (`RETAIL_MEDIA_ONLY`, `FULL_AUDIT`, `PAUSED`), detalhando a integração com o classificador de marcas comerciais `isCommercialRetailMedia` e o hashing criptográfico SHA-256 no anel forense.
+
+4. **Estabilização Ergonómica do Cabeçalho Executivo do Dashboard ([dashboard/src/pages/telemetry.astro](file:///Users/daviscorreia/Antigravity%20/invision-nexus/dashboard/src/pages/telemetry.astro)):**
+   - **Desafio Visual Detetado:** O alinhamento horizontal inline de 5 controlos com largura estrita (`shrink-0`) causava a compressão severa da coluna esquerda em ecrãs de 1280px a 1440px, forçando quebras anómalas palavra-a-palavra no título e nas badges de loja.
+   - **Solução de Layout em 2 Níveis:**
+     - **Coluna Esquerda (`flex-1 min-w-0`):** Expansão natural para as badges de conformidade e título executivo com `whitespace-nowrap`.
+     - **Coluna Direita (`flex flex-col sm:items-end gap-2.5`):**
+       - **Nível Superior:** Seletor de Governance da Política PoP com semáforo de estado animado.
+       - **Nível Inferior:** Os 4 botões de ação organizados horizontalmente (`Exportar PoP`, `Exportar SoV`, `Certificado PDF`, `Purgar Telemetria`).
+   - Resultado: Harmonia visual total, sem sobreposições e com adaptabilidade perfeita a monitores desktop, portáteis e tablets de loja.
