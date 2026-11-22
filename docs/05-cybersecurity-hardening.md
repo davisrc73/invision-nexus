@@ -165,5 +165,28 @@ Para ativar a federação com o Office 365 corporativo da Fnac Darty em ambiente
 
 ---
 
+## 6. Suíte de Testes Automatizados de Cibersegurança & Auditoria Visual
+
+A plataforma inclui uma suíte de testes de penetração e conformidade que valida os 6 pilares de segurança:
+
+```bash
+# Execução direta no servidor central ou Synology NAS:
+./scripts/run-security-tests.sh http://127.0.0.1:3000
+```
+
+### Vetores Auditados pelos Testes:
+1. **Magic Bytes Guardrail:** Tenta injetar código PHP/Shell com extensão `.mp4`. Valida rejeição com HTTP 415 e eliminação do ficheiro.
+2. **Device Token Spoofing:** Simula um terminal clonado na rede a enviar *heartbeats* com um token forjado. Valida rejeição com HTTP 401 (`UNAUTHORIZED_DEVICE`).
+3. **Anti-Defacement HMAC-SHA256:** Altera o URL de vídeo no manifesto mantendo a assinatura original. Valida a deteção de adulteração e ativação do alarme MITM.
+4. **Proteção Brute-Force Break-Glass:** Testa palavra-passe incorreta e valida a resistência do PBKDF2-HMAC-SHA512 (100.000 iterações com salt individual).
+5. **Isolamento de Portas:** Confirma que PostgreSQL (5434) e Redis (6380) estão restritos a `127.0.0.1` e não expostos na LAN.
+6. **Integridade NIS2 / RGPD:** Confirma que todas as tentativas maliciosas acima foram gravadas no Audit Trail com timestamp, IP e detalhe técnico.
+
+### Verificação Visual no Dashboard:
+- No separador **`Configurações > 🛡️ 6. Segurança & SSO`** (`/settings/`): comprove os 5 cartões de hardening ativos e a lista de eventos de invasão bloqueados no *Audit Trail*.
+- No módulo **`🖥️ Equipamentos`** (`/devices/`): comprove o alerta visual a pulsar `🚨 ALERTA MITM / ASSINATURA INVÁLIDA` e reponha o estado clicando em `🛡️ Repor Alerta`.
+
+---
+
 *Documento mantido e auditado pelo repositório Invision Nexus.*
 
