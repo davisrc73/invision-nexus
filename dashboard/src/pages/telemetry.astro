@@ -7,30 +7,30 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
   <div id="telemetry-interactive-view" class="print:hidden">
   <!-- TOP ACTIONS & INTRODUÇÃO EXECUTIVA -->
   <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 mb-6">
-    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-      <div>
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+      <div class="flex-1 min-w-0">
         <div class="flex items-center gap-2 flex-wrap mb-2">
-          <span class="text-[11px] font-mono uppercase px-2.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold">
+          <span class="text-[11px] font-mono uppercase px-2.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold whitespace-nowrap">
             Auditoria Comercial & Proof of Play (PoP)
           </span>
-          <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">
+          <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30 whitespace-nowrap">
             Conformidade SLA & Faturação de Marcas
           </span>
-          <span id="telemetry-brand-badge" class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40">
+          <span id="telemetry-brand-badge" class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40 whitespace-nowrap">
             Marca Ativa: FNAC
           </span>
         </div>
-        <h3 class="text-lg font-bold text-white">
+        <h3 class="text-xl font-bold text-white tracking-tight">
           Telemetria Comercial, Proof of Play & Cumprimento de Share of Voice (SoV)
         </h3>
-        <p class="text-xs text-slate-300 mt-1 max-w-3xl leading-relaxed">
+        <p class="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
           Registo criptograficamente auditável de exibições concluídas nos ecrãs de loja para prestação de contas, auditoria de parceiros comerciais (Samsung, Apple, Sony, Dyson, LG, Philips, etc.) e faturação publicitária.
         </p>
       </div>
 
-      <!-- POLÍTICA DE AUDITORIA & BOTÕES DE AÇÃO -->
-      <div class="flex items-center gap-2.5 shrink-0 flex-wrap">
-        <!-- SELETOR DE GOVERNANCE: POLÍTICA DE AUDITORIA POP -->
+      <!-- POLÍTICA DE AUDITORIA & BOTÕES DE AÇÃO ORGANIZADOS EM 2 NÍVEIS -->
+      <div class="flex flex-col sm:items-end justify-center gap-2.5 shrink-0">
+        <!-- NÍVEL 1: SELETOR DE GOVERNANCE: POLÍTICA DE AUDITORIA POP -->
         <div class="flex items-center gap-2 bg-slate-950 border border-slate-700/80 rounded-lg px-3 py-1.5 shadow-inner">
           <span class="text-[10px] font-mono text-slate-300 uppercase font-bold flex items-center gap-1.5 shrink-0">
             <span id="pop-policy-dot" class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
@@ -38,7 +38,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
           </span>
           <select
             id="select-pop-policy"
-            class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white font-mono text-xs focus:border-[#E1A924] outline-none font-bold cursor-pointer"
+            class="bg-slate-900 border border-slate-700 rounded px-2.5 py-1 text-white font-mono text-xs focus:border-[#E1A924] outline-none font-bold cursor-pointer"
             title="Definir política de recolha e auditoria de Proof of Play"
           >
             <option value="RETAIL_MEDIA_ONLY">💎 Retail Media (Fornecedores SLA • ~75% Poupança)</option>
@@ -47,38 +47,41 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
           </select>
         </div>
 
-        <button
-          type="button"
-          id="btn-export-pop-csv"
-          class="px-3.5 py-2 rounded-lg bg-[#E1A924] hover:bg-amber-400 text-black font-bold text-xs shadow transition flex items-center gap-1.5"
-          title="Exportar dados forenses detalhados de Proof of Play para Excel/CSV"
-        >
-          <span>⬇</span> Exportar PoP (CSV)
-        </button>
-        <button
-          type="button"
-          id="btn-export-sov-csv"
-          class="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs border border-slate-700 transition flex items-center gap-1.5"
-          title="Exportar resumo de cumprimento de Share of Voice por parceiro"
-        >
-          <span>📊</span> Exportar SoV (CSV)
-        </button>
-        <button
-          type="button"
-          id="btn-print-certificate"
-          class="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-md shadow-sky-600/30 transition flex items-center gap-1.5 shrink-0"
-          title="Abrir Pré-visualização do Certificado de Auditoria PoP & Imprimir em PDF"
-        >
-          <span>🖨️</span> Certificado Oficial PDF
-        </button>
-        <button
-          type="button"
-          id="btn-open-purge-modal"
-          class="px-3.5 py-2 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 font-semibold text-xs border border-rose-500/30 transition flex items-center gap-1.5 shrink-0"
-          title="Purgar dados de Proof of Play e telemetria (libertar espaço e repor contadores)"
-        >
-          <span>🗑️</span> Purgar Telemetria
-        </button>
+        <!-- NÍVEL 2: BOTÕES DE AÇÃO (EXPORTAÇÕES, CERTIFICADO E PURGA) -->
+        <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+          <button
+            type="button"
+            id="btn-export-pop-csv"
+            class="px-3 py-1.5 rounded-lg bg-[#E1A924] hover:bg-amber-400 text-black font-bold text-xs shadow transition flex items-center gap-1.5 whitespace-nowrap"
+            title="Exportar dados forenses detalhados de Proof of Play para Excel/CSV"
+          >
+            <span>⬇</span> Exportar PoP (CSV)
+          </button>
+          <button
+            type="button"
+            id="btn-export-sov-csv"
+            class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs border border-slate-700 transition flex items-center gap-1.5 whitespace-nowrap"
+            title="Exportar resumo de cumprimento de Share of Voice por parceiro"
+          >
+            <span>📊</span> Exportar SoV (CSV)
+          </button>
+          <button
+            type="button"
+            id="btn-print-certificate"
+            class="px-3.5 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-md shadow-sky-600/30 transition flex items-center gap-1.5 shrink-0 whitespace-nowrap"
+            title="Abrir Pré-visualização do Certificado de Auditoria PoP & Imprimir em PDF"
+          >
+            <span>🖨️</span> Certificado Oficial PDF
+          </button>
+          <button
+            type="button"
+            id="btn-open-purge-modal"
+            class="px-3 py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 font-semibold text-xs border border-rose-500/30 transition flex items-center gap-1.5 shrink-0 whitespace-nowrap"
+            title="Purgar dados de Proof of Play e telemetria (libertar espaço e repor contadores)"
+          >
+            <span>🗑️</span> Purgar Telemetria
+          </button>
+        </div>
       </div>
     </div>
 
