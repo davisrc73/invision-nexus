@@ -10,11 +10,14 @@ set -euo pipefail
 
 BOX_IP="${1:-}"
 USER_URL="${2:-}"
+APK_INPUT="${3:-}"
 CHROME_PKG="com.android.chrome"
+FULLY_PKG="de.ozerov.fully"
 
 if [[ -z "$BOX_IP" ]]; then
-  echo "Uso: $0 <IP_DA_BOX_X98_PLUS> [URL_DO_PLAYER_PWA]"
+  echo "Uso: $0 <IP_DA_BOX_X98_PLUS> [URL_DO_PLAYER_PWA] [CAMINHO_APK_FULLY_KIOSK]"
   echo "Exemplo: $0 192.168.68.115"
+  echo "Exemplo com APK: $0 192.168.68.115 http://192.168.68.117:5174 ./tools/apk/fully-kiosk.apk"
   exit 1
 fi
 
@@ -149,21 +152,74 @@ echo "==> [4/7] A silenciar notificações visuais e ativar Immersive Mode (Full
 "${ADB_BIN}" -s "${BOX_IP}:5555" shell settings put global heads_up_notifications_enabled 0 || true
 "${ADB_BIN}" -s "${BOX_IP}:5555" shell settings put global policy_control "immersive.full=*" || true
 
-echo "==> [5/7] A limpar flags de debug antigas do Chrome (evita separador em branco sem endereço)..."
-"${ADB_BIN}" -s "${BOX_IP}:5555" shell am clear-debug-app || true
-"${ADB_BIN}" -s "${BOX_IP}:5555" shell rm -f /data/local/tmp/chrome-command-line || true
+echo "==> [5/7] A verificar e configurar motor de Kiosk (Fully Kiosk vs Google Chrome)..."
+mkdir -p ./tools/apk
 
-echo "==> [6/7] A abrir o Player PWA (${PLAYER_URL}) numa única Tab limpa preservando o ID..."
-"${ADB_BIN}" -s "${BOX_IP}:5555" shell am start -a android.intent.action.VIEW -c android.intent.category.BROWSABLE -f 0x14000000 --es com.android.browser.application_id com.invision.nexus.kiosk --ez create_new_tab false -d "${PLAYER_URL}" "${CHROME_PKG}" 2>/dev/null || \
-"${ADB_BIN}" -s "${BOX_IP}:5555" shell am start -a android.intent.action.VIEW -d "${PLAYER_URL}"
+# Verifica se o Fully Kiosk Browser já se encontra instalado no sistema da Box
+IS_FULLY_INSTALLED="$("${ADB_BIN}" -s "${BOX_IP}:5555" shell pm path "${FULLY_PKG}" 2>/dev/null | grep "${FULLY_PKG}" || true)"
 
-echo "==> [7/7] A aguardar carregamento do Player (4s), ativar Fullscreen e registar Auto-Boot Watchdog..."
-sleep 4
-"${ADB_BIN}" -s "${BOX_IP}:5555" shell input tap 960 540 || true
-sleep 2
-"${ADB_BIN}" -s "${BOX_IP}:5555" shell input tap 960 540 || true
+# Se não estiver instalado, procura ficheiro APK fornecido via argumento ou presente em ./tools/apk/
+if [[ -z "${IS_FULLY_INSTALLED}" ]]; then
+  APK_FILE=""
+  if [[ -n "${APK_INPUT}" ]] && [[ -f "${APK_INPUT}" ]]; then
+    APK_FILE="${APK_INPUT}"
+  elif ls ./tools/apk/*fully*kiosk*.apk >/dev/null 2>&1; then
+    APK_FILE="$(ls ./tools/apk/*fully*kiosk*.apk | head -n1)"
+  elif ls ./tools/apk/*.apk >/dev/null 2>&1; then
+    APK_FILE="$(ls ./tools/apk/*.apk | head -n1)"
+  fi
 
-# Regista esta Box no Watchdog de Auto-Boot pós-reinício
+  if [[ -n "${APK_FILE}" ]]; then
+    echo "==> [APK] A instalar Fully Kiosk Browser (${APK_FILE}) na Box Android..."
+    "${ADB_BIN}" -s "${BOX_IP}:5555" install -r -g "${APK_FILE}" || true
+    IS_FULLY_INSTALLED="$("${ADB_BIN}" -s "${BOX_IP}:5555" shell pm path "${FULLY_PKG}" 2>/dev/null | grep "${FULLY_PKG}" || true)"
+  fi
+fi
+
+if [[ -n "${IS_FULLY_INSTALLED}" ]]; then
+  echo "==> [6/7] Fully Kiosk Browser DETETADO! A ativar modo Home Launcher e Kiosk Permanente..."
+  # Define Fully Kiosk como aplicação Home nativa do Android (garante arranque autónomo no boot sem rede!)
+  "${ADB_BIN}" -s "${BOX_IP}:5555" shell cmd package set-home-activity de.ozerov.fully/.MainActivity || true
+
+  # Inicia o Fully Kiosk com o URL alvo
+  "${ADB_BIN}" -s "${BOX_IP}:5555" shell am start -n de.ozerov.fully/.MainActivity -d "${PLAYER_URL}"
+  sleep 3
+
+  # Injeta configurações oficiais de Kiosk, auto-arranque e cache offline via broadcast
+  "${ADB_BIN}" -s "${BOX_IP}:5555" shell am broadcast -a de.ozerov.fully.action.SET_STRING_SETTING --es key startUrl --es value "${PLAYER_URL}" || true
+  "${ADB_BIN}" -s "${BOX_IP}:5555" shell am broadcast -a de.ozerov.fully.action.SET_BOOLEAN_SETTING --es key autostart --ez value true || true
+  "${ADB_BIN}" -s "${BOX_IP}:5555" shell am broadcast -a de.ozerov.fully.action.SET_BOOLEAN_SETTING --es key kioskMode --ez value true || true
+  "${ADB_BIN}" -s "${BOX_IP}:5555" shell am broadcast -a de.ozerov.fully.action.SET_BOOLEAN_SETTING --es key enableOfflineCache --ez value true || true
+  "${ADB_BIN}" -s "${BOX_IP}:5555" shell am broadcast -a de.ozerov.fully.action.SET_BOOLEAN_SETTING --es key keepScreenOn --ez value true || true
+  "${ADB_BIN}" -s "${BOX_IP}:5555" shell am broadcast -a de.ozerov.fully.action.SET_BOOLEAN_SETTING --es key sleepOnPowerConnect --ez value false || true
+  "${ADB_BIN}" -s "${BOX_IP}:5555" shell am broadcast -a de.ozerov.fully.action.SET_BOOLEAN_SETTING --es key autoplayVideo --ez value true || true
+  "${ADB_BIN}" -s "${BOX_IP}:5555" shell am broadcast -a de.ozerov.fully.action.SET_BOOLEAN_SETTING --es key showActionBar --ez value false || true
+  "${ADB_BIN}" -s "${BOX_IP}:5555" shell am broadcast -a de.ozerov.fully.action.SET_BOOLEAN_SETTING --es key showStatusBar --ez value false || true
+  "${ADB_BIN}" -s "${BOX_IP}:5555" shell am broadcast -a de.ozerov.fully.action.SET_BOOLEAN_SETTING --es key showNavigationKeys --ez value false || true
+  "${ADB_BIN}" -s "${BOX_IP}:5555" shell am broadcast -a de.ozerov.fully.action.SET_BOOLEAN_SETTING --es key preventDeviceSleep --ez value true || true
+
+  echo "🛡️  Fully Kiosk ativado com sucesso como Lançador Principal do Android!"
+else
+  echo "==> [6/7] Fully Kiosk não detetado. A abrir o Player via Google Chrome (Fallback PWA)..."
+  "${ADB_BIN}" -s "${BOX_IP}:5555" shell am clear-debug-app || true
+  "${ADB_BIN}" -s "${BOX_IP}:5555" shell rm -f /data/local/tmp/chrome-command-line || true
+  "${ADB_BIN}" -s "${BOX_IP}:5555" shell am start -a android.intent.action.VIEW -c android.intent.category.BROWSABLE -f 0x14000000 --es com.android.browser.application_id com.invision.nexus.kiosk --ez create_new_tab false -d "${PLAYER_URL}" "${CHROME_PKG}" 2>/dev/null || \
+  "${ADB_BIN}" -s "${BOX_IP}:5555" shell am start -a android.intent.action.VIEW -d "${PLAYER_URL}"
+
+  echo "==> [7/7] A aguardar carregamento do Chrome (4s) e ativar Fullscreen..."
+  sleep 4
+  "${ADB_BIN}" -s "${BOX_IP}:5555" shell input tap 960 540 || true
+  sleep 2
+  "${ADB_BIN}" -s "${BOX_IP}:5555" shell input tap 960 540 || true
+
+  echo ""
+  echo "💡 PARA ATIVAÇÃO TOTAL DO FULLY KIOSK (Arranque no Boot sem rede & Bloqueio anti-saída):"
+  echo "   1. Transfere o APK oficial de https://www.fully-kiosk.com/files/ (ou instala via Google Play Store)"
+  echo "   2. Coloca o ficheiro na pasta ./tools/apk/ e corre novamente este script!"
+  echo ""
+fi
+
+# Regista esta Box no Watchdog de Auto-Boot pós-reinício (servidor)
 mkdir -p ./data/storage
 touch ./data/storage/kiosk_boxes.conf
 grep -v "^${BOX_IP}|" ./data/storage/kiosk_boxes.conf > ./data/storage/kiosk_boxes.conf.tmp || true
@@ -177,5 +233,5 @@ if [[ ! -f "./data/storage/kiosk_watchdog.pid" ]] || ! kill -0 "$(cat ./data/sto
 fi
 
 echo "✅ Provisionamento concluído na Box X98 Plus (${BOX_IP})!"
-echo "   • URL Ativo: ${PLAYER_URL} (O ID registado no localStorage é mantido após reboot)"
-echo "   • Watchdog Pós-Reboot Ativo: Se desligares/reiniciares a Box, o NAS reabre o Chrome automaticamente!"
+echo "   • URL Ativo: ${PLAYER_URL}"
+echo "   • Modo Operacional: $([[ -n "${IS_FULLY_INSTALLED}" ]] && echo "Fully Kiosk Launcher (100% Autónomo no Boot sem rede)" || echo "Chrome PWA com Service Worker Offline-First")"

@@ -650,3 +650,29 @@ Em conformidade com a diretiva europeia **NIS2** e a arquitetura **Zero-Trust** 
 
 3. **Novo Manual de Procedimento Padrão ([docs/04-manuais/05-guia-testes-seguranca-auditoria-periodica.md](file:///Users/daviscorreia/Antigravity%20/invision-nexus/docs/04-manuais/05-guia-testes-seguranca-auditoria-periodica.md)):**
    - Registo exaustivo de todos os passos de auditoria, matriz de endereçamento IP (`127.0.0.1` vs IP de LAN `192.168.68.117`), critérios de aprovação/reprovação e plano de contingência em caso de anomalia.
+
+
+---
+
+## [2026-11-23] - Arquitetura Kiosk de Retalho (Fully Kiosk Browser) & Autonomia Total a Frio (Zero-Network Cold Boot)
+
+### Diagnóstico de Testes Físicos na Box Android X98 Plus
+Durante os testes de campo realizados com a Box Android física, foram validados com precisão dois comportamentos fundamentais:
+1. **Resiliência de Vídeo em Execução:** A desconexão do cabo de rede manteve a reprodução da playlist ativa de forma contínua, atestando o funcionamento da cache de vídeo persistente na ROM local.
+2. **Dependência do Watchdog do Servidor no Boot:** O corte de energia sem rede revelou que a Box reiniciava para o ambiente de trabalho do Android (Home Launcher) porque o Watchdog anterior residia no Synology NAS via ADB TCP/IP. Sem rede, o NAS não alcançava a Box e o Chrome padrão não dispunha de agente local de arranque a frio. Adicionalmente, o Service Worker original em modo *pass-through* impedia o Chrome de carregar o App Shell sem rede.
+
+### Soluções Implementadas & Arquitetura Fully Kiosk (Opção 1)
+1. **Service Worker Offline-First Blindado ([player/public/sw.js](file:///Users/daviscorreia/Antigravity%20/invision-nexus/player/public/sw.js)):**
+   - Implementada estratégia `Network-First` com fallback atómico para `index.html` em cache local para qualquer pedido de navegação offline.
+   - Implementada estratégia `Stale-While-Revalidate` para todos os ficheiros estáticos do App Shell (JS, CSS, fontes, ícones).
+   - Reconstruído o bundle de produção do Player em `player/dist/`.
+2. **Adoção do Fully Kiosk Browser como Lançador Nativo de Retalho ([scripts/provision-x98-kiosk.sh](file:///Users/daviscorreia/Antigravity%20/invision-nexus/scripts/provision-x98-kiosk.sh)):**
+   - Suporte a instalação automática de APK colocado na nova pasta `tools/apk/` com concessão total de permissões de sistema (`-g`).
+   - Configuração do Fully Kiosk como aplicação `HOME` nativa do Android (`cmd package set-home-activity de.ozerov.fully/.MainActivity`), garantindo que em qualquer corte de energia (mesmo com switch de loja desligado e sem Wi-Fi) o Android arranca diretamente no Player sem nunca passar pelo desktop da TV.
+   - Injeção de parâmetros de Kiosk estrito via Broadcast intents (`kioskMode`, `autostart`, `enableOfflineCache`, `keepScreenOn`, `preventDeviceSleep`).
+   - Bloqueio físico absoluto contra vandalismo em loja (inibição de teclas Home, Back, menus e atalhos).
+3. **Compatibilidade Dual no Watchdog do Backend & Script ([backend/live-bridge.mjs](file:///Users/daviscorreia/Antigravity%20/invision-nexus/backend/live-bridge.mjs) e [scripts/kiosk-watchdog.sh](file:///Users/daviscorreia/Antigravity%20/invision-nexus/scripts/kiosk-watchdog.sh)):**
+   - Atualizada a deteção de processos em primeiro plano para suportar concorrentemente `de.ozerov.fully` (Fully Kiosk) e `com.android.chrome` (Chrome PWA).
+   - Função `launchKioskOnBox` prioriza Fully Kiosk com salvaguarda transparente para Chrome se o APK ainda não estiver instalado.
+4. **Atualização da Documentação Técnica ([docs/04-manuais/03-provisionamento-kiosk-x98-sync.md](file:///Users/daviscorreia/Antigravity%20/invision-nexus/docs/04-manuais/03-provisionamento-kiosk-x98-sync.md)):**
+   - Documentado o fluxo de Zero-Network Cold Boot e o procedimento de provisionamento de loja com o Fully Kiosk Browser.

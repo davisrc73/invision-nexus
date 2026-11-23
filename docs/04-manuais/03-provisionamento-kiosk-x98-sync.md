@@ -1,27 +1,68 @@
-# Manual 03: Provisionamento Kiosk (Boxes Android X98 Plus, Parque Expo & Sincronização ao Milissegundo)
+# Manual 03: Provisionamento Kiosk (Boxes Android X98 Plus, Fully Kiosk Browser & Sincronização ao Milissegundo)
 
 Este manual descreve como preparar e operar os terminais em loja: **Boxes Android X98 Plus (4GB RAM / 64GB ROM)**, **LEDwalls**, **TVs em Exposição (`TV_DEMO`)** e **Parque de Exposição (`LAPTOP_EXPO`, `TABLET_EXPO`, `SMARTPHONE_EXPO`)**.
 
 ---
 
-## 1. Provisionamento Automatizado ADB para Boxes Android X98 Plus
+## 1. Arquitetura Kiosk de Retalho: Fully Kiosk Browser (Padrão FNAC / DARTY)
 
-O script `scripts/provision-x98-kiosk.sh` automatiza a configuração de fábrica de qualquer Box Android X98 Plus na rede da loja:
+No retalho comercial europeu, o navegador padrão do Android (Google Chrome) não é utilizado diretamente como interface primária de ecrã por não dispor de modo Kiosk com bloqueio nativo de sistema operativo (permite que clientes saiam para o desktop do Android com o comando da TV e não arranca de forma autónoma a frio se não houver rede).
 
-```bash
-chmod +x scripts/provision-x98-kiosk.sh
-./scripts/provision-x98-kiosk.sh 192.168.10.45 http://IP_DO_SERVIDOR:5173
+A plataforma Invision Nexus adota o **Fully Kiosk Browser** como motor de execução dedicado para as Boxes X98 Plus:
+
+```mermaid
+flowchart TD
+    subgraph Arranque_A_Frio["Corte de Energia / Arranque a Frio (Sem Rede)"]
+        A["Box X98 Plus Liga"] --> B["Android OS Inicializa"]
+        B --> C["Lançador Predefinido: Fully Kiosk Browser"]
+        C --> D["Carrega App Shell & Vídeos da ROM Local (Cache)"]
+        D --> E["Início Imediato da Emissão em Loop (Zero Black Screen) 🟢"]
+    end
+
+    subgraph Restabelecimento_Rede["Restabelecimento de Rede"]
+        E --> F["Cabo de Rede / Wi-Fi Liga"]
+        F --> G["WebSocket Reconecta ao Synology NAS"]
+        G --> H["Sincronização Atómica de Manifesto & Logs PoP"]
+    end
 ```
 
-### O que o script configura automaticamente:
-1. **Energia e HDMI-CEC:** Desativa o *Sleep*, protetor de ecrã Android e o desligar automático via HDMI-CEC (`stay_on_while_plugged_in = 7`).
-2. **Modo Imersivo (Full Kiosk):** Oculta a barra de estado superior e a barra de navegação Android (`immersive.full=*`) e desativa notificações *heads-up*.
-3. **Autoplay sem Gesto Humano:** Configura `--autoplay-policy=no-user-gesture-required` e descodificação de vídeo por GPU (`--enable-accelerated-video-decode`), garantindo que após um corte de energia na loja a box arranca e reproduz vídeo imediatamente sem intervenção humana.
-4. **Zero-Touch Pairing (6 Dígitos):** Ao abrir o Player pela primeira vez, o ecrã exibe um código de 6 dígitos (ex: `NX-849201`). Basta um elemento `GLOBAL_ADMIN` ou `IT_OPS` aprovar o código no Dashboard Central.
+### Vantagens do Fully Kiosk no Ecossistema Invision Nexus:
+1. **Zero-Network Cold Boot (Arranque sem Rede):** Registado no Android como aplicação `HOME` nativa (`cmd package set-home-activity de.ozerov.fully/.MainActivity`). Ao ligar a ficha à tomada, mesmo com o cabo de rede desligado e sem Wi-Fi, a Box entra diretamente no Player sem nunca exibir o ambiente de trabalho da TV.
+2. **Bloqueio Anti-Vandalismo Estrito:** Inibe fisicamente as teclas *Home*, *Back*, menus de contexto, gestos táteis e atalhos de teclado/rato. Ninguém na loja consegue fechar o ecrã.
+3. **Cache Web Agressiva:** Mantém em disco flash (64GB ROM) todo o App Shell (HTML, JS, CSS) e media, eliminando o ecrã cinzento de erro do Chrome.
 
 ---
 
-## 2. Sincronização Multi-Ecrã ao Milissegundo (`MillisecondSyncEngine`)
+## 2. Provisionamento Automatizado ADB para Boxes Android X98 Plus
+
+O script `scripts/provision-x98-kiosk.sh` automatiza toda a configuração de fábrica via rede local:
+
+```bash
+chmod +x scripts/provision-x98-kiosk.sh
+
+# Modo A: Com deteção/instalação automática do APK colocado em tools/apk/
+./scripts/provision-x98-kiosk.sh 192.168.68.115 http://192.168.68.117:5174
+
+# Modo B: Indicando o caminho direto do APK do Fully Kiosk
+./scripts/provision-x98-kiosk.sh 192.168.68.115 http://192.168.68.117:5174 ./tools/apk/fully-kiosk.apk
+```
+
+### O que o script configura automaticamente:
+1. **Instalação do APK:** Se o Fully Kiosk não estiver instalado na Box, procura qualquer instalador `.apk` na pasta `tools/apk/` e instala-o via ADB com concessão automática de permissões (`-g`).
+2. **Ativação como Home Launcher:** Configura o Fully Kiosk como aplicação Home do sistema operativo (`cmd package set-home-activity de.ozerov.fully/.MainActivity`).
+3. **Injeção de Definições de Kiosk:**
+   - `startUrl`: URL do Player (`http://192.168.68.117:5174`).
+   - `autostart = true`: Arranque instantâneo no boot.
+   - `kioskMode = true`: Bloqueio contra saída e sobreposição.
+   - `enableOfflineCache = true`: Cache persistente em disco.
+   - `keepScreenOn = true` e `preventDeviceSleep = true`: Ecrã permanentemente ativo.
+   - `showActionBar = false` e `showStatusBar = false`: Ocultação de barras de navegação.
+4. **Energia e HDMI-CEC:** Desativa o *Sleep*, protetor de ecrã Android e o desligar automático via HDMI-CEC (`stay_on_while_plugged_in = 7`).
+5. **Fallback PWA com Service Worker:** Caso o Fully Kiosk ainda não esteja instalado, provisiona o Google Chrome com o novo Service Worker Offline-First e ecrã imersivo.
+
+---
+
+## 3. Sincronização Multi-Ecrã ao Milissegundo (`MillisecondSyncEngine`)
 
 Para corredores de ecrãs ou Video Walls pertencentes ao mesmo `SyncGroup`:
 - **Calibração NTP via WebSockets (`/ws/sync`):** Calcula o *Round-Trip Time (RTT)* e o *Clock Offset* filtrando as amostras de menor jitter.

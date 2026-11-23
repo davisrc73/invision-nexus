@@ -923,6 +923,28 @@ async function launchChromeSingleTabOnBox(target, cleanUrl) {
   }, 3500);
 }
 
+async function launchKioskOnBox(target, cleanUrl) {
+  // Verifica se o Fully Kiosk Browser está instalado na Box
+  const pkgCheck = await runAdb(['-s', target, 'shell', 'pm', 'path', 'de.ozerov.fully']);
+  const isFullyInstalled = pkgCheck.ok && pkgCheck.stdout.includes('de.ozerov.fully');
+
+  if (isFullyInstalled) {
+    // Define Fully Kiosk como Lançador Principal (Home Launcher) do Android
+    await runAdb(['-s', target, 'shell', 'cmd', 'package', 'set-home-activity', 'de.ozerov.fully/.MainActivity']);
+    // Abre o Fully Kiosk com o URL
+    await runAdb(['-s', target, 'shell', 'am', 'start', '-n', 'de.ozerov.fully/.MainActivity', '-d', cleanUrl]);
+    // Injeta parâmetros essenciais de Kiosk
+    await runAdb(['-s', target, 'shell', 'am', 'broadcast', '-a', 'de.ozerov.fully.action.SET_STRING_SETTING', '--es', 'key', 'startUrl', '--es', 'value', cleanUrl]);
+    await runAdb(['-s', target, 'shell', 'am', 'broadcast', '-a', 'de.ozerov.fully.action.SET_BOOLEAN_SETTING', '--es', 'key', 'autostart', '--ez', 'value', 'true']);
+    await runAdb(['-s', target, 'shell', 'am', 'broadcast', '-a', 'de.ozerov.fully.action.SET_BOOLEAN_SETTING', '--es', 'key', 'kioskMode', '--ez', 'value', 'true']);
+    await runAdb(['-s', target, 'shell', 'am', 'broadcast', '-a', 'de.ozerov.fully.action.SET_BOOLEAN_SETTING', '--es', 'key', 'enableOfflineCache', '--ez', 'value', 'true']);
+    return { mode: 'FULLY_KIOSK' };
+  }
+
+  await launchChromeSingleTabOnBox(target, cleanUrl);
+  return { mode: 'CHROME_KIOSK' };
+}
+
 async function provisionAdbBox(boxIp, rawPlayerUrl, autoWatchdog = true) {
   const logs = [];
   const cleanIp = String(boxIp || '').trim();
@@ -974,15 +996,16 @@ async function provisionAdbBox(boxIp, rawPlayerUrl, autoWatchdog = true) {
   await runAdb(['-s', target, 'shell', 'settings', 'put', 'global', 'heads_up_notifications_enabled', '0']);
   await runAdb(['-s', target, 'shell', 'settings', 'put', 'global', 'policy_control', 'immersive.full=*']);
 
-  logs.push(`==> [4/6] A abrir o Player PWA (${cleanUrl}) numa única Tab limpa e ativar Fullscreen...`);
-  await launchChromeSingleTabOnBox(target, cleanUrl);
+  logs.push(`==> [4/6] A abrir o Player PWA (${cleanUrl}) em modo Kiosk e ativar Fullscreen...`);
+  const launched = await launchKioskOnBox(target, cleanUrl);
+  const operationalStatus = launched.mode === 'FULLY_KIOSK' ? 'ONLINE (Fully Kiosk)' : 'ONLINE (Chrome Kiosk)';
 
   const nowIso = new Date().toISOString();
   const existing = state.adbBoxes.find((b) => b.boxIp === cleanIp);
   if (existing) {
     existing.playerUrl = cleanUrl;
     existing.autoWatchdog = Boolean(autoWatchdog);
-    existing.status = 'ONLINE (Chrome Kiosk)';
+    existing.status = operationalStatus;
     existing.lastProvisionedAt = nowIso;
     existing.lastCheckedAt = nowIso;
     existing.lastLaunchMs = Date.now();
@@ -992,7 +1015,7 @@ async function provisionAdbBox(boxIp, rawPlayerUrl, autoWatchdog = true) {
       boxIp: cleanIp,
       playerUrl: cleanUrl,
       autoWatchdog: Boolean(autoWatchdog),
-      status: 'ONLINE (Chrome Kiosk)',
+      status: operationalStatus,
       lastProvisionedAt: nowIso,
       lastCheckedAt: nowIso,
       lastLaunchMs: Date.now(),
@@ -1037,36 +1060,40 @@ async function runKioskWatchdogCycle() {
         continue;
       }
 
-      // Verifica de forma ultra-rápida qual a Activity em primeiro plano na TV e se o processo Chrome existe
+      // Verifica de forma ultra-rápida qual a Activity em primeiro plano na TV e se o processo Chrome ou Fully Kiosk existe
       const actRes = await runAdb(
         [
           '-s',
           target,
           'shell',
-          'dumpsys activity activities | grep -iE "ResumedActivity|mFocusedApp" | head -n 4; echo "CHROME_PID:$(pidof com.android.chrome)"',
+          'dumpsys activity activities | grep -iE "ResumedActivity|mFocusedApp" | head -n 4; echo "CHROME_PID:$(pidof com.android.chrome)"; echo "FULLY_PID:$(pidof de.ozerov.fully)"',
         ],
         5000
       );
 
       const out = actRes.stdout || '';
-      const hasChromePid = !out.includes('CHROME_PID:') || /CHROME_PID:\s*[0-9]+/.test(out);
+      const hasChromePid = /CHROME_PID:\s*[0-9]+/.test(out);
+      const hasFullyPid = /FULLY_PID:\s*[0-9]+/.test(out);
       const resumedLines = out
         .split('\n')
         .filter((l) => /ResumedActivity|mFocusedApp/i.test(l))
         .join(' ');
-      const isChromeInForeground =
-        hasChromePid &&
-        resumedLines.length > 0 &&
-        resumedLines.includes('com.android.chrome');
+      
+      const isFullyInForeground = hasFullyPid && resumedLines.includes('de.ozerov.fully');
+      const isChromeInForeground = hasChromePid && resumedLines.includes('com.android.chrome');
+      const isPlayerInForeground = isFullyInForeground || isChromeInForeground;
 
       const sinceLastLaunchMs = Date.now() - Number(box.lastLaunchMs || 0);
 
-      if (!isChromeInForeground && !resumedLines.includes('com.android.systemui') && sinceLastLaunchMs > 18000) {
-        // A Box reiniciou para o Desktop do Android (Launcher) ou o Chrome fechou!
-        // Abre automaticamente o Chrome no URL do Player!
+      if (!isPlayerInForeground && !resumedLines.includes('com.android.systemui') && sinceLastLaunchMs > 18000) {
+        // A Box reiniciou para o Desktop do Android (Launcher) ou o Player fechou!
+        // Abre automaticamente o Player PWA!
         box.lastLaunchMs = Date.now();
-        await launchChromeSingleTabOnBox(target, box.playerUrl);
-        box.status = 'AUTO-RECOVERED (Pós-Boot)';
+        const launched = await launchKioskOnBox(target, box.playerUrl);
+        box.status = launched.mode === 'FULLY_KIOSK' ? 'ONLINE (Fully Kiosk)' : 'ONLINE (Chrome Kiosk)';
+        changed = true;
+      } else if (isFullyInForeground && box.status !== 'ONLINE (Fully Kiosk)') {
+        box.status = 'ONLINE (Fully Kiosk)';
         changed = true;
       } else if (isChromeInForeground && box.status !== 'ONLINE (Chrome Kiosk)') {
         box.status = 'ONLINE (Chrome Kiosk)';
@@ -2335,7 +2362,8 @@ const server = http.createServer(async (req, res) => {
       } else if (action === 'RELAUNCH_URL') {
         const targetUrl = (box && box.playerUrl) || payload.playerUrl;
         if (box) box.lastLaunchMs = Date.now();
-        await launchChromeSingleTabOnBox(target, targetUrl);
+        const launched = await launchKioskOnBox(target, targetUrl);
+        if (box) box.status = launched.mode === 'FULLY_KIOSK' ? 'ONLINE (Fully Kiosk)' : 'ONLINE (Chrome Kiosk)';
       } else if (action === 'REBOOT_BOX') {
         if (box) {
           box.status = 'REBOOTING (A reiniciar Box...)';

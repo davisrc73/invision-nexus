@@ -47,20 +47,35 @@ while true; do
         BOOT_DONE="$("${ADB_BIN}" -s "${BOX_IP}:5555" shell getprop sys.boot_completed 2>/dev/null | tr -d '[:space:]' || true)"
         [[ "${BOOT_DONE}" != "1" ]] && continue
 
-        # Verifica de forma ultra-rápida qual a Activity em primeiro plano na TV e se o processo Chrome existe
-        RESUMED_OUT="$("${ADB_BIN}" -s "${BOX_IP}:5555" shell 'dumpsys activity activities | grep -iE "ResumedActivity|mFocusedApp" | head -n 4; echo "CHROME_PID:$(pidof com.android.chrome)"' 2>/dev/null || true)"
+        # Verifica de forma ultra-rápida qual a Activity em primeiro plano na TV e se Chrome ou Fully Kiosk estão a correr
+        RESUMED_OUT="$("${ADB_BIN}" -s "${BOX_IP}:5555" shell 'dumpsys activity activities | grep -iE "ResumedActivity|mFocusedApp" | head -n 4; echo "CHROME_PID:$(pidof com.android.chrome)"; echo "FULLY_PID:$(pidof de.ozerov.fully)"' 2>/dev/null || true)"
 
-        # Se o Chrome não estiver em primeiro plano (ex: a Box reiniciou e está no Desktop do Android)
-        if ! echo "${RESUMED_OUT}" | grep -E "ResumedActivity|mFocusedApp" | grep -q "${CHROME_PKG}"; then
-          echo "[$(date '+%Y-%m-%d %H:%M:%S')] Box ${BOX_IP} reiniciou para o Desktop Android. A abrir ${PLAYER_URL}..."
-          "${ADB_BIN}" -s "${BOX_IP}:5555" shell am clear-debug-app >/dev/null 2>&1 || true
-          "${ADB_BIN}" -s "${BOX_IP}:5555" shell settings put global policy_control "immersive.full=*" >/dev/null 2>&1 || true
-          "${ADB_BIN}" -s "${BOX_IP}:5555" shell am start -a android.intent.action.VIEW -c android.intent.category.BROWSABLE -f 0x14000000 --es com.android.browser.application_id com.invision.nexus.kiosk --ez create_new_tab false -d "${PLAYER_URL}" "${CHROME_PKG}" >/dev/null 2>&1 || \
-          "${ADB_BIN}" -s "${BOX_IP}:5555" shell am start -a android.intent.action.VIEW -d "${PLAYER_URL}" >/dev/null 2>&1 || true
-          sleep 4
-          "${ADB_BIN}" -s "${BOX_IP}:5555" shell input tap 960 540 >/dev/null 2>&1 || true
-          sleep 2
-          "${ADB_BIN}" -s "${BOX_IP}:5555" shell input tap 960 540 >/dev/null 2>&1 || true
+        IS_FULLY_ACTIVE=0
+        if echo "${RESUMED_OUT}" | grep -E "ResumedActivity|mFocusedApp" | grep -q "de.ozerov.fully"; then
+          IS_FULLY_ACTIVE=1
+        fi
+
+        IS_CHROME_ACTIVE=0
+        if echo "${RESUMED_OUT}" | grep -E "ResumedActivity|mFocusedApp" | grep -q "${CHROME_PKG}"; then
+          IS_CHROME_ACTIVE=1
+        fi
+
+        # Se nenhum Player estiver em primeiro plano (ex: a Box reiniciou e está no Desktop do Android)
+        if [[ "$IS_FULLY_ACTIVE" -eq 0 && "$IS_CHROME_ACTIVE" -eq 0 ]]; then
+          echo "[$(date '+%Y-%m-%d %H:%M:%S')] Box ${BOX_IP} fora do Player (Desktop Android). A recuperar..."
+          if "${ADB_BIN}" -s "${BOX_IP}:5555" shell pm path de.ozerov.fully 2>/dev/null | grep -q "de.ozerov.fully"; then
+            "${ADB_BIN}" -s "${BOX_IP}:5555" shell cmd package set-home-activity de.ozerov.fully/.MainActivity >/dev/null 2>&1 || true
+            "${ADB_BIN}" -s "${BOX_IP}:5555" shell am start -n de.ozerov.fully/.MainActivity -d "${PLAYER_URL}" >/dev/null 2>&1 || true
+          else
+            "${ADB_BIN}" -s "${BOX_IP}:5555" shell am clear-debug-app >/dev/null 2>&1 || true
+            "${ADB_BIN}" -s "${BOX_IP}:5555" shell settings put global policy_control "immersive.full=*" >/dev/null 2>&1 || true
+            "${ADB_BIN}" -s "${BOX_IP}:5555" shell am start -a android.intent.action.VIEW -c android.intent.category.BROWSABLE -f 0x14000000 --es com.android.browser.application_id com.invision.nexus.kiosk --ez create_new_tab false -d "${PLAYER_URL}" "${CHROME_PKG}" >/dev/null 2>&1 || \
+            "${ADB_BIN}" -s "${BOX_IP}:5555" shell am start -a android.intent.action.VIEW -d "${PLAYER_URL}" >/dev/null 2>&1 || true
+            sleep 4
+            "${ADB_BIN}" -s "${BOX_IP}:5555" shell input tap 960 540 >/dev/null 2>&1 || true
+            sleep 2
+            "${ADB_BIN}" -s "${BOX_IP}:5555" shell input tap 960 540 >/dev/null 2>&1 || true
+          fi
         fi
       fi
     done < "${CONF_FILE}"
