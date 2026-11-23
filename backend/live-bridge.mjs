@@ -865,6 +865,10 @@ function runAdb(args, timeoutMs = 8000) {
 }
 
 async function launchChromeSingleTabOnBox(target, cleanUrl) {
+  // Fecha instâncias anteriores e limpa abas pendentes para não acumular abas na Box
+  await runAdb(['-s', target, 'shell', 'am', 'force-stop', 'com.android.chrome']);
+  await runAdb(['-s', target, 'shell', 'su', '-c', 'rm -rf /data/data/com.android.chrome/app_tabs/*']);
+  await runAdb(['-s', target, 'shell', 'rm', '-rf', '/data/data/com.android.chrome/app_tabs/*']);
   await runAdb(['-s', target, 'shell', 'am', 'clear-debug-app']);
   await runAdb(['-s', target, 'shell', 'rm', '-f', '/data/local/tmp/chrome-command-line']);
   await runAdb([
@@ -878,28 +882,27 @@ async function launchChromeSingleTabOnBox(target, cleanUrl) {
     'immersive.full=*',
   ]);
 
-  // Usa application_id fixo e create_new_tab=false para reutilizar sempre a mesma Tab sem abrir novas tabs!
+  // Inicia o Chrome com FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TASK (0x10008000) garantindo uma única aba limpa
   const launchRes = await runAdb([
     '-s',
     target,
     'shell',
     'am',
     'start',
+    '-n',
+    'com.android.chrome/com.google.android.apps.chrome.Main',
     '-a',
     'android.intent.action.VIEW',
-    '-c',
-    'android.intent.category.BROWSABLE',
+    '-d',
+    cleanUrl,
     '-f',
-    '0x14000000',
+    '0x10008000',
     '--es',
     'com.android.browser.application_id',
-    'com.invision.nexus.kiosk',
+    'com.android.chrome',
     '--ez',
     'create_new_tab',
     'false',
-    '-d',
-    cleanUrl,
-    'com.android.chrome',
   ]);
   if (!launchRes.ok) {
     await runAdb([
@@ -912,6 +915,8 @@ async function launchChromeSingleTabOnBox(target, cleanUrl) {
       'android.intent.action.VIEW',
       '-d',
       cleanUrl,
+      '-f',
+      '0x10008000',
     ]);
   }
 

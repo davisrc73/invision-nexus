@@ -676,3 +676,18 @@ Durante os testes de campo realizados com a Box Android física, foram validados
    - Função `launchKioskOnBox` prioriza Fully Kiosk com salvaguarda transparente para Chrome se o APK ainda não estiver instalado.
 4. **Atualização da Documentação Técnica ([docs/04-manuais/03-provisionamento-kiosk-x98-sync.md](file:///Users/daviscorreia/Antigravity%20/invision-nexus/docs/04-manuais/03-provisionamento-kiosk-x98-sync.md)):**
    - Documentado o fluxo de Zero-Network Cold Boot e o procedimento de provisionamento de loja com o Fully Kiosk Browser.
+
+
+---
+
+## [2026-11-23] - Prevenção de Abas Duplicadas no Chrome & Instruções de Obtenção do Fully Kiosk
+
+### Melhorias Operacionais na Experiência de Ecrã
+1. **Prevenção e Limpeza Atómica de Abas Acumuladas:**
+   - Detetado que invocações sucessivas do provisionamento ou do watchdog abriam novas abas no Google Chrome (`about:blank` ou tabs repetidas do Player), consumindo RAM e recursos de GPU na Box Android X98 Plus.
+   - Implementada rotina de fecho prévio em [scripts/provision-x98-kiosk.sh](file:///Users/daviscorreia/Antigravity%20/invision-nexus/scripts/provision-x98-kiosk.sh), [backend/live-bridge.mjs](file:///Users/daviscorreia/Antigravity%20/invision-nexus/backend/live-bridge.mjs) e [scripts/kiosk-watchdog.sh](file:///Users/daviscorreia/Antigravity%20/invision-nexus/scripts/kiosk-watchdog.sh):
+     - Execução de `am force-stop com.android.chrome` antes de cada arranque.
+     - Limpeza atómica da pasta de estado de abas (`rm -rf /data/data/com.android.chrome/app_tabs/*`), preservando integralmente `localStorage`, cookies e a cache de vídeo.
+     - Lançamento do Intent com flags `FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TASK` (`0x10008000`), garantindo estritamente **uma única aba limpa** em primeiro plano.
+2. **Guia Simplificado de Obtenção do Fully Kiosk Browser APK:**
+   - Clarificado o método direto de download via página oficial com botão de ação ([https://www.fully-kiosk.com/en/#download-box](https://www.fully-kiosk.com/en/#download-box)) e a via direta através da **Google Play Store** na própria Box Android.

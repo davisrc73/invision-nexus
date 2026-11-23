@@ -177,7 +177,12 @@ if [[ -z "${IS_FULLY_INSTALLED}" ]]; then
 fi
 
 if [[ -n "${IS_FULLY_INSTALLED}" ]]; then
-  echo "==> [6/7] Fully Kiosk Browser DETETADO! A ativar modo Home Launcher e Kiosk Permanente..."
+  echo "==> [6/7] Fully Kiosk DETETADO! A limpar instâncias anteriores e ativar Kiosk Permanente..."
+  # Fecha qualquer instância anterior para não duplicar processos
+  "${ADB_BIN}" -s "${BOX_IP}:5555" shell am force-stop "${CHROME_PKG}" || true
+  "${ADB_BIN}" -s "${BOX_IP}:5555" shell am force-stop "${FULLY_PKG}" || true
+  sleep 1
+
   # Define Fully Kiosk como aplicação Home nativa do Android (garante arranque autónomo no boot sem rede!)
   "${ADB_BIN}" -s "${BOX_IP}:5555" shell cmd package set-home-activity de.ozerov.fully/.MainActivity || true
 
@@ -200,11 +205,25 @@ if [[ -n "${IS_FULLY_INSTALLED}" ]]; then
 
   echo "🛡️  Fully Kiosk ativado com sucesso como Lançador Principal do Android!"
 else
-  echo "==> [6/7] Fully Kiosk não detetado. A abrir o Player via Google Chrome (Fallback PWA)..."
+  echo "==> [6/7] Fully Kiosk não detetado. A limpar abas abertas e a reiniciar o Google Chrome..."
+  # 1. Força a paragem do Chrome para fechar todas as abas e sessões anteriores
+  "${ADB_BIN}" -s "${BOX_IP}:5555" shell am force-stop com.android.chrome || true
+  # 2. Limpa o registo de abas abertas (preserva dados de sessão, cookies e localStorage do Player)
+  "${ADB_BIN}" -s "${BOX_IP}:5555" shell su -c "rm -rf /data/data/com.android.chrome/app_tabs/*" 2>/dev/null || \
+  "${ADB_BIN}" -s "${BOX_IP}:5555" shell rm -rf /data/data/com.android.chrome/app_tabs/* 2>/dev/null || true
   "${ADB_BIN}" -s "${BOX_IP}:5555" shell am clear-debug-app || true
   "${ADB_BIN}" -s "${BOX_IP}:5555" shell rm -f /data/local/tmp/chrome-command-line || true
-  "${ADB_BIN}" -s "${BOX_IP}:5555" shell am start -a android.intent.action.VIEW -c android.intent.category.BROWSABLE -f 0x14000000 --es com.android.browser.application_id com.invision.nexus.kiosk --ez create_new_tab false -d "${PLAYER_URL}" "${CHROME_PKG}" 2>/dev/null || \
-  "${ADB_BIN}" -s "${BOX_IP}:5555" shell am start -a android.intent.action.VIEW -d "${PLAYER_URL}"
+  sleep 1
+
+  # 3. Inicia o Chrome com FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TASK (0x10008000) garantindo UMA ÚNICA ABA LIMPA
+  "${ADB_BIN}" -s "${BOX_IP}:5555" shell am start \
+    -n com.android.chrome/com.google.android.apps.chrome.Main \
+    -a android.intent.action.VIEW \
+    -d "${PLAYER_URL}" \
+    -f 0x10008000 \
+    --es com.android.browser.application_id com.android.chrome \
+    --ez create_new_tab false 2>/dev/null || \
+  "${ADB_BIN}" -s "${BOX_IP}:5555" shell am start -a android.intent.action.VIEW -d "${PLAYER_URL}" -f 0x10008000
 
   echo "==> [7/7] A aguardar carregamento do Chrome (4s) e ativar Fullscreen..."
   sleep 4
@@ -213,9 +232,10 @@ else
   "${ADB_BIN}" -s "${BOX_IP}:5555" shell input tap 960 540 || true
 
   echo ""
-  echo "💡 PARA ATIVAÇÃO TOTAL DO FULLY KIOSK (Arranque no Boot sem rede & Bloqueio anti-saída):"
-  echo "   1. Transfere o APK oficial de https://www.fully-kiosk.com/files/ (ou instala via Google Play Store)"
-  echo "   2. Coloca o ficheiro na pasta ./tools/apk/ e corre novamente este script!"
+  echo "💡 COMO INSTALAR O FULLY KIOSK BROWSER (Para arranque no boot sem rede e bloqueio total):"
+  echo "   OPÇÃO A (Recomendada): Na própria Box Android, abre a Google Play Store e pesquisa 'Fully Kiosk Browser' -> Instalar."
+  echo "   OPÇÃO B: No computador, acede a https://www.fully-kiosk.com/en/#download-box e clica no botão 'Download APK'."
+  echo "            Coloca o ficheiro descarregado em ./tools/apk/ e corre novamente este script!"
   echo ""
 fi
 

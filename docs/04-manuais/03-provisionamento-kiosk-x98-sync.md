@@ -31,6 +31,16 @@ flowchart TD
 2. **Bloqueio Anti-Vandalismo Estrito:** Inibe fisicamente as teclas *Home*, *Back*, menus de contexto, gestos táteis e atalhos de teclado/rato. Ninguém na loja consegue fechar o ecrã.
 3. **Cache Web Agressiva:** Mantém em disco flash (64GB ROM) todo o App Shell (HTML, JS, CSS) e media, eliminando o ecrã cinzento de erro do Chrome.
 
+### Como obter o Fully Kiosk Browser APK (2 Métodos Rápidos):
+* **Método 1 (Diretamente na Box Android — Mais Rápido):**
+  1. No ecrã da TV com o comando da Box X98 Plus, abra a **Google Play Store**.
+  2. Pesquise por **Fully Kiosk Browser** e clique em **Instalar**.
+  3. Assim que a app estiver instalada, corra o script de provisionamento no Mac/NAS — o script deteta a aplicação instalada de imediato!
+* **Método 2 (Download do APK no PC/Mac):**
+  1. Aceda à página oficial de download: 👉 **[https://www.fully-kiosk.com/en/#download-box](https://www.fully-kiosk.com/en/#download-box)** (ou na página principal [https://www.fully-kiosk.com](https://www.fully-kiosk.com) e clique no botão azul *"Download APK"*).
+  2. Guarde o ficheiro descarregado na pasta `tools/apk/fully-kiosk.apk` do projeto.
+  3. Execute o script de provisionamento: o APK é transferido e instalado automaticamente na Box via ADB.
+
 ---
 
 ## 2. Provisionamento Automatizado ADB para Boxes Android X98 Plus
@@ -48,17 +58,18 @@ chmod +x scripts/provision-x98-kiosk.sh
 ```
 
 ### O que o script configura automaticamente:
-1. **Instalação do APK:** Se o Fully Kiosk não estiver instalado na Box, procura qualquer instalador `.apk` na pasta `tools/apk/` e instala-o via ADB com concessão automática de permissões (`-g`).
-2. **Ativação como Home Launcher:** Configura o Fully Kiosk como aplicação Home do sistema operativo (`cmd package set-home-activity de.ozerov.fully/.MainActivity`).
-3. **Injeção de Definições de Kiosk:**
+1. **Limpeza e Prevenção de Abas Duplicadas:** Antes de iniciar o Player, o script força a paragem do browser (`am force-stop`) e limpa o ficheiro de abas anteriores (`app_tabs/*`). O Player é iniciado com a flag `FLAG_ACTIVITY_CLEAR_TASK` (`0x10008000`), garantindo que **nunca se acumulam múltiplas abas em segundo plano**, libertando toda a memória RAM e GPU da Box.
+2. **Instalação do APK:** Se o Fully Kiosk não estiver instalado na Box, procura qualquer instalador `.apk` na pasta `tools/apk/` e instala-o via ADB com concessão automática de permissões (`-g`).
+3. **Ativação como Home Launcher:** Configura o Fully Kiosk como aplicação Home do sistema operativo (`cmd package set-home-activity de.ozerov.fully/.MainActivity`).
+4. **Injeção de Definições de Kiosk:**
    - `startUrl`: URL do Player (`http://192.168.68.117:5174`).
    - `autostart = true`: Arranque instantâneo no boot.
    - `kioskMode = true`: Bloqueio contra saída e sobreposição.
    - `enableOfflineCache = true`: Cache persistente em disco.
    - `keepScreenOn = true` e `preventDeviceSleep = true`: Ecrã permanentemente ativo.
    - `showActionBar = false` e `showStatusBar = false`: Ocultação de barras de navegação.
-4. **Energia e HDMI-CEC:** Desativa o *Sleep*, protetor de ecrã Android e o desligar automático via HDMI-CEC (`stay_on_while_plugged_in = 7`).
-5. **Fallback PWA com Service Worker:** Caso o Fully Kiosk ainda não esteja instalado, provisiona o Google Chrome com o novo Service Worker Offline-First e ecrã imersivo.
+5. **Energia e HDMI-CEC:** Desativa o *Sleep*, protetor de ecrã Android e o desligar automático via HDMI-CEC (`stay_on_while_plugged_in = 7`).
+6. **Fallback PWA com Service Worker:** Caso o Fully Kiosk ainda não esteja instalado, provisiona o Google Chrome em aba única limpa com o Service Worker Offline-First e ecrã imersivo.
 
 ---
 

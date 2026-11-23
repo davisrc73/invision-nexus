@@ -64,13 +64,24 @@ while true; do
         if [[ "$IS_FULLY_ACTIVE" -eq 0 && "$IS_CHROME_ACTIVE" -eq 0 ]]; then
           echo "[$(date '+%Y-%m-%d %H:%M:%S')] Box ${BOX_IP} fora do Player (Desktop Android). A recuperar..."
           if "${ADB_BIN}" -s "${BOX_IP}:5555" shell pm path de.ozerov.fully 2>/dev/null | grep -q "de.ozerov.fully"; then
+            "${ADB_BIN}" -s "${BOX_IP}:5555" shell am force-stop de.ozerov.fully >/dev/null 2>&1 || true
             "${ADB_BIN}" -s "${BOX_IP}:5555" shell cmd package set-home-activity de.ozerov.fully/.MainActivity >/dev/null 2>&1 || true
             "${ADB_BIN}" -s "${BOX_IP}:5555" shell am start -n de.ozerov.fully/.MainActivity -d "${PLAYER_URL}" >/dev/null 2>&1 || true
           else
+            "${ADB_BIN}" -s "${BOX_IP}:5555" shell am force-stop com.android.chrome >/dev/null 2>&1 || true
+            "${ADB_BIN}" -s "${BOX_IP}:5555" shell su -c "rm -rf /data/data/com.android.chrome/app_tabs/*" >/dev/null 2>&1 || true
+            "${ADB_BIN}" -s "${BOX_IP}:5555" shell rm -rf /data/data/com.android.chrome/app_tabs/* >/dev/null 2>&1 || true
             "${ADB_BIN}" -s "${BOX_IP}:5555" shell am clear-debug-app >/dev/null 2>&1 || true
+            "${ADB_BIN}" -s "${BOX_IP}:5555" shell rm -f /data/local/tmp/chrome-command-line >/dev/null 2>&1 || true
             "${ADB_BIN}" -s "${BOX_IP}:5555" shell settings put global policy_control "immersive.full=*" >/dev/null 2>&1 || true
-            "${ADB_BIN}" -s "${BOX_IP}:5555" shell am start -a android.intent.action.VIEW -c android.intent.category.BROWSABLE -f 0x14000000 --es com.android.browser.application_id com.invision.nexus.kiosk --ez create_new_tab false -d "${PLAYER_URL}" "${CHROME_PKG}" >/dev/null 2>&1 || \
-            "${ADB_BIN}" -s "${BOX_IP}:5555" shell am start -a android.intent.action.VIEW -d "${PLAYER_URL}" >/dev/null 2>&1 || true
+            "${ADB_BIN}" -s "${BOX_IP}:5555" shell am start \
+              -n com.android.chrome/com.google.android.apps.chrome.Main \
+              -a android.intent.action.VIEW \
+              -d "${PLAYER_URL}" \
+              -f 0x10008000 \
+              --es com.android.browser.application_id com.android.chrome \
+              --ez create_new_tab false >/dev/null 2>&1 || \
+            "${ADB_BIN}" -s "${BOX_IP}:5555" shell am start -a android.intent.action.VIEW -d "${PLAYER_URL}" -f 0x10008000 >/dev/null 2>&1 || true
             sleep 4
             "${ADB_BIN}" -s "${BOX_IP}:5555" shell input tap 960 540 >/dev/null 2>&1 || true
             sleep 2
