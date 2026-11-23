@@ -622,3 +622,31 @@ No seguimento da entrada em produção da política seletiva de Retail Media, fo
        - **Nível Superior:** Seletor de Governance da Política PoP com semáforo de estado animado.
        - **Nível Inferior:** Os 4 botões de ação organizados horizontalmente (`Exportar PoP`, `Exportar SoV`, `Certificado PDF`, `Purgar Telemetria`).
    - Resultado: Harmonia visual total, sem sobreposições e com adaptabilidade perfeita a monitores desktop, portáteis e tablets de loja.
+
+
+---
+
+## [2026-11-23] - Manual de Procedimento Operacional Padrão (SOP) de Auditoria Periódica de Cibersegurança & Testes em Box Android
+
+### Contexto & Objetivos de Cibersegurança
+Em conformidade com a diretiva europeia **NIS2** e a arquitetura **Zero-Trust** do ecossistema FNAC & DARTY, foi formalizado o processo de auditoria periódica e validação de cibersegurança do parque de Digital Signage.
+
+### Implementações & Artefactos Criados
+1. **Suíte Automatizada de Testes de Penetração ([tests/security-suite.mjs](file:///Users/daviscorreia/Antigravity%20/invision-nexus/tests/security-suite.mjs)):**
+   - Script Node.js nativo sem dependências externas adicionais, executável tanto no Synology NAS (via Docker/SSH) como no computador de gestão através de `./scripts/run-security-tests.sh <URL_DO_BACKEND>`.
+   - **Cobertura dos 6 Vetores de Ataque:**
+     - `Vetor 1 (Magic Bytes Guardrail)`: Validação de upload malicioso disfarçado de `.mp4` (rejeição estrita com HTTP 415 `INVALID_FILE_TYPE`).
+     - `Vetor 2 (Device Token Spoofing)`: Bloqueio de heartbeats com hardwareUid legítimo mas token forjado (rejeição estrita com HTTP 401 `UNAUTHORIZED_DEVICE`).
+     - `Vetor 3 (Anti-Defacement HMAC-SHA256)`: Simulação de ataque MITM com manifesto adulterado; verificação de registo de alerta de adulteração em tempo real no dashboard.
+     - `Vetor 4 (Autenticação Local Break-Glass)`: Proteção contra ataques de força bruta à conta de emergência em loja (rejeição estrita com HTTP 401 e registo de `LOGIN_FAILED`).
+     - `Vetor 5 (Hardening de Portas Docker)`: Validação de isolamento das portas de infraestrutura (PostgreSQL 5434 e Redis 6380 restritas a loopback local `127.0.0.1`).
+     - `Vetor 6 (Audit Trail Imutável)`: Verificação de rastreabilidade forense de todos os incidentes de segurança gerados durante a auditoria.
+
+2. **Roteiro Prático para Dispositivos Físicos (Boxes Android X98 Plus):**
+   - **Simulação MITM com Injeção de Alerta:** Verificação visual do crachá pulsante `🚨 ALERTA MITM / ASSINATURA INVÁLIDA` no Dashboard corporativo e validação do botão de restabelecimento `🛡️ Repor Alerta`.
+   - **Teste de Resiliência de Rede & "Zero Black Screen":** Procedimento de desconexão de cabo/Wi-Fi confirmando transição para cache local IndexedDB e transição de estado após 90 segundos sem quebras de emissão.
+   - **Teste de Bloqueio Físico Kiosk (Anti-Vandalismo):** Ligação de periféricos USB (rato e teclado) para atestar a total inibição de cliques direitos, menus contextuais, teclas de atalho de programador (`F12`, `Ctrl+Shift+I`) e toques longos.
+   - **Auditoria Criptográfica Visual (OSD Técnico):** Instrução de ativação do painel On-Screen Display (5 toques no topo esquerdo ou tecla `i`) para confirmação do selo HMAC-SHA256 e hash de integridade dos ficheiros de vídeo.
+
+3. **Novo Manual de Procedimento Padrão ([docs/04-manuais/05-guia-testes-seguranca-auditoria-periodica.md](file:///Users/daviscorreia/Antigravity%20/invision-nexus/docs/04-manuais/05-guia-testes-seguranca-auditoria-periodica.md)):**
+   - Registo exaustivo de todos os passos de auditoria, matriz de endereçamento IP (`127.0.0.1` vs IP de LAN `192.168.68.117`), critérios de aprovação/reprovação e plano de contingência em caso de anomalia.
