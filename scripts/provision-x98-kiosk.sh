@@ -208,22 +208,34 @@ else
   echo "==> [6/7] Fully Kiosk não detetado. A limpar abas abertas e a reiniciar o Google Chrome..."
   # 1. Força a paragem do Chrome para fechar todas as abas e sessões anteriores
   "${ADB_BIN}" -s "${BOX_IP}:5555" shell am force-stop com.android.chrome || true
-  # 2. Limpa o registo de abas abertas (preserva dados de sessão, cookies e localStorage do Player)
-  "${ADB_BIN}" -s "${BOX_IP}:5555" shell su -c "rm -rf /data/data/com.android.chrome/app_tabs/*" 2>/dev/null || \
-  "${ADB_BIN}" -s "${BOX_IP}:5555" shell rm -rf /data/data/com.android.chrome/app_tabs/* 2>/dev/null || true
+  # 2. Faz reset de abas acumuladas através de pm clear (elimina 100% das abas zombis anteriores)
+  "${ADB_BIN}" -s "${BOX_IP}:5555" shell pm clear com.android.chrome >/dev/null 2>&1 || true
   "${ADB_BIN}" -s "${BOX_IP}:5555" shell am clear-debug-app || true
   "${ADB_BIN}" -s "${BOX_IP}:5555" shell rm -f /data/local/tmp/chrome-command-line || true
+  # Re-aplica definições imersivas essenciais
+  "${ADB_BIN}" -s "${BOX_IP}:5555" shell settings put global stay_on_while_plugged_in 7 || true
+  "${ADB_BIN}" -s "${BOX_IP}:5555" shell settings put global policy_control "immersive.full=*" || true
   sleep 1
+
+  # Garante que o URL leva o hw_uid determinístico da Box para manter sempre o mesmo registo e emparelhamento
+  TARGET_LAUNCH_URL="${PLAYER_URL}"
+  if [[ "${TARGET_LAUNCH_URL}" != *"hw_uid="* ]]; then
+    if [[ "${TARGET_LAUNCH_URL}" == *"?"* ]]; then
+      TARGET_LAUNCH_URL="${TARGET_LAUNCH_URL}&hw_uid=${FALLBACK_HW_UID}"
+    else
+      TARGET_LAUNCH_URL="${TARGET_LAUNCH_URL}?hw_uid=${FALLBACK_HW_UID}"
+    fi
+  fi
 
   # 3. Inicia o Chrome com FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TASK (0x10008000) garantindo UMA ÚNICA ABA LIMPA
   "${ADB_BIN}" -s "${BOX_IP}:5555" shell am start \
     -n com.android.chrome/com.google.android.apps.chrome.Main \
     -a android.intent.action.VIEW \
-    -d "${PLAYER_URL}" \
+    -d "${TARGET_LAUNCH_URL}" \
     -f 0x10008000 \
     --es com.android.browser.application_id com.android.chrome \
     --ez create_new_tab false 2>/dev/null || \
-  "${ADB_BIN}" -s "${BOX_IP}:5555" shell am start -a android.intent.action.VIEW -d "${PLAYER_URL}" -f 0x10008000
+  "${ADB_BIN}" -s "${BOX_IP}:5555" shell am start -a android.intent.action.VIEW -d "${TARGET_LAUNCH_URL}" -f 0x10008000
 
   echo "==> [7/7] A aguardar carregamento do Chrome (4s) e ativar Fullscreen..."
   sleep 4

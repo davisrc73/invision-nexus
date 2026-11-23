@@ -529,21 +529,58 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
                       URL Kiosk: <span class="text-sky-300">${b.playerUrl}</span>
                     </p>
                   </div>
-                  <div class="flex items-center gap-2 flex-wrap shrink-0">
+                  <div class="flex items-center gap-1.5 flex-wrap shrink-0">
                     <button
                       type="button"
                       data-adb-action="RELAUNCH_URL"
                       data-adb-ip="${b.boxIp}"
                       data-adb-url="${b.playerUrl}"
                       class="px-2.5 py-1.5 rounded bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 font-bold text-[11px] transition"
+                      title="Relança o Player e reativa a supervisão"
                     >
                       🔄 Abrir URL
                     </button>
                     <button
                       type="button"
+                      data-adb-action="FORCE_STOP_PLAYER"
+                      data-adb-ip="${b.boxIp}"
+                      class="px-2.5 py-1.5 rounded bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 font-bold text-[11px] transition"
+                      title="Pára imediatamente o Player e pausa o Watchdog para poderes usar o Android Desktop"
+                    >
+                      🛑 Parar Player
+                    </button>
+                    <button
+                      type="button"
+                      data-adb-action="CLEAR_TABS"
+                      data-adb-ip="${b.boxIp}"
+                      class="px-2 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[11px] transition"
+                      title="Limpa 100% das abas acumuladas do Chrome (Chrome Reset)"
+                    >
+                      🧹 Limpar Abas
+                    </button>
+                    <button
+                      type="button"
+                      data-adb-action="CHECK_KIOSK"
+                      data-adb-ip="${b.boxIp}"
+                      class="px-2 py-1.5 rounded bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-[11px] transition"
+                      title="Verifica se o Fully Kiosk Browser está instalado na Box"
+                    >
+                      🔍 Verificar Kiosk
+                    </button>
+                    <button
+                      type="button"
+                      data-adb-action="TOGGLE_WATCHDOG"
+                      data-adb-ip="${b.boxIp}"
+                      class="px-2 py-1.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-[11px] transition"
+                      title="Pausa ou retoma a supervisão automática de 12s"
+                    >
+                      ${b.autoWatchdog !== false ? '⏸️ Pausar Watchdog' : '▶️ Ativar Watchdog'}
+                    </button>
+                    <button
+                      type="button"
                       data-adb-action="TAP_FULLSCREEN"
                       data-adb-ip="${b.boxIp}"
-                      class="px-2.5 py-1.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 font-bold text-[11px] transition"
+                      class="px-2 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[11px] transition"
                     >
                       ⛶ Fullscreen
                     </button>
@@ -551,7 +588,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
                       type="button"
                       data-adb-action="REBOOT_BOX"
                       data-adb-ip="${b.boxIp}"
-                      class="px-2.5 py-1.5 rounded bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 font-bold text-[11px] transition"
+                      class="px-2 py-1.5 rounded bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 font-bold text-[11px] transition"
                     >
                       🔌 Reiniciar
                     </button>
@@ -580,16 +617,18 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
                   logBox.classList.remove('hidden');
                   logBox.textContent = `A executar comando ADB [${action}] na Box ${boxIp}:5555...`;
                 }
-                await fetch(`${API_BASE}/api/v1/live/adb/action`, {
+                const res = await fetch(`${API_BASE}/api/v1/live/adb/action`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ boxIp, action, playerUrl }),
                 });
+                const data = await res.json().catch(() => ({}));
                 if (logBox) {
                   logBox.textContent =
-                    action === 'REBOOT_BOX'
-                      ? `✅ Comando de Reboot enviado para a Box ${boxIp}! Assim que a Box voltar a ligar (~30s), o Watchdog do NAS abrirá o Chrome automaticamente em Fullscreen.`
-                      : `✅ Comando [${action}] executado com sucesso na Box ${boxIp}!`;
+                    data.message ||
+                    (action === 'REBOOT_BOX'
+                      ? `✅ Comando de Reboot enviado para a Box ${boxIp}! Assim que a Box voltar a ligar (~30s), o Watchdog abrirá o Player automaticamente.`
+                      : `✅ Comando [${action}] executado com sucesso na Box ${boxIp}!`);
                 }
                 refreshDevicesPage();
               });

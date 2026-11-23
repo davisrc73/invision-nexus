@@ -698,9 +698,9 @@ function computeEffectivePlaybackForDevice(hardwareUid = null) {
     winningPlaylist.schedulingMode === 'DYNAMIC_SOV'
       ? buildDynamicSovSequence(winningPlaylist.items, 10)
       : winningPlaylist.items.map((it, idx) => ({
-          ...it,
-          sequenceSlot: idx + 1,
-        }));
+        ...it,
+        sequenceSlot: idx + 1,
+      }));
 
   const manifestSignature = generateManifestSignature(
     winningPlaylist.id,
@@ -753,7 +753,7 @@ function getEnrichedState(hardwareUid = null) {
     if (fs.existsSync(STATE_FILE)) {
       stateFileSize = fs.statSync(STATE_FILE).size;
     }
-  } catch {}
+  } catch { }
 
   const popAuditCount = (state.popAuditLogs || []).length;
   const popRecordsCount = (state.popRecords || []).length;
@@ -784,20 +784,20 @@ function getEnrichedState(hardwareUid = null) {
       stateFileSize < 50 * 1024 * 1024
         ? 'OPTIMAL'
         : stateFileSize < 200 * 1024 * 1024
-        ? 'WARNING'
-        : 'CRITICAL',
+          ? 'WARNING'
+          : 'CRITICAL',
     statusLabel:
       stateFileSize < 50 * 1024 * 1024
         ? '● OTIMIZADO'
         : stateFileSize < 200 * 1024 * 1024
-        ? '● ATENÇÃO'
-        : '● PURGA RECOMENDADA',
+          ? '● ATENÇÃO'
+          : '● PURGA RECOMENDADA',
     dailyGrowthEstimate:
       currentPolicy === 'PAUSED'
         ? '0 KB/dia (Telemetria Pausada)'
         : currentPolicy === 'RETAIL_MEDIA_ONLY'
-        ? '~35 KB/dia (~75% de poupança)'
-        : '~150 KB/dia (Auditoria Total 100%)',
+          ? '~35 KB/dia (~75% de poupança)'
+          : '~150 KB/dia (Auditoria Total 100%)',
   };
 
   return {
@@ -1083,7 +1083,7 @@ async function runKioskWatchdogCycle() {
         .split('\n')
         .filter((l) => /ResumedActivity|mFocusedApp/i.test(l))
         .join(' ');
-      
+
       const isFullyInForeground = hasFullyPid && resumedLines.includes('de.ozerov.fully');
       const isChromeInForeground = hasChromePid && resumedLines.includes('com.android.chrome');
       const isPlayerInForeground = isFullyInForeground || isChromeInForeground;
@@ -1417,7 +1417,7 @@ const server = http.createServer(async (req, res) => {
       if (!isMagicValid) {
         try {
           fs.unlinkSync(fullPath);
-        } catch {}
+        } catch { }
         const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || '';
         logAuditEvent({
           action: 'UPLOAD_BLOCKED_MAGIC_BYTES',
@@ -1570,8 +1570,8 @@ const server = http.createServer(async (req, res) => {
             (isAndroid
               ? `Box Android #${devNumber} (${hwUid})`
               : isMobile
-              ? `Telemóvel / Tablet #${devNumber} (${hwUid})`
-              : `Player Mac #${devNumber} (${hwUid})`),
+                ? `Telemóvel / Tablet #${devNumber} (${hwUid})`
+                : `Player Mac #${devNumber} (${hwUid})`),
           brand: payload.brand || (autoMatchedStore ? autoMatchedStore.brand : state.brand) || 'FNAC',
           storeName:
             payload.storeName ||
@@ -1673,8 +1673,8 @@ const server = http.createServer(async (req, res) => {
         (payload.category === 'TV_DEMO'
           ? 'INTERACTIVE_CATALOG'
           : ['LAPTOP_EXPO', 'TABLET_EXPO', 'SMARTPHONE_EXPO'].includes(payload.category)
-          ? 'IDLE_SCREENSAVER'
-          : 'PASSIVE');
+            ? 'IDLE_SCREENSAVER'
+            : 'PASSIVE');
 
       const profObj = (state.screenProfilesCatalog || []).find(
         (p) => p.code === payload.screenProfile || p.name === payload.screenProfile
@@ -1683,8 +1683,8 @@ const server = http.createServer(async (req, res) => {
         payload.invert180 !== undefined
           ? Boolean(payload.invert180)
           : profObj
-          ? Boolean(profObj.defaultInvert180)
-          : false;
+            ? Boolean(profObj.defaultInvert180)
+            : false;
 
       if (!dev) {
         dev = {
@@ -2234,8 +2234,8 @@ const server = http.createServer(async (req, res) => {
           scope === 'ALL'
             ? 'GLOBAL (TODAS AS INSÍGNIAS)'
             : scope === 'NON_COMMERCIAL'
-            ? 'RUÍDO NÃO-COMERCIAL (MANTEVE RETAIL MEDIA)'
-            : `INSÍGNIA: ${brand}`,
+              ? 'RUÍDO NÃO-COMERCIAL (MANTEVE RETAIL MEDIA)'
+              : `INSÍGNIA: ${brand}`,
         details: `Purga de telemetria PoP executada com sucesso (${purgedCount} registos eliminados). Âmbito: ${scope}.`,
         clientIp: req.socket?.remoteAddress || '',
         success: true,
@@ -2252,8 +2252,8 @@ const server = http.createServer(async (req, res) => {
             scope === 'ALL'
               ? 'Todos os registos de telemetria foram eliminados com sucesso.'
               : scope === 'NON_COMMERCIAL'
-              ? `Foram eliminados ${purgedCount} registos de ruído institucional/editorial. Os dados de parceiros comerciais (Retail Media) foram preservados com sucesso.`
-              : `Os registos de telemetria da marca ${brand} foram eliminados com sucesso (${purgedCount} registos).`,
+                ? `Foram eliminados ${purgedCount} registos de ruído institucional/editorial. Os dados de parceiros comerciais (Retail Media) foram preservados com sucesso.`
+                : `Os registos de telemetria da marca ${brand} foram eliminados com sucesso (${purgedCount} registos).`,
           purgedCount,
           state: getEnrichedState(),
         })
@@ -2361,26 +2361,59 @@ const server = http.createServer(async (req, res) => {
 
       await runAdb(['connect', target]);
 
-      if (action === 'TAP_FULLSCREEN') {
+      let actionMessage = `Comando [${action}] executado com sucesso na Box ${cleanIp}.`;
+
+      if (action === 'FORCE_STOP_PLAYER') {
+        await runAdb(['-s', target, 'shell', 'am', 'force-stop', 'com.android.chrome']);
+        await runAdb(['-s', target, 'shell', 'am', 'force-stop', 'de.ozerov.fully']);
+        if (box) {
+          box.autoWatchdog = false;
+          box.status = 'PARADO (Modo Manutenção)';
+        }
+        actionMessage = `🛑 Player parado e Watchdog pausado na Box ${cleanIp}. O ecrã da TV está agora no Desktop Android para poderes configurar a Box ou verificar o Fully Kiosk à vontade!`;
+      } else if (action === 'CLEAR_TABS') {
+        await runAdb(['-s', target, 'shell', 'am', 'force-stop', 'com.android.chrome']);
+        await runAdb(['-s', target, 'shell', 'pm', 'clear', 'com.android.chrome']);
+        await runAdb(['-s', target, 'shell', 'settings', 'put', 'global', 'stay_on_while_plugged_in', '7']);
+        await runAdb(['-s', target, 'shell', 'settings', 'put', 'global', 'policy_control', 'immersive.full=*']);
+        if (box) box.status = 'ABAS LIMPAS (Chrome Reset)';
+        actionMessage = `🧹 100% das abas do Chrome na Box ${cleanIp} foram eliminadas! O browser foi limpo a zeros. Clica em 'Abrir URL' para iniciar uma única aba nova.`;
+      } else if (action === 'CHECK_KIOSK') {
+        const fullyCheck = await runAdb(['-s', target, 'shell', 'pm', 'path', 'de.ozerov.fully']);
+        const isInstalled = fullyCheck.ok && fullyCheck.stdout.includes('de.ozerov.fully');
+        if (box) {
+          box.fullyInstalled = isInstalled;
+          if (isInstalled) box.status = 'ONLINE (Fully Kiosk)';
+        }
+        actionMessage = isInstalled
+          ? `✅ O Fully Kiosk Browser ESTÁ INSTALADO com sucesso na Box ${cleanIp}! Clica em 'Abrir URL' para ativar o modo Kiosk permanente.`
+          : `⚠️ O Fully Kiosk Browser AINDA NÃO ESTÁ INSTALADO na Box ${cleanIp}. Podes instalá-lo abrindo a Google Play Store na Box com o comando ou transferindo o APK para ./tools/apk/.`;
+      } else if (action === 'TAP_FULLSCREEN') {
         await runAdb(['-s', target, 'shell', 'settings', 'put', 'global', 'policy_control', 'immersive.full=*']);
         await runAdb(['-s', target, 'shell', 'input', 'tap', '960', '540']);
+        actionMessage = `⛶ Toque de Fullscreen enviado para a Box ${cleanIp}.`;
       } else if (action === 'RELAUNCH_URL') {
         const targetUrl = (box && box.playerUrl) || payload.playerUrl;
-        if (box) box.lastLaunchMs = Date.now();
+        if (box) {
+          box.autoWatchdog = true;
+          box.lastLaunchMs = Date.now();
+        }
         const launched = await launchKioskOnBox(target, targetUrl);
         if (box) box.status = launched.mode === 'FULLY_KIOSK' ? 'ONLINE (Fully Kiosk)' : 'ONLINE (Chrome Kiosk)';
+        actionMessage = `🔄 Player relançado com sucesso na Box ${cleanIp}! (Modo: ${box ? box.status : 'Iniciado'})`;
       } else if (action === 'REBOOT_BOX') {
         if (box) {
           box.status = 'REBOOTING (A reiniciar Box...)';
           box.lastLaunchMs = 0;
         }
         runAdb(['-s', target, 'reboot']);
+        actionMessage = `🔌 Comando de reinício enviado para a Box ${cleanIp}.`;
       }
 
       saveState();
       broadcastUpdate();
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ ok: true, state: getEnrichedState() }));
+      res.end(JSON.stringify({ ok: true, message: actionMessage, state: getEnrichedState() }));
     } catch (err) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: false, error: err.message || 'ADB_ACTION_ERROR' }));

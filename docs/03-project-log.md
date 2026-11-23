@@ -691,3 +691,26 @@ Durante os testes de campo realizados com a Box Android física, foram validados
      - Lançamento do Intent com flags `FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TASK` (`0x10008000`), garantindo estritamente **uma única aba limpa** em primeiro plano.
 2. **Guia Simplificado de Obtenção do Fully Kiosk Browser APK:**
    - Clarificado o método direto de download via página oficial com botão de ação ([https://www.fully-kiosk.com/en/#download-box](https://www.fully-kiosk.com/en/#download-box)) e a via direta através da **Google Play Store** na própria Box Android.
+
+
+---
+
+## [2026-11-23] - Modo de Manutenção (Force Stop / Pause Watchdog) & Reset Atómico de Abas no Chrome
+
+### Desafio Operacional Relatado
+1. **Restauro Persistente de Abas Antigas:** No Google Chrome do Android, sessões e abas acumuladas persistiam na base de dados de sessão do browser, não sendo eliminadas por chamadas DAC padrão sem permissões de root.
+2. **Conflito com o Watchdog durante Configuração:** O ciclo do Watchdog (verificação a cada 12 segundos) forçava a reabertura contínua do Player sempre que um técnico tentava minimizar o browser para aceder às Definições da Box ou abrir a Google Play Store para verificar a instalação do Fully Kiosk Browser.
+
+### Soluções de Engenharia Implementadas
+1. **Reset Total de Abas via Android Package Manager:**
+   - No fallback do Chrome em [scripts/provision-x98-kiosk.sh](file:///Users/daviscorreia/Antigravity%20/invision-nexus/scripts/provision-x98-kiosk.sh) e [backend/live-bridge.mjs](file:///Users/daviscorreia/Antigravity%20/invision-nexus/backend/live-bridge.mjs), a rotina executa agora `pm clear com.android.chrome`.
+   - Como o comando é executado com privilégios de sistema Android, elimina 100% das abas zombis e restauros de sessão.
+   - O Player é reaberto passando `?hw_uid=${FALLBACK_HW_UID}` no URL, garantindo que a Box preserva exatamente o mesmo identificador determinístico sem exigir novo emparelhamento.
+2. **Utilitário de Terminal ([scripts/kiosk-control.sh](file:///Users/daviscorreia/Antigravity%20/invision-nexus/scripts/kiosk-control.sh)):**
+   - Comandos dedicados para o operador:
+     - `stop`: Força a paragem (`am force-stop`) de Chrome e Fully Kiosk e suspende a supervisão, deixando a Box livre no ambiente de trabalho Android.
+     - `check`: Inspeciona a Box e devolve se o Fully Kiosk Browser está instalado e configurado como Home Launcher.
+     - `clear-tabs`: Executa o reset de abas a zeros.
+     - `resume`: Retoma a reprodução e reativa o Watchdog.
+3. **Controlos Operacionais no Dashboard Central ([dashboard/src/pages/devices.astro](file:///Users/daviscorreia/Antigravity%20/invision-nexus/dashboard/src/pages/devices.astro)):**
+   - Adicionados os botões `🛑 Parar Player`, `🧹 Limpar Abas`, `🔍 Verificar Kiosk` e `⏸️ Pausar Watchdog` diretamente na interface web de gestão de dispositivos.

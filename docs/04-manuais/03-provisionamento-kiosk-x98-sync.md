@@ -73,7 +73,38 @@ chmod +x scripts/provision-x98-kiosk.sh
 
 ---
 
-## 3. Sincronização Multi-Ecrã ao Milissegundo (`MillisecondSyncEngine`)
+## 3. Modo de Manutenção & Utilitário de Controlo de Kiosk (`kiosk-control.sh`)
+
+Quando um técnico necessita de inspecionar a Box (por exemplo, aceder às Definições do Android, abrir a Google Play Store para verificar se o Fully Kiosk foi instalado ou configurar Wi-Fi), o Watchdog automático (que verifica a cada 12 segundos) **não deve forçar a reabertura do Player**.
+
+Para isso, foi criado o utilitário `scripts/kiosk-control.sh` e botões de ação dedicados no Dashboard Central (`/devices`):
+
+### 3.1. Comandos Rápidos de Terminal:
+```bash
+# 1. Pára imediatamente o Player e pausa o Watchdog (deixa a TV livre no Desktop Android):
+./scripts/kiosk-control.sh stop 192.168.68.115
+
+# 2. Verifica se o Fully Kiosk Browser está instalado e se é o Home Launcher:
+./scripts/kiosk-control.sh check 192.168.68.115
+
+# 3. Elimina 100% das abas acumuladas no Google Chrome (Chrome Reset completo):
+./scripts/kiosk-control.sh clear-tabs 192.168.68.115
+
+# 4. Relança o Player e reativa a supervisão de 12 segundos:
+./scripts/kiosk-control.sh resume 192.168.68.115
+```
+
+### 3.2. Controlo Remoto via Dashboard Central (`/devices/`):
+Na secção **"Provisionamento Kiosk ADB & Auto-Boot Watchdog"**, cada Box dispõe dos seguintes botões de ação:
+* **`🛑 Parar Player`:** Força a paragem (`am force-stop`) do Chrome e do Fully Kiosk e suspende o Watchdog, permitindo usar a Box livremente com o comando da TV.
+* **`🧹 Limpar Abas`:** Executa `pm clear com.android.chrome`, eliminando todas as abas antigas e sessões restauradas.
+* **`🔍 Verificar Kiosk`:** Executa um teste em tempo real na Box e confirma se o pacote `de.ozerov.fully` está presente.
+* **`⏸️ Pausar / ▶️ Ativar Watchdog`:** Alterna a vigilância automática sem fechar o ecrã.
+* **`🔄 Abrir URL`:** Relança o Player em modo Kiosk limpo e reativa a supervisão.
+
+---
+
+## 4. Sincronização Multi-Ecrã ao Milissegundo (`MillisecondSyncEngine`)
 
 Para corredores de ecrãs ou Video Walls pertencentes ao mesmo `SyncGroup`:
 - **Calibração NTP via WebSockets (`/ws/sync`):** Calcula o *Round-Trip Time (RTT)* e o *Clock Offset* filtrando as amostras de menor jitter.
@@ -85,7 +116,7 @@ Para corredores de ecrãs ou Video Walls pertencentes ao mesmo `SyncGroup`:
 
 ---
 
-## 3. Atalho Secreto de Diagnóstico em Loja (Hidden OSD Menu)
+## 5. Atalho Secreto de Diagnóstico em Loja (Hidden OSD Menu)
 
 Em frente a qualquer ecrã na loja:
 - **Com Rato / Touch:** Clique **5 vezes seguidas no canto superior esquerdo** do ecrã.
