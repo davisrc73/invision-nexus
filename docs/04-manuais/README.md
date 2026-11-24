@@ -6,4 +6,5 @@ Esta pasta contém os manuais técnicos e operacionais oficiais da plataforma In
 - [03-provisionamento-kiosk-x98-sync.md](file:///Users/daviscorreia/Antigravity%20/invision-nexus/docs/04-manuais/03-provisionamento-kiosk-x98-sync.md): Provisionamento das Boxes Android X98 Plus (Modo Kiosk)
 - [04-politica-proof-of-play-retail-media.md](file:///Users/daviscorreia/Antigravity%20/invision-nexus/docs/04-manuais/04-politica-proof-of-play-retail-media.md): Governação de Telemetria Comercial, Proof of Play & Minimização de Dados (PoP Governance)
 - [05-guia-testes-seguranca-auditoria-periodica.md](file:///Users/daviscorreia/Antigravity%20/invision-nexus/docs/04-manuais/05-guia-testes-seguranca-auditoria-periodica.md): Guia Prático de Auditoria Periódica de Cibersegurança & Testes em Box Android (SOP)
+- [06-manual-operacao-manutencao-diaria-boxes.md](file:///Users/daviscorreia/Antigravity%20/invision-nexus/docs/04-manuais/06-manual-operacao-manutencao-diaria-boxes.md): Operação Diária, Manutenção de Campo & Resolução de Problemas (Runbook / SOP Boxes Android X98 Plus)
 

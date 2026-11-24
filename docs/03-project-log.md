@@ -714,3 +714,24 @@ Durante os testes de campo realizados com a Box Android física, foram validados
      - `resume`: Retoma a reprodução e reativa o Watchdog.
 3. **Controlos Operacionais no Dashboard Central ([dashboard/src/pages/devices.astro](file:///Users/daviscorreia/Antigravity%20/invision-nexus/dashboard/src/pages/devices.astro)):**
    - Adicionados os botões `🛑 Parar Player`, `🧹 Limpar Abas`, `🔍 Verificar Kiosk` e `⏸️ Pausar Watchdog` diretamente na interface web de gestão de dispositivos.
+
+
+---
+
+## [2026-11-24] - Formalização do Manual 06 de Operação Diária & Runbook de Manutenção em Loja
+
+### Contexto & Necessidade de Governação Operacional
+No seguimento da introdução do utilitário `kiosk-control.sh`, das novas ações no backend e dos botões operacionais no Dashboard Central (`/devices/`), foi solicitada a documentação exaustiva e estruturada de todos os procedimentos de operação diária e resolução de problemas para suporte contínuo às equipas de loja da FNAC e DARTY.
+
+### Artefactos e Manuais Criados
+1. **Manual Operacional Oficial ([docs/04-manuais/06-manual-operacao-manutencao-diaria-boxes.md](file:///Users/daviscorreia/Antigravity%20/invision-nexus/docs/04-manuais/06-manual-operacao-manutencao-diaria-boxes.md)):**
+   - **Procedimento Operacional Padrão (SOP):** Fluxo determinístico para intervir nas Boxes Android sem interferência do Watchdog (ciclo de 12 segundos).
+   - **Playbook de 4 Cenários Práticos de Campo:**
+     1. *Acesso a Definições e Ambiente de Trabalho:* Passo a passo para suspender a supervisão e libertar o ecrã.
+     2. *Instalação e Validação do Fully Kiosk Browser:* Métodos via Google Play Store e sideload APK com ativação como Home Launcher.
+     3. *Purga e Reset Atómico de Abas no Chrome:* Eliminação de instâncias zombis preservando a identidade determinística (`hw_uid`).
+     4. *Substituição Física de Equipamento:* Provisionamento de nova unidade de reserva sem perda de histórico de telemetria.
+   - **Matriz Comparativa de Controlos:** Mapeamento integral entre comandos de terminal CLI (`./scripts/kiosk-control.sh`) e os botões da interface web (`/devices/`).
+   - **Tabela de Troubleshooting Rápido:** Matriz "Sintoma -> Causa -> Solução" para despiste imediato pelas equipas locais de informática.
+2. **Atualização do Índice Corporativo ([docs/04-manuais/README.md](file:///Users/daviscorreia/Antigravity%20/invision-nexus/docs/04-manuais/README.md)):**
+   - Adicionado o Manual 06 como referência viva oficial de suporte às operações de campo.
